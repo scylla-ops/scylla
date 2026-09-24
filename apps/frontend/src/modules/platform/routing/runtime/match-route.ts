@@ -2,7 +2,6 @@ import type { RouteParams } from '../declaration/scylla-module.struct.ts';
 import type { CompiledRoute } from '../compilation/compile-routes.ts';
 import { isParam, splitPath } from '../compilation/route-path.ts';
 
-/** The route of a URL, and the values of its parameters. */
 export interface RouteMatch {
   route: CompiledRoute;
   params: RouteParams;
@@ -28,12 +27,7 @@ const paramsOf = (route: CompiledRoute, segments: readonly string[]): RouteParam
   return params;
 };
 
-/**
- * The first route whose path fits `pathname`, or `null`.
- *
- * `routes` comes sorted by specificity from `compileRoutes`, so the first fit is
- * the most specific one. A trailing slash does not count.
- */
+/** `routes` comes sorted by `compileRoutes`, so the first fit is the most specific. */
 export const matchRoute = (
   routes: readonly CompiledRoute[],
   pathname: string,

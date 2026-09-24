@@ -1,12 +1,4 @@
-/**
- * Projects: the unit that owns pipelines, secrets and its own member list.
- *
- * The three ways an organization's projects get read — the paginated list, the
- * dashboard overview and the grant-label lookup — all go through
- * `projectQueries` and therefore share one cache entry. They are plain options
- * objects, so the modules still on React run them through react-query while
- * this one runs them through `createQuery`.
- */
+/** The list, the overview and the lookup share one cache entry through `projectQueries`. */
 export type { ProjectEntity } from './domain/entities/project.entity.ts';
 export type { ProjectMember } from './domain/structs/project-member.struct.ts';
 export {

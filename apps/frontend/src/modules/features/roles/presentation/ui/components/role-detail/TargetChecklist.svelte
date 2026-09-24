@@ -6,13 +6,13 @@
 
   interface Props {
     label: string;
-    /** Shown when the list came back empty — not while it is still loading. */
+    /** Shown when the list is empty, not while it loads. */
     empty: string;
     isLoading: boolean;
     options: TargetOption[];
     disabled: boolean;
     isSelected: (id: string) => boolean;
-    /** Already held: offered ticked and locked, so the state is visible. */
+    /** Already held: ticked and locked. */
     isGranted: (id: string) => boolean;
     onToggle: (option: TargetOption) => void;
   }
@@ -30,8 +30,7 @@
       {empty}
     </p>
   {:else}
-    <!-- Plain overflow rather than the shared `ScrollArea` — see the note in
-         `RoleDetailGrantList.svelte`: that root clips nothing under a `max-h`. -->
+    <!-- Not `ScrollArea`: its root does not clip under a `max-h`. -->
     <div class="max-h-48 overflow-y-auto rounded-lg border p-2">
       <div class="flex flex-col gap-0.5">
         {#each options as option (option.id)}

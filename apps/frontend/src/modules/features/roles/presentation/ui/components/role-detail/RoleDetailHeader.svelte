@@ -20,8 +20,7 @@
     {
       builtin: t(rolesMessages.builtin),
       custom: t(rolesMessages.custom),
-      // A role whose origin the backend did not name — an older build, or a
-      // kind added since. "Unknown" is feminine here: it agrees with "origine".
+      // "Unknown" is feminine here, to agree with "origine".
       unknown: t(rolesMessages.unknownOrigin),
     }[role.origin.kind],
   );

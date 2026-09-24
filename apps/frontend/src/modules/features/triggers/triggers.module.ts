@@ -14,7 +14,6 @@ const triggersRepository = new DefaultTriggersRepository(triggersRemoteDataSourc
 export const TriggersModule = {
   id: 'triggers',
   domain: {
-    /** Repository interface — the module's data surface. */
     triggersRepository: triggersRepository,
   },
   routes: {
@@ -27,7 +26,7 @@ export const TriggersModule = {
           highlight: pipelineName,
           detail: msg`Triggers`,
         }),
-        page: () => import('./presentation/ui/Triggers.page.svelte'),
+        page: () => import('./presentation/ui/Triggers/Triggers.page.svelte'),
       },
     ],
   },

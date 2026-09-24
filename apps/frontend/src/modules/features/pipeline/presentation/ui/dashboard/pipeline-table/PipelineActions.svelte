@@ -41,19 +41,13 @@
 
   const compact = createCompactContainer();
 
-  // Gate each action by the permission it needs, in the current project context.
   const canRun = $derived(can(Permission.RUN_PIPELINE));
   const canEdit = $derived(can(Permission.UPDATE_PIPELINE));
   const canDuplicate = $derived(can(Permission.CREATE_PIPELINE));
   const showTriggers = $derived(!!onViewTriggers && can(Permission.MANAGE_TRIGGERS));
 </script>
 
-<!--
-  A pipeline row's actions, laid out inline and collapsing into a dropdown once
-  the column is too narrow for them. The breakpoint is this element's own width
-  — a table column is sized independently of the viewport — which is why it is
-  measured with an action rather than read from a media query.
--->
+<!-- Falls back to a menu when the column is too narrow. -->
 <div
   use:compact.measure
   class="flex w-full shrink-0 items-center justify-center gap-2"
@@ -70,8 +64,7 @@
             class="h-8 w-8 shrink-0 rounded-full text-slate-400 hover:text-slate-900"
           >
             <MoreHorizontalIcon class="h-4 w-4" />
-            <!-- The React trigger had no accessible name at all: an icon-only
-                 button whose only label was the icon itself. -->
+            <!-- An icon-only button: this is its name. -->
             <span class="sr-only">{t(pipelineMessages.pipelineActions)}</span>
           </Button>
         {/snippet}

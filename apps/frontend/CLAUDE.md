@@ -246,6 +246,8 @@ In query and mutation options, call `.unwrap()` inside `mutationFn`/`queryFn` so
 - **Selection**: `createSelection(key)` over the single `selectionStore`, keyed by feature. Used by
   `DataTable` + `FeatureHeader`. No per-feature selection store.
 - **List headers**: `FeatureHeader` (count, clear/delete selection, new button).
+- **Modals**: `ScyllaDialog` for every modal, never `Dialog` + `DialogContent` directly — a
+  `{#key}` around `DialogContent` leaves the modal impossible to close.
 - **Forms**: declarative `ScyllaForm` from `FormItem[]`; `FormDialog` wraps it in a dialog;
   `createFormState(() => items)` manages values/changes/reset/validation. Both are generic over
   the item ids — type the items `readonly FormItem<'a' | 'b'>[]` and `onSubmit` hands back a typed
@@ -300,7 +302,7 @@ subscription, a CodeMirror or `@xyflow` instance). For everything else there is 
 | Value derived from props/state | `$effect` + assignment | `$derived` / `$derived.by` |
 | Server data | `$effect` + gRPC call | `createQuery` on a `*.queries.ts` factory |
 | Respond to a user action | effect watching state | The event handler |
-| Reset a form when a dialog opens | effect on `open` | `{#key open}` around a child component |
+| Reset a form when a dialog opens | effect on `open` | `ScyllaDialog`: it rebuilds its content at each opening |
 | Refetch after a mutation | effect | `invalidateQueries` in `onSuccess` |
 | Touch the DOM | `bind:this` + effect | a Svelte action (`use:action`) — the only sanctioned way |
 
@@ -392,9 +394,18 @@ Code identifiers: Interfaces/Types/Classes/Components/Enums **PascalCase** (no `
 
 ## Testing (Vitest)
 
-Tests live **next to the code they cover** — `grant-creator.state.svelte.ts` →
-`grant-creator.state.svelte.test.ts`, `GrantCreator.svelte` → `GrantCreator.test.ts`. There is no
-`__tests__/` mirror tree.
+Where a test goes:
+
+- **A tested Svelte component has its own folder**, with its test and its fixtures:
+  `LoginForm/LoginForm.svelte`, `LoginForm/LoginForm.test.ts`, `LoginForm/LoginForm.fixture.svelte`.
+  A page drops `.page` from the folder name: `Login/Login.page.svelte`. This keeps a component
+  and what describes it in one place (Storybook stories will go there too).
+- **Every other test goes in the `__test__/` folder of the directory it covers**:
+  `presentation/grant-creator.state.svelte.ts` → `presentation/__test__/grant-creator.state.svelte.test.ts`.
+  Fixtures used by several components' tests go there too.
+- A component without a test stays a plain file. When you add its first test, move it into
+  its folder and update its importers.
+- `shadcn/` is vendored: its tests go in `shadcn/__test__/`, its components stay flat.
 
 The harness is five files in `src/test/`, and it is the only shared test code:
 
@@ -504,9 +515,14 @@ turn a red run green. Generated proto code, compiled catalogs, vendored `shadcn/
   in `core/presentation/ui/router/core.router.ts`; the routes of the `app` mount and below are
   wrapped by `AuthGuard` + `Layout` (`AppShell.svelte`).
 - Backend comms: gRPC-Web via protobuf-ts through `CoreGrpcTransport`.
-- Comments: **none in the code, except on public/exported items.** When the reason behind the
-  code needs more room, write it in the module's `AGENTS.md`, not inline. Team-visible text
-  (PR bodies, issues, `AGENTS.md`, comments on public items) is written in ASD-STE100.
+- Comments: **few, short, and only where the code cannot speak for itself.**
+  - Write one when the logic is hard to follow, or when the role of a function, component or
+    prop is not clear from its name. One or two lines is the norm, but longer block comments are fully acceptable only when documenting really complex algorithms or multi-step execution flows.
+  - Do not write one that repeats the name (`/** The user id. */ userId`), narrates the code,
+    or tells history: no mention of React, of the migration, of a "phase" or of what the code
+    used to be. Git keeps the history.
+  - A reason that needs more room goes in the module's `AGENTS.md`, not inline.
+  - Team-visible text (PR bodies, issues, `AGENTS.md`, comments) is written in ASD-STE100.
 - Lint rules worth knowing (see `eslint.config.js`): `no-floating-promises` and `no-misused-promises` are errors — never fire-and-forget a promise; unused bindings must be prefixed `_` to be tolerated. The `no-unsafe-*` rules are off only because of the generated proto layer — that is not a licence to spread `any`. `no-restricted-imports` forbids `@tanstack/svelte-query` (use `@platform/query`).
 
 ### Stack
@@ -541,7 +557,7 @@ Svelte 5 (runes) · TypeScript 5.8 · TanStack Query 5 (`@tanstack/svelte-query`
     table. Follow the shape of a neighbouring module's pair: `AGENTS.md` = public API, data
     contract, file map, routes/nav, the rules that bite there; `README.md` = what it is for and
     why it is built that way.
-11. Tests next to the code they cover (`*.test.ts`) — see "Testing" above. Run `pnpm coverage`:
+11. Tests in the component's folder or in `__test__/` (`*.test.ts`) — see "Testing" above. Run `pnpm coverage`:
     the thresholds are the gate that sees a module arrive without tests.
 12. `pnpm typecheck && pnpm test && pnpm lint && pnpm depcruise && pnpm depcruise:cycles &&
     pnpm i18n:collisions` all clean.

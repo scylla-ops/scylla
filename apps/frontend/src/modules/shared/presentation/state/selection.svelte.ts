@@ -11,18 +11,8 @@ export interface Selection {
 }
 
 /**
- * A feature's slice of the one keyed selection store — the Svelte counterpart
- * of `use-selection.ts`.
- *
- * Keyed, never per-feature: `createSelection('jobs')` and
- * `createSelection('users')` are independent views over the same store, and
- * `DataTable` and `FeatureHeader` reading the same key is what keeps a list and
- * its toolbar in agreement.
- *
- * No `$state` of its own: the store is the single source of truth and
- * `toRune` makes reading it reactive. Mirroring `selectedIds` into a local rune
- * would be a second copy to keep in sync, which is the mistake the React rules
- * call mirror state.
+ * One feature's view of the keyed selection store. `DataTable` and `FeatureHeader`
+ * read the same key, so a list and its toolbar agree.
  */
 export const createSelection = (key: string): Selection => {
   const read = toRune(selectionStore);

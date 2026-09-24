@@ -1,7 +1,7 @@
 export { default as AgentRunInstructions } from './AgentRunInstructions.svelte';
-export { default as CopyableText } from './CopyableText.svelte';
-export { default as DataTable } from './DataTable.svelte';
-export { default as TruncatedText } from './TruncatedText.svelte';
+export { default as CopyableText } from './CopyableText/CopyableText.svelte';
+export { default as DataTable } from './DataTable/DataTable.svelte';
+export { default as TruncatedText } from './TruncatedText/TruncatedText.svelte';
 export {
   buildGridTemplate,
   minTableWidthOf,

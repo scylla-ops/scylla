@@ -5,28 +5,12 @@ import type {
   ScriptPipelineStep,
 } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 
-/**
- * The single translation between the canvas graph and `PipelineStep[]`.
- *
- * Pure, and the safety net of the Phase 5 port: `reactflow` became
- * `@xyflow/svelte`, and the only thing that changed here is which package the
- * `Node` / `Edge` types come from — every rule below, and every test beside it,
- * is the code that did not have to be rewritten.
- *
- * One shape did change. A node's `data` must satisfy `Record<string, unknown>`,
- * and `PipelineStep` is a union of *interfaces*, which TypeScript gives no
- * implicit index signature. So a step node carries `{ step }` rather than being
- * the step, and `node.data.step` replaces the `node.data as PipelineNodeData`
- * cast the React version needed at every use site — a cast fewer, not more.
- */
+/** A node's `data` must be a `Record`: a step travels wrapped, as `{ step }`. */
 
 export type StepNodeData = { step: PipelineStep };
 export type StartNodeData = { name: string };
 
-/**
- * A step as the node dialog builds it: everything but its identity and its
- * wiring, both of which the canvas owns.
- */
+/** A step without its identity and wiring, which the canvas owns. */
 export type NodeFormValue =
   | Omit<ExecPipelineStep, 'id' | 'deps'>
   | Omit<ScriptPipelineStep, 'id' | 'deps'>;
@@ -45,10 +29,6 @@ const HORIZONTAL_GAP = 100;
 const VERTICAL_GAP = 60;
 const START_NODE_OFFSET = NODE_WIDTH + HORIZONTAL_GAP;
 
-/**
- * `style` is a CSS string here, where reactflow took an object — the one
- * cosmetic difference between the two libraries this file touches.
- */
 export const DEFAULT_EDGE_STYLE = {
   animated: true,
   type: 'deletable',
@@ -56,9 +36,7 @@ export const DEFAULT_EDGE_STYLE = {
   style: `stroke: ${EDGE_COLOR}; stroke-width: 2;`,
 } satisfies Partial<BlueprintEdge>;
 
-/**
- * Compute the depth (column) of each node via BFS from roots.
- */
+/** The column of each node, by BFS from the roots. */
 function computeDepths(steps: PipelineStep[]): Map<string, number> {
   const depthMap = new Map<string, number>();
   const childrenOf = new Map<string, string[]>();
@@ -94,9 +72,7 @@ function computeDepths(steps: PipelineStep[]): Map<string, number> {
   return depthMap;
 }
 
-/**
- * Sanitize steps: deduplicate IDs, remove self-deps, remove deps to non-existent nodes.
- */
+/** Deduplicates ids, removes self-deps and deps to missing nodes. */
 export function sanitizeSteps(steps: PipelineStep[]): PipelineStep[] {
   const seen = new Set<string>();
   const idMap = new Map<string, string>();
@@ -187,7 +163,6 @@ export function stepsToFlow(
   };
 }
 
-/** A step node's payload, or `undefined` for the start node. */
 export const stepOf = (node: BlueprintNode): PipelineStep | undefined =>
   node.type === 'pipelineStep' ? node.data.step : undefined;
 
@@ -210,10 +185,7 @@ export function flowToSteps(nodes: BlueprintNode[], edges: BlueprintEdge[]): Pip
   });
 }
 
-/**
- * Generate a unique node ID, avoiding collisions with existing IDs.
- * Optionally exclude one ID (useful when renaming a node).
- */
+/** `exclude` is the node's own id when renaming it. */
 export function generateUniqueNodeId(
   desired: string,
   existingIds: Set<string>,

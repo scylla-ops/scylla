@@ -13,7 +13,7 @@
     class?: string;
     size?: StatusIndicatorSize;
     labelClass?: string;
-    /** Pulses for every state, not just the two that are still moving. */
+    /** Pulses for every state, not only the running ones. */
     animateAllStates?: boolean;
   }
 
@@ -32,13 +32,8 @@
 </script>
 
 <!--
-  A status pill: a coloured dot, pulsing while the thing it describes is still
-  moving, optionally followed by a label. Ported class for class from
-  `ui/data-display/status-indicator.tsx`.
-
-  `data-state` is ours and is not decoration: the dot carries no text, so a test
-  asserting on a *status* would otherwise have to reach for a Tailwind class —
-  exactly the kind of assertion the testing rules rule out.
+  A colored dot, pulsing while the thing is still running. `data-state` lets a
+  test read the status without a CSS class.
 -->
 <div class="relative inline-flex overflow-hidden rounded-full">
   <div

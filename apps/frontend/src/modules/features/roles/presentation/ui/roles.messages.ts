@@ -1,24 +1,10 @@
 import { msg } from '@lingui/core/macro';
 
 /**
- * Every string the roles screens show.
- *
- * `lingui extract` does not read `.svelte`, so a message declared inside a
- * component would vanish from the catalogs without failing a single gate. The
- * ids below are byte-identical to the ones the React components carried —
- * placeholder names included, since those are part of the msgid.
- *
- * Three of them interpolate a positional `{0}`, because the `<Trans>` they came
- * from was given an expression rather than an identifier. `String(…)` /
- * `Number(…)` keeps them expressions here, which is what keeps the msgid — and
- * therefore the French — attached.
- *
- * Permission and scope names are **not** here: they live in
- * `presentation/utils/permission-mapping.ts`, beside the catalog that defines
- * them, so a new backend permission needs one entry rather than two.
+ * Keep the msgids (placeholder names included) or the French is lost. Permission
+ * and scope names are in `utils/permission-mapping.ts`.
  */
 export const rolesMessages = {
-  // List page
   role: msg`Role`,
   roles: msg`Roles`,
   createRole: msg`Create role`,
@@ -27,7 +13,6 @@ export const rolesMessages = {
   noDescription: msg`No description`,
   memberCount: (memberCount: number) => msg`${memberCount} members`,
 
-  // Detail header
   builtin: msg`Built-in`,
   custom: msg`Custom`,
   unknownOrigin: msg({ context: 'feminine', message: 'Unknown' }),
@@ -35,19 +20,16 @@ export const rolesMessages = {
   editDenied: msg`You don't have permission to edit roles.`,
   fullControl: msg`Full control`,
 
-  // Detail permissions
   permissions: msg`Permissions`,
   grantsFullControl: msg`Grants full control over its scope.`,
   noPermissions: msg`No permissions.`,
   unknownAccess: msg`Unknown access.`,
 
-  // Detail grants
   grants: msg`Grants`,
   noGrants: msg`No one holds this role yet.`,
   remove: msg`Remove`,
   revokeDenied: msg`You don't have permission to revoke grants.`,
 
-  // Grant dialog
   addGrant: msg`Add grant`,
   grantDenied: msg`You don't have permission to grant this role.`,
   grantTitle: (roleName: string) => msg`Grant “${String(roleName)}”`,
@@ -74,7 +56,6 @@ export const rolesMessages = {
   grantsCreated: (count: number) => msg`${Number(count)} grants created`,
   grantFailed: msg`Failed to create grant`,
 
-  // Role form
   editRoleTitle: msg`Edit role`,
   roleFormSubtitle: msg`Define what this role is called and what it can do.`,
   name: msg`Name`,
@@ -87,15 +68,8 @@ export const rolesMessages = {
   restricted: msg`Restricted permissions`,
   saveChanges: msg`Save changes`,
 
-  // Permission picker
   conferredCount: (conferredCount: number) => msg`${conferredCount} selected`,
   always: msg`Always`,
-  /**
-   * New, and deliberately: the expand/collapse control of the permission tree
-   * had no accessible name at all in React — a `+` glyph in a button — so
-   * nothing but a CSS selector could reach it, and a screen reader announced
-   * "button".
-   */
   showSubPermissions: (label: string) => msg`Show ${label} sub-permissions`,
   hideSubPermissions: (label: string) => msg`Hide ${label} sub-permissions`,
   alwaysGrantedNote: msg`Holding a role in an organization is what belonging to it means, so every organization role carries it. An organization role applies to every project of the organization.`,

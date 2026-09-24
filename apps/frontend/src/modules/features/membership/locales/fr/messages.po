@@ -13,197 +13,197 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:41
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:27
 msgid "{username} removed — {revoked} grant(s) revoked"
 msgstr "{username} retiré — {revoked} attribution(s) révoquée(s)"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:35
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:22
 msgid "{value, plural, =0 {No role} one {# role} other {# roles}}"
 msgstr "{value, plural, =0 {Aucun rôle} one {# rôle} other {# rôles}}"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:23
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:15
 msgid "+ role"
 msgstr "+ rôle"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:17
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:9
 msgid "Add"
 msgstr "Ajouter"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:15
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:7
 msgid "Add a member"
 msgstr "Ajouter un membre"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:53
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:38
 msgid "Add a member to “{name}”"
 msgstr "Ajouter un membre à « {name} »"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:70
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:54
 msgid "Add a member to this project"
 msgstr "Ajouter un membre à ce projet"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:47
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:32
 msgid "Belonging to “{name}” means holding a role in it. Granting someone their first role admits them; revoking every role they hold here, and on its projects, removes them."
 msgstr "Appartenir à « {name} », c'est y détenir un rôle. Accorder son premier rôle à quelqu'un l'y admet ; révoquer tous les rôles qu'il détient ici, et sur ses projets, l'en retire."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:16
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:8
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:72
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:56
 msgid "Every member of the organization is already here"
 msgstr "Tous les membres de l'organisation sont déjà présents"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:60
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:45
 msgid "Every role they hold on this organization and on its projects will be revoked. They will lose access immediately."
 msgstr "Tous les rôles qu'il détient sur cette organisation et sur ses projets seront révoqués. Il perdra l'accès immédiatement."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:76
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:60
 msgid "Every role they hold on this project will be revoked. Roles inherited from the organization are untouched — they are managed at the organization level."
 msgstr "Tous les rôles qu'il détient sur ce projet seront révoqués. Les rôles hérités de l'organisation ne sont pas touchés — ils sont gérés au niveau de l'organisation."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:55
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:40
 msgid "Everyone is already a member"
 msgstr "Tout le monde est déjà membre"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:63
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:47
 msgid "Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this page."
 msgstr "Toutes les personnes ayant accès à ce projet, qu'il soit accordé ici ou via un rôle sur l'organisation. Seuls les rôles de projet peuvent être modifiés depuis cette page."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:22
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:14
 msgid "Held"
 msgstr "Détenu"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:20
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:12
 msgid "Loading…"
 msgstr "Chargement…"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:26
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:18
 msgid "Managed at the organization level."
 msgstr "Géré au niveau de l'organisation."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:66
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:50
 msgid "Managed by a project administrator"
 msgstr "Géré par un administrateur du projet"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:51
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:36
 msgid "Managed by an organization administrator"
 msgstr "Géré par un administrateur de l'organisation"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:13
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:5
 msgid "Member"
 msgstr "Membre"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:42
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:28
 msgid "Member added with {count} role(s)"
 msgstr "Membre ajouté avec {count} rôle(s)"
 
-#: src/modules/features/membership/membership.module.ts:18
-#: src/modules/features/membership/membership.module.ts:22
-#: src/modules/features/membership/membership.module.ts:29
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:14
+#: src/modules/features/membership/membership.module.ts:14
+#: src/modules/features/membership/membership.module.ts:16
+#: src/modules/features/membership/membership.module.ts:23
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:6
 msgid "Members"
 msgstr "Membres"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:19
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:11
 msgid "No role"
 msgstr "Aucun rôle"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:21
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:13
 msgid "No role can be granted here."
 msgstr "Aucun rôle ne peut être attribué ici."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:49
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:34
 msgid "Nobody belongs to this organization yet."
 msgstr "Personne n'appartient encore à cette organisation."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:65
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:49
 msgid "Nobody has access to this project yet."
 msgstr "Personne n'a encore accès à ce projet."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:25
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:17
 msgid "Nobody is listed here yet."
 msgstr "Personne n'est listé ici pour l'instant."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:71
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:55
 msgid "Only members of the organization can be added — a project role granted to anyone else is refused."
 msgstr "Seuls les membres de l'organisation peuvent être ajoutés — un rôle de projet accordé à quelqu'un d'autre est refusé."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:69
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:53
 msgid "Organization administrators also reach this project. Their roles are managed at the organization level and are not listed here."
 msgstr "Les administrateurs de l'organisation ont aussi accès à ce projet. Leurs rôles sont gérés au niveau de l'organisation et ne sont pas listés ici."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:54
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:39
 msgid "Pick someone and the roles they should hold in this organization."
 msgstr "Choisissez une personne et les rôles qu'elle doit détenir dans cette organisation."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:74
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:58
 msgid "Project roles to grant"
 msgstr "Rôles de projet à attribuer"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:50
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:35
 msgid "Reached via a project"
 msgstr "Atteint via un projet"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:59
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:44
 msgid "Remove {username} from “{organization}”?"
 msgstr "Retirer {username} de « {organization} » ?"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:75
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:59
 msgid "Remove {username} from this project?"
 msgstr "Retirer {username} de ce projet ?"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:52
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:37
 msgid "Remove from the organization"
 msgstr "Retirer de l'organisation"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:67
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:51
 msgid "Remove from the project"
 msgstr "Retirer du projet"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:27
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:19
 msgid "Revoke {name}"
 msgstr "Révoquer {name}"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:38
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:24
 msgid "Role granted"
 msgstr "Rôle accordé"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:39
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:25
 msgid "Role revoked"
 msgstr "Rôle révoqué"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:68
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:52
 msgid "Roles badged “Organization” are inherited from the organization and are managed there."
 msgstr "Les rôles marqués « Organisation » sont hérités de l'organisation et se gèrent là-bas."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:57
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:42
 msgid "Roles to grant"
 msgstr "Rôles à attribuer"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:24
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:16
 msgid "Select a user"
 msgstr "Sélectionner un utilisateur"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:45
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:30
 msgid "Select an organization to see its members."
 msgstr "Sélectionnez une organisation pour voir ses membres."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:18
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:10
 msgid "You"
 msgstr "Vous"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:73
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:57
 msgid "You can't browse the organization's members"
 msgstr "Vous ne pouvez pas parcourir les membres de l'organisation"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:56
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:41
 msgid "You can't browse the user directory"
 msgstr "Vous ne pouvez pas parcourir l'annuaire des utilisateurs"
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:64
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:48
 msgid "You don't have permission to add members to this project."
 msgstr "Vous n'avez pas la permission d'ajouter des membres à ce projet."
 
-#: src/modules/features/membership/presentation/ui/membership.messages.ts:48
+#: src/modules/features/membership/presentation/ui/membership.messages.ts:33
 msgid "You don't have permission to admit members here."
 msgstr "Vous n'avez pas la permission d'admettre des membres ici."

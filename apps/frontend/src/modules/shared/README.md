@@ -66,7 +66,8 @@ and behave alike:
   Both are generic over the item ids, so a form declared with literal ids submits a typed
   `FormValues` record (`{ name: string; description: string }`) instead of a bag of pairs the
   caller has to search through.
-- **`ConfirmOperationAlertDialog`** for destructive actions, **`SecretRevealDialog`** for values
+- **`ScyllaDialog`** for every modal: it closes the same way everywhere and resets its content
+  at each opening. **`ConfirmOperationAlertDialog`** for destructive actions, **`SecretRevealDialog`** for values
   shown exactly once.
 
 ## Two global stores, and only two

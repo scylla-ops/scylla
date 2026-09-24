@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/layout/whats-new.ts:55
+#: src/modules/layout/whats-new.ts:39
 msgid "Build your own roles and grant them fine-grained permissions on an organization or a project."
 msgstr "Build your own roles and grant them fine-grained permissions on an organization or a project."
 
@@ -21,13 +21,13 @@ msgstr "Build your own roles and grant them fine-grained permissions on an organ
 msgid "Create"
 msgstr "Create"
 
-#: src/modules/layout/whats-new.ts:68
+#: src/modules/layout/whats-new.ts:52
 msgid "Dark mode"
 msgstr "Dark mode"
 
-#: src/modules/layout/presentation/nav-sections.test.ts:48
-#: src/modules/layout/presentation/ui/AppSidebar.test.ts:83
-#: src/modules/layout/whats-new.ts:47
+#: src/modules/layout/presentation/__test__/nav-sections.test.ts:48
+#: src/modules/layout/presentation/ui/AppSidebar/AppSidebar.test.ts:83
+#: src/modules/layout/whats-new.ts:31
 msgid "Dashboard"
 msgstr "Dashboard"
 
@@ -39,7 +39,7 @@ msgstr "Got it"
 msgid "Here is what landed in this version."
 msgstr "Here is what landed in this version."
 
-#: src/modules/layout/whats-new.ts:62
+#: src/modules/layout/whats-new.ts:46
 msgid "Invite people to your organization and your projects, and manage what each of them can do."
 msgstr "Invite people to your organization and your projects, and manage what each of them can do."
 
@@ -47,7 +47,7 @@ msgstr "Invite people to your organization and your projects, and manage what ea
 msgid "Language"
 msgstr "Language"
 
-#: src/modules/layout/whats-new.ts:48
+#: src/modules/layout/whats-new.ts:32
 msgid "Live metrics for your agents, pipelines and recent runs, all in one place."
 msgstr "Live metrics for your agents, pipelines and recent runs, all in one place."
 
@@ -59,7 +59,7 @@ msgstr "Loading..."
 msgid "Log out"
 msgstr "Log out"
 
-#: src/modules/layout/whats-new.ts:61
+#: src/modules/layout/whats-new.ts:45
 msgid "Members"
 msgstr "Members"
 
@@ -71,20 +71,20 @@ msgstr "New"
 msgid "Organization"
 msgstr "Organization"
 
-#: src/modules/layout/presentation/nav-sections.test.ts:55
+#: src/modules/layout/presentation/__test__/nav-sections.test.ts:55
 msgid "Pipelines"
 msgstr "Pipelines"
 
-#: src/modules/layout/whats-new.ts:54
+#: src/modules/layout/whats-new.ts:38
 msgid "Roles"
 msgstr "Roles"
 
-#: src/modules/layout/whats-new.ts:69
+#: src/modules/layout/whats-new.ts:53
 msgid "Scylla now comes in light and dark — switch with the button in the top-right corner."
 msgstr "Scylla now comes in light and dark — switch with the button in the top-right corner."
 
-#: src/modules/layout/presentation/nav-sections.test.ts:11
-#: src/modules/layout/presentation/ui/AppSidebar.test.ts:23
+#: src/modules/layout/presentation/__test__/nav-sections.test.ts:11
+#: src/modules/layout/presentation/ui/AppSidebar/AppSidebar.test.ts:23
 msgid "Secrets"
 msgstr "Secrets"
 
@@ -108,8 +108,8 @@ msgstr "To get started, please create your first organization."
 msgid "Toggle Sidebar"
 msgstr "Toggle Sidebar"
 
-#: src/modules/layout/presentation/nav-sections.test.ts:61
-#: src/modules/layout/presentation/nav-sections.test.ts:70
+#: src/modules/layout/presentation/__test__/nav-sections.test.ts:61
+#: src/modules/layout/presentation/__test__/nav-sections.test.ts:70
 msgid "Users"
 msgstr "Users"
 

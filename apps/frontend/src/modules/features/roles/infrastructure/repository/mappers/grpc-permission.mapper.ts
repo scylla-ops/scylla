@@ -7,10 +7,9 @@ import type {
 } from '@/generated/scylla/authz/v1/permission.ts';
 import { type AccessEntity, type AccessSpec, type Permission as PermissionDomain, PermissionScope, type PrincipalEntity, PrincipalKind, } from '@platform/authz';
 
-/** A scope as the domain carries it: a kind plus the id it is bound to. */
 export interface ScopeBinding {
   scope: PermissionScope;
-  /** Empty for SYSTEM scope, and for a scope arm this build does not know. */
+  /** Empty for SYSTEM and for an unknown scope arm. */
   scopeId: string;
 }
 
@@ -23,10 +22,6 @@ export class GrpcPermissionMapper {
     return permission;
   }
 
-  // ── Scope ───────────────────────────────────────────────────────────────────
-  // `ScopeKind` (id-free) is still used for catalog filters; `ScopeRef` is the
-  // id-carrying form used by grants and effective scopes.
-
   public static scopeToDomain(scope: ScopeKind): PermissionScope {
     return scope as unknown as PermissionScope;
   }
@@ -35,11 +30,7 @@ export class GrpcPermissionMapper {
     return scope as unknown as ScopeKind;
   }
 
-  /**
-   * Flattens a `ScopeRef` into the domain's (kind, id) pair.
-   * An arm this build does not know about surfaces as `UNSPECIFIED` rather
-   * than being silently read as SYSTEM.
-   */
+  /** An unknown arm becomes `UNSPECIFIED`, never SYSTEM. */
   public static scopeRefToDomain(ref: ScopeRef | undefined): ScopeBinding {
     switch (ref?.scope.oneofKind) {
       case 'system':
@@ -59,7 +50,7 @@ export class GrpcPermissionMapper {
     }
   }
 
-  /** Builds the `ScopeRef` for a scope the user picked. Throws on UNSPECIFIED. */
+  /** Throws on UNSPECIFIED. */
   public static scopeRefToGrpc(scope: PermissionScope, scopeId: string): ScopeRef {
     switch (scope) {
       case PermissionScope.SYSTEM:
@@ -78,9 +69,7 @@ export class GrpcPermissionMapper {
     }
   }
 
-  // ── Principal ───────────────────────────────────────────────────────────────
-
-  /** A grant can target a user or an app. An unknown arm stays UNSPECIFIED. */
+  /** An unknown arm stays UNSPECIFIED. */
   public static principalRefToDomain(ref: PrincipalRef | undefined): PrincipalEntity {
     switch (ref?.principal.oneofKind) {
       case 'user':
@@ -103,13 +92,7 @@ export class GrpcPermissionMapper {
     }
   }
 
-  // ── Access ──────────────────────────────────────────────────────────────────
-
-  /**
-   * `Access` is a oneof: full control, or an explicit permission set.
-   * A missing message or an unknown arm surfaces as `unknown` — never as an
-   * empty permission list, which would read as "holds nothing".
-   */
+  /** A missing or unknown arm becomes `unknown`, never an empty list ("holds nothing"). */
   public static accessToDomain(access: Access | undefined): AccessEntity {
     switch (access?.access.oneofKind) {
       case 'fullControl':

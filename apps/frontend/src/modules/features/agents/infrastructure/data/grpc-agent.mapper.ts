@@ -10,7 +10,6 @@ import type {
 import type { AgentStats } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
-/** Maps gRPC AgentAdmin messages to the domain Agent models. */
 export class GrpcAgentMapper {
   static toDomain(w: ProtoAgent): AgentEntity {
     return {
@@ -63,6 +62,6 @@ export class GrpcAgentMapper {
   }
 }
 
-/** Absent on the wire means unknown, which must stay `null` and not become 0. */
+/** Absent on the wire means unknown: `null`, never 0. */
 const optionalCount = (v: bigint | undefined): number | null =>
   v === undefined ? null : Number(v);

@@ -10,25 +10,19 @@
   } from '@shared/utils/date-utils.ts';
   import type { JobEntity } from '../../../domain/entities/job.entity.ts';
   import { isActiveStatus } from '../../../domain/structs/jobs-summary.struct.ts';
-  import JobStatus from '../jobs-table/JobStatus.svelte';
-  import JobTimeline from '../jobs-table/JobTimeline.svelte';
+  import JobStatus from '../jobs-table/JobStatus/JobStatus.svelte';
+  import JobTimeline from '../jobs-table/JobTimeline/JobTimeline.svelte';
   import { jobsMessages } from '../jobs.messages.ts';
 
   interface Props {
     job: JobEntity;
-    /**
-     * Shows that node's logs alone, closing whatever else was open — picking a
-     * segment out of the timeline means reading that one, not adding to a pile.
-     * A grouped segment stands for several nodes at once and names none, which
-     * comes back to the job as a whole.
-     */
+    /** Shows that node alone. A grouped segment names no node: the whole job. */
     onSelectNode: (nodeId?: string) => void;
   }
 
   let { job, onSelectNode }: Props = $props();
 
-  // Ticks only while the job is still moving, and stops on its own when it
-  // finishes — the getter is what makes that work without an extra effect.
+  // Ticks only while the job runs.
   const now = createNow(() => isActiveStatus(job.status));
 
   const duration = $derived.by(() => {

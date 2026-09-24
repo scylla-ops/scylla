@@ -45,8 +45,7 @@
       return;
     }
 
-    // Closed from the mutation's own callback, not before it: unlike the secret
-    // dialog, this one stays up and pending until the user actually exists.
+    // Closes on success only: the dialog stays pending until the user exists.
     createUser.mutate({ username, password }, { onSuccess: () => setOpen(false) });
   };
 </script>

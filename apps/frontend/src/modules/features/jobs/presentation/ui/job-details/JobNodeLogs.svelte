@@ -15,26 +15,23 @@
   import { getStatusConfig } from '@shared/utils/status-config.ts';
   import type { JobEntity } from '../../../domain/entities/job.entity.ts';
   import { nodeIdOf } from '../jobs-table/job-timeline.calculator.ts';
-  import JobLogDisplay from '../jobs-log/JobLogDisplay.svelte';
+  import JobLogDisplay from '../jobs-log/JobLogDisplay/JobLogDisplay.svelte';
   import { jobsMessages } from '../jobs.messages.ts';
 
-  /** The whole job's `h-9` header, the only one whose height the column must allow for. */
   const PANEL_HEADER_HEIGHT = 36;
-  /** The panel's own `border` (1px top + 1px bottom), on top of the header. */
   const PANEL_BORDER_HEIGHT = 2;
-  /** Below this a log is a peephole; the column scrolls rather than shrink past it. */
+  /** The column scrolls rather than shrink a log below this. */
   const MIN_LOG_HEIGHT = 192;
-  /** What a node's log stands at, however many are open — the column takes the overflow. */
+  /** A node log's height, however many are open: the column scrolls. */
   const NODE_LOG_HEIGHT = 448;
 
   interface Props {
     job: JobEntity;
-    /** From the URL, in execution order. Ids no node matches are already dropped. */
+    /** From the URL, in execution order. */
     openNodeIds: readonly string[];
     isWholeJobOpen: boolean;
-    /** Adds or removes one node's panel, leaving the other open ones alone. */
     onToggleNode: (nodeId: string) => void;
-    /** Drops every node panel, which is what brings the whole job back. */
+    /** Closes every node panel, which shows the whole job again. */
     onShowWholeJob: () => void;
   }
 
@@ -42,8 +39,7 @@
 
   const canViewLogs = $derived(can(Permission.READ_JOB_LOGS));
 
-  // The column's height comes from the layout and never from the panels inside
-  // it, or measuring it would resize what it measures.
+  // Sized by the layout, never by the panels, or the measure feeds back into itself.
   const column = createMeasuredHeight();
 
   const collapsedIds = new SvelteSet<string>();
@@ -58,7 +54,7 @@
   );
   const openNodes = $derived(nodes.filter(({ id }) => openNodeIds.includes(id)));
 
-  /** The whole job is only ever shown alone, so its log gets the column entire. */
+  /** The whole job always shows alone: it gets the whole column. */
   const wholeJobLogHeight = $derived(
     column.height === null
       ? undefined
@@ -73,17 +69,8 @@
 </script>
 
 <!--
-  The job's logs: the job as a whole, or the nodes the reader picked out of it.
-
-  Comparing what two nodes printed is the point, so the nav adds and removes
-  node panels rather than switching between them, and each keeps the same
-  readable height whether it is alone or one of five — past the room the page
-  has, the column scrolls. The whole job is what shows when no node is picked,
-  never a panel alongside them, which is why it has no close button: closing the
-  last node is what comes back to it.
-
-  Every open panel keeps its own live stream, and closing one unmounts it, which
-  is what cancels that stream.
+  The whole job, or the nodes the reader opened side by side to compare them.
+  Each open panel keeps its own stream; closing a panel cancels it.
 -->
 {#if !canViewLogs}
   <p class="text-sm italic text-muted-foreground">{t(jobsMessages.logsDenied)}</p>
@@ -163,13 +150,6 @@
               aria-label={id}
               class="flex min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm"
             >
-              <!--
-                The whole line collapses the panel, the way the node list this
-                page replaced read: a chevron leading, then the status, the node
-                and what it ended as. Only the close button is left out of it —
-                a button inside a button is no HTML, and closing is not
-                collapsing.
-              -->
               <header
                 class="flex shrink-0 items-center border-b border-border bg-muted/40 pr-2"
               >
@@ -203,8 +183,7 @@
                   <XIcon class="size-4" />
                 </button>
               </header>
-              <!-- Collapsing only hides the log, so its stream stays open — no
-                   reconnect when the reader expands it again. -->
+              <!-- Collapsing only hides the log: the stream stays open. -->
               <div class={cn(collapsed && 'hidden')}>
                 <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={NODE_LOG_HEIGHT} />
               </div>

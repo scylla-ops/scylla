@@ -70,7 +70,7 @@ They all sync in one direction: **URL → store**. The URL is the source of trut
 its mirror. That is what makes a pasted link work, and it is why there is no wrapper syncing the
 other way — two-way sync would need effects on both sides watching each other.
 
-Each wrapper keeps its logic in a `*.svelte.ts` file beside it, and the tests run that file
+Each wrapper keeps its logic in a `*.svelte.ts` file beside it, and the tests (in `__test__/`) run that file
 without a component.
 
 ## Errors are handled once, at the root

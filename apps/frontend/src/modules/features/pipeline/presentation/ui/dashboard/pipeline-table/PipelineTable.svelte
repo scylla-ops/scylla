@@ -20,10 +20,7 @@
     isJobsLoading?: boolean;
     isJobsError?: boolean;
     canListJobs?: boolean;
-    /**
-     * Shared with the page header, which runs from the same place — one
-     * subscription to the agent list between them, and one set of in-flight ids.
-     */
+    /** Shared with the header: one agent subscription, one set of running ids. */
     runPipeline: RunPipeline;
   }
 
@@ -78,8 +75,7 @@
 {#snippet actionsCell(pipeline: PipelineMetadata)}
   <PipelineActions
     onRun={event => {
-      // Every action stops the click here: the row itself is a selection
-      // target, and acting on a pipeline is not selecting it.
+      // The row is a selection target: an action is not a selection.
       event.stopPropagation();
       void runPipeline.run(pipeline.id);
     }}

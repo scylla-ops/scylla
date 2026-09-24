@@ -6,23 +6,15 @@
 
   interface Props {
     nodes: CheckboxNode[];
-    /**
-     * Ids checked on mount. Ids whose parent chain is not checked are dropped,
-     * so the seeded state always matches what the tree can actually render.
-     */
+    /** Ids whose parent is not checked are dropped. */
     checkedIds?: Permission[];
     onCheckedChange?: (checkedIds: Permission[]) => void;
-    /** Disables every checkbox without altering the current selection. */
     allDisabled?: boolean;
   }
 
   let { nodes, checkedIds = [], onCheckedChange, allDisabled = false }: Props = $props();
 
-  // Seeded once, then owned here. The React version re-seeded through an effect
-  // comparing the incoming ids with its own state, because a parent feeding the
-  // emitted selection straight back would otherwise wipe the selection being
-  // made. The dialog recreates this component with `{#key}` when it opens for
-  // another role, which is the same reset without the comparison.
+  // Seeded once, then owned here: the dialog rebuilds it for another role.
   // svelte-ignore state_referenced_locally
   const checked = new SvelteSet(checkedIdsOf(nodes, new Set(checkedIds)));
 
@@ -31,8 +23,7 @@
     if (!node) return;
 
     if (isChecked) checked.add(id);
-    // Unchecking cascades: a child is not conferred without its parent, so
-    // leaving it ticked would show a selection the backend would not honour.
+    // A child is not conferred without its parent.
     else for (const descendant of descendantIdsOf(node)) checked.delete(descendant);
 
     onCheckedChange?.(checkedIdsOf(nodes, checked));

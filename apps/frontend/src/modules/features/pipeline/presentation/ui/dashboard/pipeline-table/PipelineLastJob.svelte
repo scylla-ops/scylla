@@ -8,7 +8,6 @@
 
   interface Props {
     jobs: JobEntity[];
-    /** Makes the last run open its job details page. */
     onSelectJob?: (jobId: string) => void;
   }
 
@@ -17,8 +16,7 @@
   const lastJob = $derived(jobs[0]);
   const isLive = $derived(lastJob?.status === 'running' || lastJob?.status === 'pending');
 
-  // A run still in flight has no end to measure against, so the clock has to
-  // be the one that moves. It stops on its own when the job finishes.
+  // A running job has no end: the clock moves, and stops when it finishes.
   const now = createNow(() => isLive);
 
   const duration = $derived.by(() => {
@@ -30,7 +28,6 @@
   const className = 'flex flex-col w-full items-center justify-center gap-1';
 </script>
 
-<!-- How long the pipeline's most recent run took, and how long ago it ended. -->
 {#snippet body()}
   <div class="flex w-full flex-row items-center justify-center gap-1.5">
     <ClockIcon class="h-3.5 w-3.5" />

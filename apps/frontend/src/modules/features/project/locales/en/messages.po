@@ -13,96 +13,96 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:27
+#: src/modules/features/project/presentation/ui/project.messages.ts:22
 msgid "Add a description..."
 msgstr "Add a description..."
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:28
+#: src/modules/features/project/presentation/ui/project.messages.ts:23
 msgid "Create a new project"
 msgstr "Create a new project"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:30
+#: src/modules/features/project/presentation/ui/project.messages.ts:25
 msgid "Create Project"
 msgstr "Create Project"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:25
+#: src/modules/features/project/presentation/ui/project.messages.ts:20
 msgid "Description"
 msgstr "Description"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:26
+#: src/modules/features/project/presentation/ui/project.messages.ts:21
 msgid "e.g., A short description of the project"
 msgstr "e.g., A short description of the project"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:24
+#: src/modules/features/project/presentation/ui/project.messages.ts:19
 msgid "e.g., My project"
 msgstr "e.g., My project"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:18
+#: src/modules/features/project/presentation/ui/project.messages.ts:14
 msgid "Edit"
 msgstr "Edit"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:31
+#: src/modules/features/project/presentation/ui/project.messages.ts:26
 msgid "Edit project"
 msgstr "Edit project"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:29
+#: src/modules/features/project/presentation/ui/project.messages.ts:24
 msgid "Enter a name for your new project and select the organization it belongs to."
 msgstr "Enter a name for your new project and select the organization it belongs to."
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:13
+#: src/modules/features/project/presentation/ui/project.messages.ts:10
 msgid "New project"
 msgstr "New project"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:20
+#: src/modules/features/project/presentation/ui/project.messages.ts:16
 msgid "No description"
 msgstr "No description"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:6
+#: src/modules/features/project/presentation/ui/project.messages.ts:4
 msgid "No organization selected"
 msgstr "No organization selected"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:11
+#: src/modules/features/project/presentation/ui/project.messages.ts:8
 msgid "Project"
 msgstr "Project"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:23
+#: src/modules/features/project/presentation/ui/project.messages.ts:18
 msgid "Project name"
 msgstr "Project name"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:12
-#: src/modules/features/project/project.module.ts:24
-#: src/modules/features/project/project.module.ts:26
+#: src/modules/features/project/presentation/ui/project.messages.ts:9
+#: src/modules/features/project/project.module.ts:23
+#: src/modules/features/project/project.module.ts:25
 msgid "Projects"
 msgstr "Projects"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:33
+#: src/modules/features/project/presentation/ui/project.messages.ts:28
 msgid "Save"
 msgstr "Save"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:34
+#: src/modules/features/project/presentation/ui/project.messages.ts:29
 msgid "Saving..."
 msgstr "Saving..."
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:19
+#: src/modules/features/project/presentation/ui/project.messages.ts:15
 msgid "Select"
 msgstr "Select"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:7
+#: src/modules/features/project/presentation/ui/project.messages.ts:5
 msgid "Select an organization from the sidebar to view its projects"
 msgstr "Select an organization from the sidebar to view its projects"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:8
+#: src/modules/features/project/presentation/ui/project.messages.ts:6
 msgid "Unable to load projects"
 msgstr "Unable to load projects"
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:32
+#: src/modules/features/project/presentation/ui/project.messages.ts:27
 msgid "Update the project name and description."
 msgstr "Update the project name and description."
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:14
+#: src/modules/features/project/presentation/ui/project.messages.ts:11
 msgid "You don't have permission to create projects."
 msgstr "You don't have permission to create projects."
 
-#: src/modules/features/project/presentation/ui/project.messages.ts:15
+#: src/modules/features/project/presentation/ui/project.messages.ts:12
 msgid "You don't have permission to delete projects."
 msgstr "You don't have permission to delete projects."

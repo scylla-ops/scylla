@@ -1,11 +1,3 @@
-/**
- * The palette half of {@link StatusIndicator}, split out of the component.
- *
- * `tsc` only ever sees a `.svelte` file's default export, so `StatusState` —
- * which `shared/utils/job-status.utils.ts` maps a raw job status onto — has to
- * live in a `.ts`. The React original declared it inside `status-indicator.tsx`
- * and got away with it because `.tsx` is ordinary TypeScript.
- */
 export type StatusState =
   | 'success'
   | 'failed'
@@ -24,15 +16,7 @@ interface StateColors {
   container: string;
 }
 
-/**
- * Semantic status tokens from the theme: success → `status-passed`, running →
- * `status-running`, failed → `status-failed`, pending → `status-queued`,
- * skipped → `status-skipped`, cancelled / orphaned → `status-canceled`,
- * idle → `muted-foreground`.
- *
- * A `Record` rather than the React version's `switch`: the compiler then fails
- * here when a state joins the union, instead of falling through to `idle`.
- */
+/** A `Record` so that a new state fails to compile here. */
 const STATE_COLORS: Record<StatusState, StateColors> = {
   success: {
     dot: 'bg-status-passed',
@@ -82,7 +66,6 @@ const SIZE_CLASSES: Record<StatusIndicatorSize, { dot: string; container: string
   lg: { dot: 'h-4 w-4', container: 'px-4 py-2 text-sm' },
 };
 
-/** Falls back to `idle` for a state this build does not know. */
 export const statusStateColors = (state: StatusState) => STATE_COLORS[state] ?? STATE_COLORS.idle;
 
 export const statusIndicatorSize = (size: StatusIndicatorSize) => SIZE_CLASSES[size];

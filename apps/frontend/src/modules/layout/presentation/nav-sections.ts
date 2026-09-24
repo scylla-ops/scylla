@@ -6,7 +6,7 @@ import type { NavSection } from './structs/nav-section.struct.ts';
 
 export interface NavSectionsInput {
   entries: readonly NavEntry[];
-  /** The URL prefix of the current organization, for example `/acme`. */
+  /** E.g. `/acme`. */
   prefix: string;
   can: (permission: Permission) => boolean;
   translate: (message: MessageDescriptor) => string;
@@ -15,13 +15,7 @@ export interface NavSectionsInput {
   organizationHeader?: Snippet;
 }
 
-/**
- * Turns the entries that the modules declared into sidebar sections.
- *
- * It removes the entries that the user cannot open, then the sections that have
- * no entries. A section with a header stays, because the user must always be
- * able to change the organization.
- */
+/** Hides the entries the user cannot open, then the empty sections (a section with a header stays). */
 export const navSectionsFor = ({
   entries,
   prefix,

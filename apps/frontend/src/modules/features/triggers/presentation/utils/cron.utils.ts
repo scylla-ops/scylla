@@ -1,12 +1,7 @@
 import { msg } from '@lingui/core/macro';
 import type { I18n, MessageDescriptor } from '@lingui/core';
 
-/**
- * A friendly, structured view of a 5-field cron expression (UTC). The builder UI
- * edits this model; {@link buildCron} renders it back to a cron string and
- * {@link parseCron} recognizes the common shapes we produce (anything else is
- * kept verbatim as a `custom` expression).
- */
+/** The builder's model of a cron expression (UTC). Unrecognised shapes stay `custom`. */
 export type CronFrequency = 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
 
 export interface CronModel {
@@ -18,10 +13,7 @@ export interface CronModel {
   custom: string; // raw expression, for `custom`
 }
 
-/**
- * Weekday chips, displayed Mon→Sun; `value` is the cron day-of-week number.
- * Labels are lazy messages — this module is imported outside any i18n context.
- */
+/** Mon→Sun; `value` is the cron day number. Descriptors: built at import time. */
 export const WEEKDAYS: { value: number; label: MessageDescriptor }[] = [
   { value: 1, label: msg`Mon` },
   { value: 2, label: msg`Tue` },
@@ -61,7 +53,6 @@ export const buildCron = (model: CronModel): string => {
   }
 };
 
-/** Best-effort: recognize the shapes the builder produces, else fall back to custom. */
 export const parseCron = (expression: string): CronModel => {
   const trimmed = expression.trim();
   if (trimmed.length === 0) return { ...DEFAULT_MODEL };
@@ -104,10 +95,7 @@ export const parseCron = (expression: string): CronModel => {
   return toCustom();
 };
 
-/**
- * A plain-language summary of the schedule. Takes the active `i18n` because it
- * runs outside the component tree — the caller passes the one from `useLingui`.
- */
+/** Takes `i18n`: it runs outside the component tree. */
 export const describeCron = (model: CronModel, i18n: I18n): string => {
   const time = `${pad2(model.hour)}:${pad2(model.minute)}`;
   switch (model.frequency) {

@@ -1,10 +1,3 @@
-/**
- * How a module declares its routes, and the router the shell builds from them.
- *
- * Sits in `platform/` because both sides need it: features declare routes,
- * `core` builds the router and `layout` reads the sidebar and breadcrumb
- * contracts — none of which may depend on each other.
- */
 export type {
   ScyllaModule,
   ModuleRoute,
@@ -37,4 +30,4 @@ export {
   type TrailCrumb,
 } from './runtime/route-state.svelte.ts';
 export { default as Redirect } from './view/Redirect.svelte';
-export { default as RouterView } from './view/RouterView.svelte';
+export { default as RouterView } from './view/RouterView/RouterView.svelte';

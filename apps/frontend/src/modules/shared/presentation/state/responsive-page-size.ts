@@ -3,13 +3,7 @@ export const MAX_PAGE_SIZE = 50;
 export const DEFAULT_ROW_HEIGHT = 61;
 export const DEFAULT_HEADER_HEIGHT = 44;
 
-/**
- * How many rows fit in the room the layout left, clamped to a sane range.
- *
- * Pure on purpose: it is the whole of the responsive-page-size rule, and it is
- * tested without a DOM. The measuring is a separate concern — see
- * `measured-height.svelte.ts`.
- */
+/** How many rows fit in the height, clamped. The measure is in `measured-height.svelte.ts`. */
 export const computePageSize = (
   containerHeight: number,
   rowHeight: number = DEFAULT_ROW_HEIGHT,

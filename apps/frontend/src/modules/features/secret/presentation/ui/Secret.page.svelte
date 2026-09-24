@@ -1,20 +1,17 @@
 <script lang="ts">
   import { createQuery } from '@platform/query';
   import { secretQueries } from '../secret.queries.ts';
-  import CreateSecretDialog from './CreateSecretDialog.svelte';
+  import CreateSecretDialog from './CreateSecretDialog/CreateSecretDialog.svelte';
   import SecretHeader from './components/SecretHeader.svelte';
-  import SecretList from './components/SecretList.svelte';
+  import SecretList from './components/SecretList/SecretList.svelte';
 
   interface Props {
-    /** From the route: `/:organizationSlug/projects/:projectId/secrets`. */
     projectId?: string;
   }
 
   let { projectId }: Props = $props();
 
-  // `enabled` on the query handles a missing id, so the component tree below
-  // does not have to — but the id is non-optional to its children, so the page
-  // still guards before rendering them.
+  // The children need a defined id, so the page still checks it.
   const secretsQuery = createQuery(() => secretQueries.byProject(projectId ?? ''));
   const secrets = $derived(secretsQuery.data ?? []);
 

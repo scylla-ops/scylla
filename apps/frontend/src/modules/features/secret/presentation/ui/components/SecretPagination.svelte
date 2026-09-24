@@ -19,12 +19,7 @@
   const lastItem = $derived(Math.min(page * itemsPerPage, totalItems));
 </script>
 
-<!--
-  Not mounted by any page either, and hand-rolled rather than the shared
-  `Pagination` — see the module's AGENTS.md. One thing did change in the port:
-  the three numbers lost their bold, because `<Trans>` could wrap them in
-  elements and a `t()` string cannot.
--->
+<!-- Not mounted. Hand-rolled, not the shared `Pagination`: see AGENTS.md. -->
 <div
   class="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card px-4 py-3"
 >

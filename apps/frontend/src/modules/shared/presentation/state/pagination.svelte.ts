@@ -10,7 +10,7 @@ import { MIN_PAGE_SIZE, computePageSize } from './responsive-page-size.ts';
 export interface PaginationOptions {
   initialPage?: number;
   initialPageSize?: number;
-  /** Size the page to the container `measure` is attached to. */
+  /** Sizes the page to the container that `measure` is on. */
   responsive?: boolean;
   rowHeight?: number;
   headerHeight?: number;
@@ -21,25 +21,17 @@ export interface Pagination {
   readonly pageSize: number;
   readonly paginationParams: PaginationParams;
   readonly paginationInfo: PaginationInfo | undefined;
-  /** False only while a responsive container has yet to be measured. */
+  /** False while a responsive container is not measured yet. */
   readonly isPageSizeReady: boolean;
   setPage: (page: number) => void;
   setPageSize: (size: number) => void;
   updatePaginationInfo: (info: PaginationInfo | undefined) => void;
-  /** `use:measure` on the list container, when `responsive` is on. */
   measure: Action<HTMLElement>;
 }
 
 /**
- * Local page state merged with what the server reports — the Svelte
- * counterpart of `use-pagination.ts`.
- *
- * One thing is deliberately different, and it is the point of the port: React
- * held `pageSize` in state and ran an effect to copy the measured size into it.
- * Here the size is *derived* from the measurement, so there is no effect, no
- * mirror state, and no frame where the two disagree. `pageSizeIsFixed` is the
- * only thing that has to be remembered, because "the user picked a size" is a
- * fact about the past that nothing else records.
+ * Local page state merged with what the server reports. The page size is derived
+ * from the measure; only a size the user picked is stored.
  */
 export const createPagination = (options?: PaginationOptions): Pagination => {
   const isResponsive = (options?.responsive ?? false) && options?.initialPageSize === undefined;
@@ -97,8 +89,7 @@ export const createPagination = (options?: PaginationOptions): Pagination => {
 
     updatePaginationInfo: (info: PaginationInfo | undefined) => {
       serverInfo = info;
-      // The page the user is on can stop existing — deleting the last item on
-      // the last page. Fall back to the last one that does.
+      // The current page can disappear (last item deleted): fall back to the last page.
       if (info && info.totalPages > 0 && page > info.totalPages) page = info.totalPages;
     },
 

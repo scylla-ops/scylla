@@ -24,13 +24,7 @@ const initialState = {
   pipeline: { id: null, name: null } as ContextItem,
 };
 
-/**
- * Which organization/project/pipeline the user is currently looking at.
- *
- * Holds identifiers only. The effective permissions of the user are in
- * `permissionsStore` (`@platform/authz`). Persisted in `localStorage`, so a
- * reload keeps the user in the same place.
- */
+/** Ids and names only, persisted in `localStorage`. */
 export const contextStore = createStore<ContextState>(
   set => ({
     ...initialState,

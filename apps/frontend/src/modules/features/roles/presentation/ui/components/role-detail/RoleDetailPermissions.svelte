@@ -24,8 +24,7 @@
     {:else}
       <div class="flex flex-wrap gap-1.5">
         {#each role.access.permissions as permission (permission)}
-          <!-- Labelled against the *role's* scope, so a project permission
-               conferred by an organization role says "every project". -->
+          <!-- Labelled against the role's scope: an organization role says "every project". -->
           <Badge variant="outline" class="font-normal">
             {permissionLabelOf(permission, role.scope)}
           </Badge>

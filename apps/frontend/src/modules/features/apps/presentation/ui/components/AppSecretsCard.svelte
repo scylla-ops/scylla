@@ -32,13 +32,10 @@
   const secrets = $derived(secretsQuery.data ?? []);
 
   let createOpen = $state(false);
-  /** The one-time plaintext, held only as long as the dialog shows it. */
   let created = $state<CreatedAppSecret | null>(null);
-  /** The secret awaiting confirmation. `null` closes the dialog. */
   let pendingRevocation = $state<string | null>(null);
 
-  // The items resolve their labels through the Lingui macro at call time, so
-  // reading the active locale here is what rebuilds them on a switch.
+  // Reading the locale rebuilds the labels on a switch.
   const items = $derived((activeLocale(), createAppSecretItems()));
 
   const handleCreate = ({ label }: FormValues<'label'>) => {
@@ -123,7 +120,6 @@
                 onclick={() => (pendingRevocation = secret.id)}
               >
                 <TrashIcon class="h-4 w-4" />
-                <!-- Icon-only: the React original had no accessible name here. -->
                 <span class="sr-only">{t(appsMessages.revokeSecretAction)}</span>
               </Button>
             </div>

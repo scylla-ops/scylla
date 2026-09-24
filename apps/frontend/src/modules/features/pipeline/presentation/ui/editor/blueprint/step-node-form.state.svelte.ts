@@ -5,13 +5,7 @@ import type {
 } from '../../../../domain/structs/pipeline.struct.ts';
 import type { NodeFormValue } from '../../../utils/blueprint-converter.ts';
 
-/**
- * One environment row, keeping both a literal value and a secret reference.
- *
- * `EnvEntry` is a union and only carries one of the two, so toggling the kind
- * on the entry itself would throw away whatever the user had already typed in
- * the other. The row is the editing shape; the entry is the saved one.
- */
+/** Keeps both a literal and a secret reference, so switching the kind loses nothing typed. */
 export interface EnvRow {
   key: string;
   kind: 'literal' | 'secret';
@@ -29,19 +23,7 @@ const entryFrom = (row: EnvRow): EnvEntry =>
     ? { key: row.key, kind: 'secret', secretRef: row.secretRef }
     : { key: row.key, kind: 'literal', value: row.value };
 
-/**
- * Defining or editing one pipeline step.
- *
- * Seeded from `editingStep` **at construction**, with no effect watching it:
- * the dialog renders the form under `{#key open}`, so reopening it builds a new
- * instance and the initialisers below are the reset. React needed an effect on
- * `[open, editingNode]` for the same thing, and had a frame in which the
- * previous node's values were still on screen.
- *
- * `toValue()` is where every rule about what makes a step submittable lives —
- * trimming, dropping blank rows, refusing an empty script or command — so the
- * component only has to ask.
- */
+/** Seeded once: the dialog rebuilds it at each opening. `toValue()` holds every rule of a valid step. */
 export const createStepNodeForm = (editingStep?: PipelineStep) => {
   let nodeId = $state(editingStep?.id ?? '');
   let mode = $state<'script' | 'exec'>(editingStep?.kind === 'exec' ? 'exec' : 'script');
@@ -90,8 +72,7 @@ export const createStepNodeForm = (editingStep?: PipelineStep) => {
       workingDir = next;
     },
 
-    // An argument has no identity of its own — it *is* its position on the
-    // command line — so these are all by index, and so is the `{#each}` key.
+    // An argument is its position: indexed, like its `{#each}` key.
     get args() {
       return args;
     },
@@ -118,18 +99,12 @@ export const createStepNodeForm = (editingStep?: PipelineStep) => {
       envRows = envRows.filter((_, i) => i !== index);
     },
 
-    /**
-     * The step as it would be saved, or `null` when it is not submittable.
-     *
-     * A step with no id, no script (in script mode) or no command (in exec
-     * mode) cannot run, so submitting does nothing rather than creating
-     * something the backend would reject.
-     */
+    /** `null` when the step cannot run (no id, no script, no command). */
     toValue(): { nodeId: string; value: NodeFormValue } | null {
       const trimmedId = nodeId.trim();
       if (!trimmedId) return null;
 
-      // A row with no key names nothing — it is an empty line, not a variable.
+      // A row with no key is an empty line.
       const env = envRows
         .filter(row => row.key.trim())
         .map(row => entryFrom({ ...row, key: row.key.trim() }));
@@ -151,7 +126,7 @@ export const createStepNodeForm = (editingStep?: PipelineStep) => {
         value: {
           kind: 'exec',
           command: trimmedCommand,
-          // Blank rows were added and never filled in — not empty arguments.
+          // Blank rows are unfilled lines, not empty arguments.
           args: args.filter(arg => arg !== ''),
           workingDir: directory,
           env,

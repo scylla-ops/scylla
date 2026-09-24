@@ -2,7 +2,6 @@ import type { Secret as ProtoSecret } from '@/generated/scylla/secret/v1/secret.
 import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
-/** Maps gRPC Secret messages to the domain Secret model (never carries a value). */
 export class GrpcSecretMapper {
   static toDomain(s: ProtoSecret): SecretEntity {
     return {

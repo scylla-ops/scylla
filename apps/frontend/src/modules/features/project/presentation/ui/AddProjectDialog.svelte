@@ -45,8 +45,7 @@
   ]);
 
   const handleSubmit = ({ name, description }: FormValues<'name' | 'description'>) => {
-    // A project belongs to an organization; without one there is nothing to
-    // create it under, and the toast says so rather than failing on the wire.
+    // A project needs an organization: the toast says so.
     if (!name.trim() || !organizationId) {
       toast.error(i18n._(ToastMessages.PROJECT_NAME_REQUIRED_ERROR));
       return;

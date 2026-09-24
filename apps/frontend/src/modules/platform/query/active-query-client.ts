@@ -1,19 +1,11 @@
 import type { QueryClient } from '@tanstack/query-core';
 import { queryClient } from './query-client.ts';
 
-/**
- * Which client the Svelte bindings use.
- *
- * The production answer is always `queryClient`; the override exists for tests,
- * which need `retry: false` and a cache that does not survive the file. Same
- * shape as `setDependencyRegistry` in `@platform/di`: there are no providers, so
- * substitution in a test is a setter.
- */
+/** Overridable so a test can use its own client (`retry: false`, a fresh cache). */
 let active: QueryClient | null = null;
 
 export const getQueryClient = (): QueryClient => active ?? queryClient;
 
-/** Pass `null` to go back to the application's own client. */
 export const setQueryClient = (client: QueryClient | null): void => {
   active = client;
 };

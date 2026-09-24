@@ -19,12 +19,7 @@
     </div>
   </div>
 {:else}
-  <!--
-    Keyed on the organization, which is what replaces React's effect: switching
-    organizations rebuilds the list and its pagination from scratch, so the page
-    number cannot survive into an organization that may not have that many
-    pages. `useProjects` used an effect calling `setPage(1)` for this.
-  -->
+  <!-- Keyed on the organization: the page number resets on a switch. -->
   {#key organizationId}
     <ProjectList {organizationId} />
   {/key}

@@ -11,22 +11,11 @@ export type StatusKey =
   | 'orphaned'
   | 'unknown';
 
-/**
- * Everything a status looks like **except its icon**.
- *
- * The icon is a component, and a file under `utils/` imports no UI library, so
- * the icons are in `presentation/ui/data-display/status-icons.ts`, keyed by
- * {@link StatusKey}.
- * The colours and labels, which are the part worth keeping in one place, stayed.
- */
+/** The icon is in `status-icons.ts`: `utils/` imports no UI. */
 export interface StatusConfig {
-  /** Lazy message: this table is built at import time, outside any i18n context. */
+  /** A descriptor: this table is built at import time. */
   label: MessageDescriptor;
-  /**
-   * Classes for a `<Badge variant='outline'>`. The four shadcn variants can't tell
-   * six statuses apart — running and completed both landed on `default` (primary),
-   * so a running job read as a passed one. Tinted status tokens instead.
-   */
+  /** Classes for a `<Badge variant='outline'>`: the shadcn variants cannot tell the statuses apart. */
   badgeClassName: string;
   iconClassName: string;
   barClassName: string;
@@ -35,17 +24,6 @@ export interface StatusConfig {
   textClassName: string;
 }
 
-/**
- * Every colour here maps to dedicated semantic status tokens:
- *
- *   pending (queued)     → `status-queued`
- *   running              → `status-running`
- *   completed (passed)   → `status-passed`
- *   failed               → `status-failed`
- *   skipped              → `status-skipped`
- *   cancelled / orphaned → `status-canceled`
- *   unknown              → `muted-foreground`
- */
 export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   running: {
     label: msg`Running`,
@@ -111,8 +89,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     dotClassName: 'bg-status-canceled',
     textClassName: 'text-status-canceled',
   },
-  // The server reported a state this build doesn't know about (a newer oneof
-  // arm or enum value). Shown as-is rather than guessed at.
+  // A state this build does not know: shown as it is.
   unknown: {
     label: msg`Unknown`,
     badgeClassName: 'bg-muted-foreground/15 border-muted-foreground/30 text-muted-foreground',
@@ -124,8 +101,6 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   },
 };
 
-/**
- * Resolve a status string to its config, falling back to 'pending'.
- */
+/** Falls back to `pending`. */
 export const getStatusConfig = (status: string): StatusConfig =>
   STATUS_CONFIG[status as StatusKey] ?? STATUS_CONFIG.pending;

@@ -8,12 +8,6 @@ export interface BreadcrumbItem {
   pathname: string;
 }
 
-/**
- * The breadcrumbs of the current URL.
- *
- * `label` and `detail` are translated. `highlight` is business data and stays as
- * it is.
- */
 export const breadcrumbsFor = (
   trail: readonly TrailCrumb[],
   params: BreadcrumbParams,

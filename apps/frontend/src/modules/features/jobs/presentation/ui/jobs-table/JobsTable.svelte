@@ -17,9 +17,9 @@
   import type { JobEntity } from '../../../domain/entities/job.entity.ts';
   import { isActiveStatus } from '../../../domain/structs/jobs-summary.struct.ts';
   import { jobMutations } from '../../jobs.queries.ts';
-  import JobActions from './JobActions.svelte';
-  import JobStatus from './JobStatus.svelte';
-  import JobTimeline from './JobTimeline.svelte';
+  import JobActions from './JobActions/JobActions.svelte';
+  import JobStatus from './JobStatus/JobStatus.svelte';
+  import JobTimeline from './JobTimeline/JobTimeline.svelte';
   import { jobColumns } from './job-columns.ts';
   import { jobsMessages } from '../jobs.messages.ts';
 
@@ -35,9 +35,7 @@
 
   let jobToDelete = $state<string | null>(null);
 
-  // One ticking clock for the whole table rather than one per row, and it stops
-  // by itself once nothing is running. The React version mounted a `useNow` in
-  // every duration cell.
+  // One clock for the table, stopped when nothing runs.
   const now = createNow(() => jobs.some(job => isActiveStatus(job.status)));
 
   const durationOf = (job: JobEntity) => {

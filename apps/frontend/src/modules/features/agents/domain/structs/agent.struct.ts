@@ -1,8 +1,5 @@
 import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 
-/**
- * Aggregate run stats for an agent, derived from the jobs it executed.
- */
 export interface AgentStats {
   total: number;
   pending: number;
@@ -12,14 +9,13 @@ export interface AgentStats {
   cancelled: number;
   orphaned: number;
   lastRunAt: string;
-  /** Finished jobs per day (last 30 days, oldest first); gap days absent. */
+  /** Last 30 days, oldest first; days without a finished job are absent. */
   daily: DailyOutcome[];
-  /** `null` means no job has run yet, as opposed to a 0 ms run. */
+  /** `null`: no job ran yet (not a 0 ms run). */
   medianDurationMs: number | null;
   p95DurationMs: number | null;
 }
 
-/** One day of finished-job outcomes (day is an ISO date-time string). */
 export interface DailyOutcome {
   day: string;
   completed: number;
@@ -29,10 +25,7 @@ export interface DailyOutcome {
   medianDurationMs: number | null;
 }
 
-/**
- * Result of creating an Agent. The secret is returned exactly once, at creation
- * time, and is never retrievable again.
- */
+/** The secret is returned once, at creation, and never again. */
 export interface CreatedAgent {
   agent: AgentEntity;
   secret: string;

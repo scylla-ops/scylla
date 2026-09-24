@@ -9,8 +9,6 @@ import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import type { OrganizationRemoteDataSource } from '@/modules/features/organization/infrastructure/repository/data-sources/organization-remote.data-source.ts';
 
-// `implements OrganizationRemoteDataSource` — it used to name itself, so a
-// missing method only surfaced later, at the DI wiring site.
 export default class GrpcOrganizationRemoteDataSource implements OrganizationRemoteDataSource {
   private readonly _organizationClient: OrganizationServiceClient;
 
@@ -25,8 +23,7 @@ export default class GrpcOrganizationRemoteDataSource implements OrganizationRem
     }, 'Failed to fetch organizations.');
   }
 
-  // Member-scoped list: orgs the current user belongs to. Non-admins are
-  // denied listOrganizations (global), so this is the default for the switcher.
+  // The organizations of the current user: non-admins may not list them all.
   public getMine(): Promise<ScyllaResult<ListOrganizationsResponse>> {
     return ScyllaResult.tryAsync<ListOrganizationsResponse>(async () => {
       const userId = localStorage.getItem('userId') ?? '';
@@ -37,11 +34,7 @@ export default class GrpcOrganizationRemoteDataSource implements OrganizationRem
     }, 'Failed to fetch organizations.');
   }
 
-  /**
-   * Who the organization has admitted. A read projection over the grants table
-   * on the backend, so it also lists anyone holding only a project-scoped grant
-   * under this organization.
-   */
+  /** Derived from grants: also lists people holding only a project grant in the organization. */
   public listMembers(organizationId: string): Promise<ScyllaResult<OrganizationMember[]>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._organizationClient.listOrganizationMembers({
@@ -80,11 +73,7 @@ export default class GrpcOrganizationRemoteDataSource implements OrganizationRem
   }
 }
 
-/**
- * Every organization RPC now answers with a wrapper message holding an optional
- * `organization`. The server always fills it on success, so an absent entity is
- * a protocol violation, not a state the rest of the app should model.
- */
+/** The server always fills it on success: an absent one is a protocol error. */
 function requireOrganization(organization?: Organization): Organization {
   if (!organization) throw new Error('Server returned no organization.');
   return organization;

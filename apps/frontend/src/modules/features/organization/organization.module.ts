@@ -11,14 +11,12 @@ const organizationRepository = new DefaultOrganizationRepository(organizationRem
 export const OrganizationModule = {
   id: 'organization',
   domain: {
-    /** Repository interface — the module's data surface. */
     organizationRepository: organizationRepository,
   },
   routes: {
     organization: [
       {
-        // Under the user directory that `user` owns: this page is here because
-        // it renders the organizations panel.
+        // Under the directory of `user`: here because the page shows the organizations panel.
         path: 'users/:userId',
         breadcrumb: ({ userId }) => ({ label: msg`User`, highlight: userId, detail: msg`Detail` }),
         page: () => import('./presentation/ui/UserSettingsRoute.svelte'),

@@ -20,31 +20,14 @@ import {
   PROJECT_PIPELINES_QUERY_ROOT,
 } from './pipelines.query-keys.ts';
 
-/**
- * Every read and write this module performs, declared as plain data.
- *
- * This is what the eight hooks under `presentation/hooks/` were, with the
- * framework taken out. `byOrganization` predates the rest — `dashboard` went
- * Svelte in Phase 4 and reads it through the barrel — and the others joined it
- * here when the module itself was ported.
- *
- * The repository is resolved per call, never at module load: the registry is
- * installed by the composition root and swapped by tests.
- */
+// Resolved per call: tests swap the registry.
 const repository = () =>
   getModuleDomain<typeof PipelineModule.domain>('pipeline').pipelineRepository;
 
-/** The project the user is currently in, which is where a write lands. */
 const currentProject = () => contextStore.getState().project;
 
 export const pipelineQueries = {
-  /**
-   * One page of a project's pipelines.
-   *
-   * `enabled` takes the caller's readiness because the page size is measured
-   * from the layout: asking before the table area exists would fetch a page
-   * sized for a container that has not been laid out yet, then fetch again.
-   */
+  /** `enabled`: wait until the page size is measured, or the first page is fetched twice. */
   byProject: (
     projectId: string,
     pagination: PaginationParams,
@@ -58,15 +41,7 @@ export const pipelineQueries = {
       staleTime: 5_000,
     }),
 
-  /**
-   * Every pipeline of one organization, in a single request.
-   *
-   * The replacement for the per-project fan-out the dashboard used to run: that
-   * cost one request and one cache entry per project and — because
-   * `ListPipelinesByProject` is enforced per project — one error toast for
-   * every project the caller could not read. `ListOrganizationPipelines` is
-   * scoped server-side, so there is nothing to gate client-side.
-   */
+  /** One call, scoped by the backend: nothing to gate here. */
   byOrganization: (organizationId: string | null) =>
     queryOptions<PaginatedList<PipelineMetadata>>({
       queryKey: ORGANIZATION_PIPELINES_QUERY_KEY(organizationId, PIPELINES_LOOKUP_PAGE),
@@ -78,7 +53,6 @@ export const pipelineQueries = {
       staleTime: 30_000,
     }),
 
-  /** One pipeline, steps included — the editor's source document. */
   byId: (pipelineId: string) =>
     queryOptions<PipelineEntity>({
       queryKey: PIPELINE_QUERY_KEY(pipelineId),
@@ -88,12 +62,7 @@ export const pipelineQueries = {
     }),
 };
 
-/**
- * The shape both consumers derive from one page of pipeline metadata.
- *
- * A pure fold rather than a second query: the window is a single page, so
- * whether it covers the whole list is something the page itself answers.
- */
+/** The single page, and whether it covers the whole list. */
 export const asPipelineFeed = (data: PaginatedList<PipelineMetadata> | undefined) => {
   const pipelines = data?.items ?? [];
   const totalCount = data?.pagination.totalCount ?? 0;
@@ -101,7 +70,6 @@ export const asPipelineFeed = (data: PaginatedList<PipelineMetadata> | undefined
   return {
     pipelines,
     totalCount,
-    /** True when more pipelines exist than the single page fetched. */
     isPartialWindow: totalCount > pipelines.length,
   };
 };
@@ -112,13 +80,7 @@ export interface EditPipelineInput {
   name?: string;
 }
 
-/**
- * Back to the project the write belongs to — only when there is one.
- *
- * Both halves are needed, not just the id: `goToProject` also writes the name
- * into the context store, and sending it an empty one would blank the
- * breadcrumb the user lands on.
- */
+/** Needs the name too: `goToProject` writes it into the context (the breadcrumb). */
 const returnToProject = () => {
   const { id, name } = currentProject();
   if (id && name) scyllaNavigate.goToProject(id, name);
@@ -164,13 +126,7 @@ export const pipelineMutations = {
       },
     }),
 
-  /**
-   * Copies a pipeline: read it whole, then create a second one from its steps.
-   *
-   * Two calls with a rule between them, which is why this one is not a plain
-   * forward to a repository method — the backend has no duplicate operation and
-   * the "(copy)" name is a decision made here.
-   */
+  /** The backend has no duplicate: read the pipeline, then create a copy of its steps. */
   duplicate: () =>
     mutationOptions({
       mutationFn: async (pipelineId: string) => {
@@ -191,14 +147,7 @@ export const pipelineMutations = {
       },
     }),
 
-  /**
-   * Starts a run.
-   *
-   * The toast is not here: whether to reassure, warn about agent connectivity
-   * or say nothing depends on the agent list, which only a subscriber holds —
-   * see `run-pipeline.svelte.ts`. Invalidating the pipeline's jobs is
-   * unconditional, because a run creates one either way.
-   */
+  /** No toast here: `run-pipeline.svelte.ts` decides it from the agents. */
   run: () =>
     mutationOptions({
       mutationFn: async (pipelineId: string) => (await repository().run(pipelineId)).unwrap(),

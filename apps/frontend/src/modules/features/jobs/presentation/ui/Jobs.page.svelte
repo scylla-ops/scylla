@@ -6,18 +6,13 @@
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { ScyllaError } from '@shared/utils/scylla-result.ts';
   import { jobQueries } from '../jobs.queries.ts';
-  import JobsHeader from './JobsHeader.svelte';
+  import JobsHeader from './JobsHeader/JobsHeader.svelte';
   import JobsTable from './jobs-table/JobsTable.svelte';
   import { jobsMessages } from './jobs.messages.ts';
 
   interface Props {
-    /**
-     * From the route this page is mounted under. `pipeline` owns it — the list
-     * needs a Run action, which is a pipeline operation — so it arrives as a
-     * prop from `PipelineJobsRoute` rather than from `sveltePage`.
-     */
+    /** Passed by `PipelineJobsRoute`: `pipeline` owns this route (the Run action). */
     pipelineId?: string;
-    /** Runs the pipeline. See {@link JobsHeader}'s note on the same prop. */
     onRun?: () => Promise<void>;
   }
 
@@ -33,10 +28,7 @@
 
   const jobs = $derived(jobsQuery.data?.items);
 
-  // The clamp inside `updatePaginationInfo` is remembered state — the page the
-  // reader is on can stop existing when the last row of the last page is
-  // deleted — so this is synchronisation with the server's answer, not a mirror
-  // of it. The React hook needed the same effect for the same reason.
+  // Clamps the page when the last row of the last page is deleted.
   $effect(() => {
     pagination.updatePaginationInfo(jobsQuery.data?.pagination);
   });
@@ -53,8 +45,7 @@
 {:else if jobsQuery.isError}
   <ErrorState message={errorMessage} />
 {:else}
-  <!-- The frame renders before the jobs do: the table area has to be in the DOM
-       for its height to be measured, and that height decides what to fetch. -->
+  <!-- The frame renders first: the table area's height decides what to fetch. -->
   <div class="flex flex-col gap-4 w-full h-full min-h-0">
     <JobsHeader
       numberOfJobs={pagination.paginationInfo?.totalCount ?? jobs?.length ?? 0}
@@ -64,9 +55,7 @@
       {onRun}
     />
 
-    <!-- Awaited, not imported: the barrel hands out a loader so bits-ui stays
-         out of the chunks of its React consumers. Nothing is shown until it
-         lands, which is right — the banner is advisory. -->
+    <!-- A loader from the barrel. Nothing shows until it loads: the banner is advisory. -->
     {#await loadNoAgentsBanner() then banner}
       <banner.default hasPendingJobs={jobs?.some(job => job.status === 'pending') ?? false} />
     {/await}

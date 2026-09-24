@@ -1,14 +1,6 @@
 export type PageItem = number | 'ellipsis';
 
-/**
- * Which page numbers to show, and where the gaps go.
- *
- * Pure, and tested without a DOM: the windowing rules are the only thing in
- * `Pagination` worth pinning, and they do not need a rendered nav to be read.
- *
- * Up to seven pages every number is shown. Beyond that the window keeps the
- * first and last page reachable and slides around the current one.
- */
+/** Every number up to seven pages; beyond, the first, the last, and a window around the current one. */
 export const generatePageNumbers = (currentPage: number, totalPages: number): PageItem[] => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);

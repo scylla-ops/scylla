@@ -8,7 +8,6 @@ import type {
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 
-//tood: move this
 export interface JobLogsTailHandleRepo {
   responses: AsyncIterable<ScyllaResult<JobLogEntry>>;
   cancel: () => void;
@@ -23,7 +22,6 @@ export interface JobsRemoteDataSource {
     organizationId: string,
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<ListOrganizationJobsResponse>>;
-  /** Resolves the `Job` itself: the data source unwraps `GetJobResponse`. */
   getById(jobId: string): Promise<ScyllaResult<Job>>;
   deleteById(jobId: string): Promise<ScyllaResult<void>>;
   getLogs(

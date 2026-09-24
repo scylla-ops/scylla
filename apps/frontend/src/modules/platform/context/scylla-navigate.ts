@@ -2,16 +2,7 @@ import { currentPathname, navigateBack, navigateTo } from './navigator.ts';
 import { contextStore } from './context.store.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
-/**
- * Context-aware navigation, with no framework in it.
- *
- * Every function reads the current organization / project from the store at
- * call time and builds the URL from it, so callers never hand-assemble
- * `/${orgSlug}/projects/${projectId}/…`. That was already true of the React
- * hook this replaces; what changed is that nothing here is a hook any more, so
- * a Svelte view model imports `scyllaNavigate` directly and
- * `useScyllaNavigate()` is a one-line binding for the React half.
- */
+/** Builds the URL from the current organization and project, read at call time. */
 
 const getOrgPrefix = () => {
   const orgName = contextStore.getState().organization.name;
@@ -25,8 +16,6 @@ const goToSubRoute = (subPath: string, options = {}) => {
   navigateTo(`${base}/${cleanSubPath}`, options);
 };
 
-// Navigation takes ids and names, never feature entities: this is shared
-// infrastructure and must stay ignorant of what a project or a pipeline is.
 const goToProject = (id: string, name: string) => {
   navigateTo(`${getOrgPrefix()}/projects/${id}`);
   contextStore.getState().setProject(id, name);
@@ -41,8 +30,7 @@ const goToEditPipeline = (id: string, name: string) => {
   contextStore.getState().setPipeline(id, name);
 };
 
-// `name` is optional: a caller already inside the pipeline (its jobs, one of
-// its jobs) navigates without renaming the context it is already in.
+// No `name`: the caller is already inside this pipeline.
 const goToJobs = (id: string, name?: string) => {
   const projectId = contextStore.getState().project.id;
   navigateTo(`${getOrgPrefix()}/projects/${projectId}/pipelines/${id}/jobs`);
@@ -55,8 +43,6 @@ const goToJobDetails = (
   options: { nodeId?: string; pipelineName?: string } = {},
 ) => {
   const projectId = contextStore.getState().project.id;
-  // `nodes` is a list the page opens a panel per id for; one id opens that
-  // node's logs alone, which is what every caller here means.
   const query = options.nodeId ? `?nodes=${encodeURIComponent(options.nodeId)}` : '';
   navigateTo(
     `${getOrgPrefix()}/projects/${projectId}/pipelines/${pipelineId}/jobs/${jobId}${query}`,

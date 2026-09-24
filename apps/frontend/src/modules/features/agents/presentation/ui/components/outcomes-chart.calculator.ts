@@ -13,7 +13,6 @@ export interface Bucket {
   cancelled: number;
 }
 
-/** Local calendar date (yyyy-mm-dd) of an ISO timestamp. */
 const localDay = (iso: string): string => {
   const date = new Date(iso);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
@@ -21,13 +20,7 @@ const localDay = (iso: string): string => {
   ).padStart(2, '0')}`;
 };
 
-/**
- * Zero-fill the last `days` calendar days from the sparse backend series.
- *
- * Pure, and in a `.ts` rather than a `$derived.by` inside the component: it is
- * the one piece here a test can pin without a DOM, and the decision matrix in
- * `refacto_svelte.md` §4.1 puts calculation in a `*.calculator.ts`.
- */
+/** Zero-fills the last days of the sparse backend series. */
 export const fillBuckets = (daily: DailyOutcome[], range: OutcomeRange): Bucket[] => {
   const days = RANGE_DAYS[range];
   const byDay = new Map(daily.map(outcome => [localDay(outcome.day), outcome]));
@@ -50,6 +43,6 @@ export const fillBuckets = (daily: DailyOutcome[], range: OutcomeRange): Bucket[
 export const bucketTotal = (bucket: Bucket): number =>
   bucket.completed + bucket.failed + bucket.cancelled;
 
-/** The y-axis top. At least 1, so an all-zero window still lays out. */
+/** At least 1, so an all-zero window still lays out. */
 export const bucketsMax = (buckets: Bucket[]): number =>
   Math.max(1, ...buckets.map(bucketTotal));

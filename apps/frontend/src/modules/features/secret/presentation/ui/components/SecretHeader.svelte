@@ -18,8 +18,7 @@
 
   const deleteSecret = createMutation(() => secretMutations.remove(projectId));
 
-  // A getter, not the array: the ids are server data that arrives late, and
-  // capturing them once would freeze "select all" on the first, empty render.
+  // A getter: the ids arrive later.
   const selection = createFeatureSelection('secrets', () => secretIds, {
     deleteItem: id => deleteSecret.mutateAsync(id),
   });

@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { navEntriesFor } from '@platform/routing';
-  import Layout from '@/modules/layout/presentation/ui/Layout.svelte';
+  import Layout from '@/modules/layout/presentation/ui/Layout/Layout.svelte';
   import { modules } from '@core/di/registry.ts';
-  import AuthGuard from './Auth.guard.svelte';
+  import AuthGuard from './AuthGuard/Auth.guard.svelte';
 
   let { children }: { children: Snippet } = $props();
 

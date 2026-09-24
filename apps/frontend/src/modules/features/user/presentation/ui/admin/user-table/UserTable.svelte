@@ -42,7 +42,6 @@
     icon={EyeIcon}
     tooltip={t(userMessages.view)}
     onclick={event => {
-      // The row click selects; viewing must not also toggle the selection.
       event.stopPropagation();
       onView(user.userId);
     }}

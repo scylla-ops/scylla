@@ -6,12 +6,7 @@ import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { organizationMutations, organizationQueries } from '@/modules/features/organization';
 import { syncMyPermissions } from '@/modules/features/roles';
 
-/**
- * The state of the app shell.
- *
- * It loads the organizations of the user, and it keeps the permissions store in
- * sync with the active organization and project. Create it once, in `Layout`.
- */
+/** Loads the user's organizations and keeps the permissions in sync with the context. Create it once, in `Layout`. */
 export const createShellState = () => {
   const organizations = createQuery(() => organizationQueries.mine());
   const createOrganization = createMutation(() => organizationMutations.create());

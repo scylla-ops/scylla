@@ -6,12 +6,7 @@
   import {
     Badge,
     Button,
-    Dialog,
-    DialogContent,
-    DialogDescription,
     DialogFooter,
-    DialogHeader,
-    DialogTitle,
     Label,
     Select,
     SelectContent,
@@ -19,7 +14,7 @@
     SelectTrigger,
     SelectValue,
   } from '@shadcn';
-  import { GatedButton } from '@shared/presentation/ui';
+  import { GatedButton, ScyllaDialog } from '@shared/presentation/ui';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { RoleEntity } from '../../../../domain/entities/role.entity.ts';
@@ -62,19 +57,7 @@
   };
 </script>
 
-<!--
-  Grants one role to one user, across the scope targets the role requires.
-
-  Project grants follow the backend's tenant boundary: a user may only receive
-  one once the organization owning the project has already admitted them — which
-  is exactly what being a member of it means. So the dialog asks for the
-  organization first and greys out the users it has not admitted, turning a
-  server-side rejection into a constraint you can see. Admitting someone is the
-  members dialog's job, in the organization switcher.
-
-  Grants are administered system-wide in this build: one permission for every
-  scope, held by system administrators only.
--->
+<!-- Users not admitted to the organization are greyed out: the backend would reject a project grant. -->
 {#snippet userPicker()}
   <div class="flex flex-col gap-1.5">
     <Label for="grant-user">{t(rolesMessages.user)}</Label>
@@ -88,11 +71,7 @@
         <SelectValue placeholder={userPlaceholder} />
       </SelectTrigger>
       <SelectContent>
-        <!--
-          A disabled item carries `pointer-events-none`, so a hover tooltip on it
-          would never fire — the reason is rendered inline instead, which also
-          saves the reader a hover to find out why a name is greyed out.
-        -->
+        <!-- A disabled item gets no hover: the reason is shown inline. -->
         {#each creator.users as user (user.id)}
           <SelectItem value={user.id} label={user.name} disabled={!!user.ineligible}>
             <span class="flex w-full items-center gap-2">
@@ -120,126 +99,124 @@
   {t(rolesMessages.addGrant)}
 </GatedButton>
 
-<Dialog bind:open>
-  <DialogContent class="flex max-h-[85vh] max-w-lg flex-col">
-    <DialogHeader class="space-y-3">
-      <DialogTitle class="text-lg font-semibold">
-        {t(rolesMessages.grantTitle(role.name))}
-      </DialogTitle>
-      <DialogDescription>{t(rolesMessages.grantSubtitle)}</DialogDescription>
-    </DialogHeader>
+<ScyllaDialog
+  {open}
+  onOpenChange={next => (open = next)}
+  class="flex max-h-[85vh] max-w-lg flex-col"
+  title={t(rolesMessages.grantTitle(role.name))}
+  description={t(rolesMessages.grantSubtitle)}
+>
 
-    <div class="flex flex-col gap-4 overflow-y-auto pr-1">
-      {#if creator.scope === PermissionScope.SYSTEM}
-        {@render userPicker()}
-        <div
-          class="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm text-muted-foreground"
-        >
-          <GlobeIcon class="size-4 shrink-0" />
-          {t(rolesMessages.systemWide)}
-        </div>
-      {:else if creator.scope === PermissionScope.ORGANIZATION}
-        {@render userPicker()}
-        <TargetChecklist
-          label={t(rolesMessages.organizations)}
-          empty={t(rolesMessages.noOrganizations)}
-          isLoading={creator.organizationsLoading}
-          options={creator.organizations}
-          disabled={creator.isPending}
-          isSelected={id => creator.isSelected(id)}
-          isGranted={id => creator.isAlreadyGranted(id)}
-          onToggle={option => creator.toggle(option)}
-        />
-      {:else}
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-1.5">
-            <Label for="grant-org">{t(rolesMessages.organization)}</Label>
-            <Select
-              type="single"
-              value={creator.browseOrgId ?? ''}
-              disabled={creator.isPending || creator.organizationsLoading}
-              onValueChange={value => creator.browseOrganization(value)}
-            >
-              <SelectTrigger id="grant-org" class="w-full">
-                <SelectValue placeholder={t(rolesMessages.pickAnOrganization)} />
-              </SelectTrigger>
-              <SelectContent>
-                {#each creator.organizations as organization (organization.id)}
-                  <SelectItem value={organization.id} label={organization.name}>
-                    {organization.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {@render userPicker()}
-
-          {#if creator.browseOrgId && !creator.hasSelectableUser}
-            <div
-              class="flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm text-muted-foreground"
-            >
-              <InfoIcon class="mt-0.5 size-4 shrink-0" />
-              {t(rolesMessages.nobodyEligible)}
-            </div>
-          {/if}
-
-          {#if creator.browseOrgId && creator.hasSelectableUser}
-            <TargetChecklist
-              label={t(rolesMessages.projects)}
-              empty={t(rolesMessages.noProjects)}
-              isLoading={creator.projectsLoading}
-              options={creator.projects}
-              disabled={creator.isPending}
-              isSelected={id => creator.isSelected(id)}
-              isGranted={id => creator.isAlreadyGranted(id)}
-              onToggle={option => creator.toggle(option)}
-            />
-          {/if}
-        </div>
-      {/if}
-
-      {#if creator.needsTargets && creator.selectedCount > 0}
-        <div class="flex flex-col gap-1.5">
-          <Label>{t(rolesMessages.selectedCount(creator.selectedCount))}</Label>
-          <div class="flex flex-wrap gap-1.5">
-            {#each creator.selected as option (option.id)}
-              <Badge variant="secondary" class="gap-1 pr-1">
-                {option.name}
-                <Button
-                  variant="outline"
-                  size="xs"
-                  type="button"
-                  disabled={creator.isPending}
-                  aria-label={option.name}
-                  class="rounded hover:text-destructive"
-                  onclick={() => creator.toggle(option)}
-                >
-                  ×
-                </Button>
-              </Badge>
-            {/each}
-          </div>
-        </div>
-      {/if}
-    </div>
-
-    <DialogFooter>
-      <Button
-        type="button"
-        variant="outline"
+  <div class="flex flex-col gap-4 overflow-y-auto pr-1">
+    {#if creator.scope === PermissionScope.SYSTEM}
+      {@render userPicker()}
+      <div
+        class="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm text-muted-foreground"
+      >
+        <GlobeIcon class="size-4 shrink-0" />
+        {t(rolesMessages.systemWide)}
+      </div>
+    {:else if creator.scope === PermissionScope.ORGANIZATION}
+      {@render userPicker()}
+      <TargetChecklist
+        label={t(rolesMessages.organizations)}
+        empty={t(rolesMessages.noOrganizations)}
+        isLoading={creator.organizationsLoading}
+        options={creator.organizations}
         disabled={creator.isPending}
-        onclick={() => (open = false)}
-      >
-        {t(rolesMessages.cancel)}
-      </Button>
-      <Button
-        type="button"
-        disabled={!creator.isValid || creator.isPending}
-        onclick={() => void submit()}
-      >
-        {t(rolesMessages.createGrant)}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+        isSelected={id => creator.isSelected(id)}
+        isGranted={id => creator.isAlreadyGranted(id)}
+        onToggle={option => creator.toggle(option)}
+      />
+    {:else}
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <Label for="grant-org">{t(rolesMessages.organization)}</Label>
+          <Select
+            type="single"
+            value={creator.browseOrgId ?? ''}
+            disabled={creator.isPending || creator.organizationsLoading}
+            onValueChange={value => creator.browseOrganization(value)}
+          >
+            <SelectTrigger id="grant-org" class="w-full">
+              <SelectValue placeholder={t(rolesMessages.pickAnOrganization)} />
+            </SelectTrigger>
+            <SelectContent>
+              {#each creator.organizations as organization (organization.id)}
+                <SelectItem value={organization.id} label={organization.name}>
+                  {organization.name}
+                </SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {@render userPicker()}
+
+        {#if creator.browseOrgId && !creator.hasSelectableUser}
+          <div
+            class="flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm text-muted-foreground"
+          >
+            <InfoIcon class="mt-0.5 size-4 shrink-0" />
+            {t(rolesMessages.nobodyEligible)}
+          </div>
+        {/if}
+
+        {#if creator.browseOrgId && creator.hasSelectableUser}
+          <TargetChecklist
+            label={t(rolesMessages.projects)}
+            empty={t(rolesMessages.noProjects)}
+            isLoading={creator.projectsLoading}
+            options={creator.projects}
+            disabled={creator.isPending}
+            isSelected={id => creator.isSelected(id)}
+            isGranted={id => creator.isAlreadyGranted(id)}
+            onToggle={option => creator.toggle(option)}
+          />
+        {/if}
+      </div>
+    {/if}
+
+    {#if creator.needsTargets && creator.selectedCount > 0}
+      <div class="flex flex-col gap-1.5">
+        <Label>{t(rolesMessages.selectedCount(creator.selectedCount))}</Label>
+        <div class="flex flex-wrap gap-1.5">
+          {#each creator.selected as option (option.id)}
+            <Badge variant="secondary" class="gap-1 pr-1">
+              {option.name}
+              <Button
+                variant="outline"
+                size="xs"
+                type="button"
+                disabled={creator.isPending}
+                aria-label={option.name}
+                class="rounded hover:text-destructive"
+                onclick={() => creator.toggle(option)}
+              >
+                ×
+              </Button>
+            </Badge>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <DialogFooter>
+    <Button
+      type="button"
+      variant="outline"
+      disabled={creator.isPending}
+      onclick={() => (open = false)}
+    >
+      {t(rolesMessages.cancel)}
+    </Button>
+    <Button
+      type="button"
+      disabled={!creator.isValid || creator.isPending}
+      onclick={() => void submit()}
+    >
+      {t(rolesMessages.createGrant)}
+    </Button>
+  </DialogFooter>
+</ScyllaDialog>

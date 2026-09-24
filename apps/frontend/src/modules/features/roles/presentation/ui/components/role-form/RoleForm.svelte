@@ -16,10 +16,10 @@
   import { createRoleForm, type AccessKind } from '../../../role-form.state.svelte.ts';
   import { ALL_SCOPES, scopeLabelOf } from '../../../utils/permission-mapping.ts';
   import { rolesMessages } from '../../roles.messages.ts';
-  import RoleDialogPermissions from './RoleDialogPermissions.svelte';
+  import RoleDialogPermissions from './RoleDialogPermissions/RoleDialogPermissions.svelte';
 
   interface Props {
-    /** The role being edited, or `null` when creating one. */
+    /** `null` when creating. */
     role: RoleEntity | null;
     onDone: () => void;
   }
@@ -37,15 +37,6 @@
   };
 </script>
 
-<!--
-  The fields, split from the dialog that frames them.
-
-  That split is the reset: `RoleFormDialog` renders this under `{#key open}`, so
-  reopening it builds a new component and `createRoleForm` re-runs its
-  initialisers from the role at hand. React needed an effect on `[open, role]`
-  for the same thing, and a frame where the previous role's values were still on
-  screen.
--->
 <div class="flex flex-col gap-4 overflow-y-auto pr-1">
   <div class="flex flex-col gap-1.5">
     <Label for="role-name">{t(rolesMessages.name)}</Label>

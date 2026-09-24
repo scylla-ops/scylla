@@ -3,10 +3,6 @@ import UsersRound from '@lucide/svelte/icons/users-round';
 import { Permission } from '@platform/authz';
 import type { ScyllaModule } from '@platform/routing';
 
-/**
- * Members of an organization or of a project. Both pages read other modules'
- * data, so like `dashboard` this module contributes routes without a domain.
- */
 export const MembershipModule = {
   id: 'membership',
   domain: {},
@@ -16,9 +12,7 @@ export const MembershipModule = {
         path: 'members',
         permission: Permission.LIST_ORGANIZATION_MEMBERS,
         breadcrumb: () => ({ label: msg`Members` }),
-        page: () => import('./presentation/ui/OrganizationMembers.page.svelte'),
-        // Who belongs to the *current* organization — org-scoped, unlike the
-        // system-wide directory under "System".
+        page: () => import('./presentation/ui/OrganizationMembers/OrganizationMembers.page.svelte'),
         nav: { section: 'organization', title: msg`Members`, icon: UsersRound, order: 30 },
       },
     ],
@@ -27,7 +21,7 @@ export const MembershipModule = {
         path: 'members',
         permission: Permission.LIST_PROJECT_MEMBERS,
         breadcrumb: () => ({ label: msg`Members` }),
-        page: () => import('./presentation/ui/ProjectMembers.page.svelte'),
+        page: () => import('./presentation/ui/ProjectMembers/ProjectMembers.page.svelte'),
       },
     ],
   },

@@ -16,10 +16,10 @@
   import type { TriggerEntity } from '../../../domain/entities/trigger.entity.ts';
   import { TriggerKind } from '../../../domain/structs/trigger-source.struct.ts';
   import { triggerMutations } from '../../triggers.queries.ts';
-  import TriggerActions from './TriggerActions.svelte';
-  import TriggerSourceCell from './TriggerSourceCell.svelte';
-  import TriggerStatusCell from './TriggerStatusCell.svelte';
-  import TriggerFormDialog from '../dialogs/TriggerFormDialog.svelte';
+  import TriggerActions from './TriggerActions/TriggerActions.svelte';
+  import TriggerSourceCell from './TriggerSourceCell/TriggerSourceCell.svelte';
+  import TriggerStatusCell from './TriggerStatusCell/TriggerStatusCell.svelte';
+  import TriggerFormDialog from '../dialogs/TriggerFormDialog/TriggerFormDialog.svelte';
   import { triggerColumns } from './trigger-columns.ts';
   import { triggersMessages } from '../triggers.messages.ts';
 
@@ -44,7 +44,6 @@
 
   let editTarget = $state<TriggerEntity | null>(null);
   let deleteTargetId = $state<string | null>(null);
-  /** Per-row, because two rows can be firing at once. */
   const firingIds = new SvelteSet<string>();
 
   const handleFire = (trigger: TriggerEntity) => {
@@ -52,10 +51,10 @@
 
     fireNow
       .mutateAsync(trigger.id)
-      // Close the loop: land on the run we just created.
+      // Go to the run just created.
       .then(() => scyllaNavigate.goToJobs(pipelineId, pipelineName))
       .catch(() => {
-        // Toast shown by the global MutationCache onError handler.
+        // The global mutation handler toasts the error.
       })
       .finally(() => {
         firingIds.delete(trigger.id);
@@ -99,7 +98,7 @@
 {/snippet}
 
 {#snippet enabledCell(trigger: TriggerEntity)}
-  <!-- Stop propagation so toggling the switch doesn't also select the row. -->
+  <!-- Toggling the switch must not select the row. -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="flex justify-center" onclick={event => event.stopPropagation()}>

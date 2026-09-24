@@ -17,7 +17,7 @@
   interface Props {
     provider: string;
     title: string;
-    /** Spelt as the proto field is — see the struct. */
+    /** Spelt like the proto field. */
     descrption: string;
     class?: string;
   }

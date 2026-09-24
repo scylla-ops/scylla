@@ -1,11 +1,6 @@
 import { i18n } from '@lingui/core';
 
-/**
- * Intl formatters are expensive to build, so they are cached — but keyed by
- * locale, never pinned at import time: the app language switches at runtime
- * and a module-level formatter would keep rendering dates in the language the
- * user just left. Read `i18n.locale` per call, cache the result per locale.
- */
+/** Cached per locale, never at import time: the locale changes at runtime. */
 const dateFormatters = new Map<string, Intl.DateTimeFormat>();
 const relativeFormatters = new Map<string, Intl.RelativeTimeFormat>();
 
@@ -25,32 +20,20 @@ const getRelativeFormatter = () => {
   const locale = currentLocale();
   let formatter = relativeFormatters.get(locale);
   if (!formatter) {
-    // 'short', not 'narrow': narrow renders French as a bare "-3 j" instead of
-    // "il y a 3 j", which reads as a negative number rather than a past time.
+    // 'short': 'narrow' renders French as "-3 j", which reads as a negative number.
     formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' });
     relativeFormatters.set(locale, formatter);
   }
   return formatter;
 };
 
-/**
- * Calculate duration between two dates in seconds
- * @param createdAt - Start date string (ISO format)
- * @param updatedAt - End date string (ISO format)
- * @returns Duration in seconds
- */
 export const calculateDuration = (createdAt: string, updatedAt: string): number => {
   const start = new Date(createdAt).getTime();
   const end = new Date(updatedAt).getTime();
   return Math.floor((end - start) / 1000);
 };
 
-/**
- * Execution duration of a job/node in seconds: from when it actually started
- * (a worker picked it up) to when it finished — NOT including the pending/queue
- * wait. Returns null while still pending (not started); counts up to now while
- * running.
- */
+/** From the start (not the creation) to the end, in seconds. `null` while pending; counts up while running. */
 export const calculateExecutionDuration = (
   startedAt?: string,
   finishedAt?: string,
@@ -61,11 +44,7 @@ export const calculateExecutionDuration = (
   return Math.max(0, Math.floor((end - start) / 1000));
 };
 
-/**
- * Format duration in seconds to human-readable string
- * @param seconds - Duration in seconds
- * @returns Formatted string (e.g., "1m 12s", "45s", "2h 15m")
- */
+/** E.g. "1m 12s", "45s", "2h 15m". */
 export const formatDuration = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -76,11 +55,6 @@ export const formatDuration = (seconds: number): string => {
   return `${secs}s`;
 };
 
-/**
- * Get relative time from a date string, in the app's current language.
- * @param dateString - ISO date string
- * @returns Relative time (e.g., "2d ago" / "il y a 2 j")
- */
 export const getRelativeTime = (dateString: string): string => {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return '-';
@@ -98,7 +72,6 @@ export const getRelativeTime = (dateString: string): string => {
   return rtf.format(0, 'second');
 };
 
-/** Full date + time, localized. */
 export function formatDate(isoString: string | undefined): string {
   if (!isoString) return '-';
 
@@ -115,7 +88,6 @@ export function formatDate(isoString: string | undefined): string {
   }).format(date);
 }
 
-/** Calendar day only, localized — for places where the time of day is noise. */
 export function formatDay(isoString: string | undefined): string {
   if (!isoString) return '-';
 
@@ -129,7 +101,6 @@ export function formatDay(isoString: string | undefined): string {
   }).format(date);
 }
 
-/** Time of day only, localized. */
 export function formatTime(isoString: string | undefined): string {
   if (!isoString) return '-';
 

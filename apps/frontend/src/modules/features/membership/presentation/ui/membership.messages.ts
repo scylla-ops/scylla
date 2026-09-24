@@ -1,15 +1,7 @@
 import { msg, plural } from '@lingui/core/macro';
 
-/**
- * Every string the two member screens show.
- *
- * `lingui extract` does not read `.svelte`, so a message declared inside a
- * component would vanish from the catalogs without failing a single gate. The
- * ids below are byte-identical to the ones the React components carried —
- * **placeholder names included**, since those are part of the msgid.
- */
+/** Keep the msgids (placeholder names included) or the French is lost. */
 export const membershipMessages = {
-  // Shared
   member: msg`Member`,
   members: msg`Members`,
   addAMember: msg`Add a member`,
@@ -25,23 +17,16 @@ export const membershipMessages = {
   nobodyListed: msg`Nobody is listed here yet.`,
   managedAtOrganization: msg`Managed at the organization level.`,
   revokeRole: (name: string) => msg`Revoke ${name}`,
-  /**
-   * The exact-zero arm is `0:` here where the React `<Plural>` spelled it `_0`
-   * — the two compile to the same `=0 {…}` in the msgid, which is what keeps
-   * the French translation attached. The placeholder stays named `value` for
-   * the same reason: its name is part of the id.
-   */
+  /** Keep `value` and the `0:` arm: they are part of the msgid. */
   roleCount: (value: number) =>
     msg`${plural(value, { 0: 'No role', one: '# role', other: '# roles' })}`,
 
-  // Toasts — from `scope-membership.state.svelte.ts`
   roleGranted: msg`Role granted`,
   roleRevoked: msg`Role revoked`,
   memberRemoved: (username: string, revoked: number) =>
     msg`${username} removed — ${revoked} grant(s) revoked`,
   memberAdded: (count: number) => msg`Member added with ${count} role(s)`,
 
-  // Organization page
   selectAnOrganization: msg`Select an organization to see its members.`,
   organizationBlurb: (name: string) =>
     msg`Belonging to “${name}” means holding a role in it. Granting someone their first role admits them; revoking every role they hold here, and on its projects, removes them.`,
@@ -59,7 +44,6 @@ export const membershipMessages = {
     msg`Remove ${username} from “${organization}”?`,
   confirmRemoveFromOrganizationBody: msg`Every role they hold on this organization and on its projects will be revoked. They will lose access immediately.`,
 
-  // Project page
   projectBlurb: msg`Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this page.`,
   projectNewDenied: msg`You don't have permission to add members to this project.`,
   projectEmpty: msg`Nobody has access to this project yet.`,

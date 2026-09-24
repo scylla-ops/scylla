@@ -22,10 +22,7 @@
   const lines = $derived(mockInitialLogs(agentId));
 </script>
 
-<!--
-  Static preview only, and nothing mounts it yet: the agent log stream does not
-  exist. Ported rather than deleted — see this module's AGENTS.md.
--->
+<!-- A static preview, not mounted: the agent log stream does not exist yet. See AGENTS.md. -->
 <div class="space-y-2">
   <div class="flex items-center justify-between gap-2">
     <div class="flex items-baseline gap-2">

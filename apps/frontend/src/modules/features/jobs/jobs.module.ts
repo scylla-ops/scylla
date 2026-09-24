@@ -12,17 +12,16 @@ const jobsRepository = new DefaultJobsRepository(jobsRemoteDataSource);
 export const JobsModule = {
   id: 'jobs',
   domain: {
-    /** Repository interface — the module's data surface. */
     jobsRepository: jobsRepository,
   },
   routes: {
     project: [
       {
-        // Under the jobs list that `pipeline` owns, whose crumb shows before this one.
+        // Under the jobs list of `pipeline`, whose crumb shows first.
         path: 'pipelines/:pipelineId/jobs/:jobId',
         permission: Permission.READ_JOB,
         breadcrumb: ({ jobId }) => ({ label: msg`Job`, highlight: jobId }),
-        page: () => import('./presentation/ui/JobDetails.page.svelte'),
+        page: () => import('./presentation/ui/JobDetails/JobDetails.page.svelte'),
       },
     ],
   },

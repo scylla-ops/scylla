@@ -7,42 +7,18 @@ import type { TriggerDraft, TriggerEntity } from '../domain/entities/trigger.ent
 import { TriggerKind } from '../domain/structs/trigger-source.struct.ts';
 import type { TriggersModule } from '../triggers.module.ts';
 
-/**
- * Every read and write this module performs, declared as plain data.
- *
- * This is what the six hooks under `presentation/hooks/` were, with the
- * framework taken out: `queryOptions` / `mutationOptions` describe the call,
- * `createQuery` / `createMutation` run it inside a component, and a test can
- * exercise a `queryFn` on its own.
- *
- * The repository is resolved per call, never at module load: the registry is
- * installed by the composition root and swapped by tests.
- */
+// Resolved per call: tests swap the registry.
 const repository = () =>
   getModuleDomain<typeof TriggersModule.domain>('triggers').triggersRepository;
 
 export const TRIGGERS_QUERY_KEY = (pipelineId: string) =>
   ['triggers', 'pipeline', pipelineId] as const;
 
-/**
- * The jobs key, spelled out rather than imported from `features/jobs`.
- *
- * Firing a trigger mints a real job, so its list has to be refreshed — but
- * importing the key would make `triggers` depend on `jobs` for one array, and
- * the graph is cheaper kept acyclic. `jobs`' own `JOBS_QUERY_KEY` is the
- * authority; this must match it.
- */
+/** Must match `JOBS_QUERY_KEY` of `jobs`: not imported, to keep the graph acyclic. */
 const JOBS_OF_PIPELINE = (pipelineId: string) => ['jobs', 'pipeline', pipelineId] as const;
 
 export const triggerQueries = {
-  /**
-   * A pipeline's triggers.
-   *
-   * Polls **only while an enabled cron trigger exists**: `nextFireAt` and
-   * `lastResult` move on their own then, and nothing else here does. A webhook
-   * trigger changes when someone calls it, which no interval can predict
-   * usefully.
-   */
+  /** Polls only while an enabled cron trigger exists: nothing else changes by itself. */
   byPipeline: (pipelineId: string) =>
     queryOptions<TriggerEntity[]>({
       queryKey: TRIGGERS_QUERY_KEY(pipelineId),
@@ -63,7 +39,6 @@ const invalidateTriggers = (pipelineId: string) =>
   getQueryClient().invalidateQueries({ queryKey: TRIGGERS_QUERY_KEY(pipelineId) });
 
 export const triggerMutations = {
-  /** Answers the `CreatedTrigger` so a caller can reveal a one-time webhook secret. */
   create: (pipelineId: string) =>
     mutationOptions({
       mutationFn: async (draft: TriggerDraft) =>
@@ -74,7 +49,6 @@ export const triggerMutations = {
       },
     }),
 
-  /** Updates the editable fields: name, source spec, inputs. */
   update: (pipelineId: string) =>
     mutationOptions({
       mutationFn: async ({ triggerId, draft }: { triggerId: string; draft: TriggerDraft }) =>
@@ -85,10 +59,7 @@ export const triggerMutations = {
       },
     }),
 
-  /**
-   * Deleting a webhook trigger invalidates its URL forever — distinct from
-   * {@link triggerMutations.setEnabled}, which is reversible. Confirm first.
-   */
+  /** A deleted webhook URL is gone forever, unlike disabling. Confirm first. */
   remove: (pipelineId: string) =>
     mutationOptions({
       mutationFn: async (triggerId: string) =>
@@ -99,13 +70,7 @@ export const triggerMutations = {
       },
     }),
 
-  /**
-   * Enable/disable, with an optimistic toggle in the cached list.
-   *
-   * The switch has to move under the pointer: a round trip's worth of "nothing
-   * happened" on a toggle reads as a broken control, and the rollback in
-   * `onError` is what makes the optimism honest.
-   */
+  /** Optimistic: the switch moves at once, and `onError` rolls it back. */
   setEnabled: (pipelineId: string) =>
     mutationOptions({
       mutationFn: async ({ triggerId, enabled }: { triggerId: string; enabled: boolean }) =>
@@ -137,11 +102,7 @@ export const triggerMutations = {
       onSettled: () => void invalidateTriggers(pipelineId),
     }),
 
-  /**
-   * Fires a trigger immediately. **This mints a real job**, so the pipeline's
-   * job list is invalidated too — otherwise the run the user just started does
-   * not appear anywhere.
-   */
+  /** Creates a real job: the pipeline's job list is invalidated too. */
   fireNow: (pipelineId: string) =>
     mutationOptions({
       mutationFn: async (triggerId: string) => (await repository().fireNow(triggerId)).unwrap(),

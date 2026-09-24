@@ -14,7 +14,6 @@ const secretRepository = new DefaultSecretRepository(secretRemoteDataSource);
 export const SecretModule = {
   id: 'secret',
   domain: {
-    /** Repository interface — the module's data surface. */
     secretRepository: secretRepository,
   },
   routes: {

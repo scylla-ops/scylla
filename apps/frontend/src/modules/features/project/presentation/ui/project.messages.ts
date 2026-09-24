@@ -1,25 +1,20 @@
 import { msg } from '@lingui/core/macro';
 
-/** Extraction does not read `.svelte`; ids are unchanged from the React components. */
 export const projectMessages = {
-  // Page
   noOrganization: msg`No organization selected`,
   noOrganizationHint: msg`Select an organization from the sidebar to view its projects`,
   loadError: msg`Unable to load projects`,
 
-  // Header
   project: msg`Project`,
   projects: msg`Projects`,
   newProject: msg`New project`,
   createDenied: msg`You don't have permission to create projects.`,
   deleteDenied: msg`You don't have permission to delete projects.`,
 
-  // Card
   edit: msg`Edit`,
   select: msg`Select`,
   noDescription: msg`No description`,
 
-  // Dialogs
   projectName: msg`Project name`,
   projectNamePlaceholder: msg`e.g., My project`,
   description: msg`Description`,

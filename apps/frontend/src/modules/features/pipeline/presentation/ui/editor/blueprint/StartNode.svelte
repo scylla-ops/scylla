@@ -9,8 +9,7 @@
   let { data }: NodeProps<BlueprintStartNode> = $props();
 </script>
 
-<!-- The pipeline itself, as the graph's single entry point: every step with no
-     dependency hangs off it. Not deletable — see `stepsToFlow`. -->
+<!-- The pipeline itself: every step without a dependency hangs off it. Not deletable. -->
 <Card
   class="w-55 cursor-pointer overflow-hidden border-primary/30 p-0 shadow-md transition-all duration-200 hover:scale-105 hover:border-primary hover:shadow-lg"
 >

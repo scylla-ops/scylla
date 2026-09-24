@@ -5,13 +5,7 @@ import { changeLocation, location, syncLocation } from './location.svelte.ts';
 import { resolveTarget } from './resolve-target.ts';
 import { setRouteTable } from './route-state.svelte.ts';
 
-/**
- * Compiles the routes and starts the router on them.
- *
- * Returns the navigator that the shell installs with `setAppNavigator`. Call it
- * once, before the app mounts `RouterView`. It throws when a route declaration
- * is wrong, see `compileRoutes`.
- */
+/** Call it once, before `RouterView` mounts. Throws when a route declaration is wrong. */
 export const createAppRouter = (config: AppRouterConfig): AppNavigator => {
   setRouteTable(compileRoutes(config));
   syncLocation();

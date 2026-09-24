@@ -1,8 +1,6 @@
 import { msg } from '@lingui/core/macro';
 
-/** Extraction does not read `.svelte`; ids are unchanged from the React components. */
 export const userMessages = {
-  // Admin page
   user: msg`User`,
   users: msg`Users`,
   newUser: msg`New user`,
@@ -10,7 +8,6 @@ export const userMessages = {
   deleteDenied: msg`You don't have permission to delete users.`,
   loadError: msg`Error loading users`,
 
-  // Add dialog
   createTitle: msg`Create a new user`,
   createDescription: msg`Enter a username and password for the new user.`,
   createSubmit: msg`Create User`,
@@ -19,12 +16,10 @@ export const userMessages = {
   password: msg`Password`,
   passwordPlaceholder: msg`Enter a password`,
 
-  // Table
   createdAt: msg`Created at`,
   actions: msg`Actions`,
   view: msg`View`,
 
-  // Settings
   userSettings: msg`User settings`,
   organizations: msg`Organizations: `,
   userInformation: msg`User information`,

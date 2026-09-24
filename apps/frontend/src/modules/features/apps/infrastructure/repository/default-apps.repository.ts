@@ -10,7 +10,6 @@ import type {
   CreatedAppSecret,
 } from '@/modules/features/apps/domain/structs/app.struct.ts';
 
-/** AppsRepository backed by the remote (gRPC) data source. */
 export class DefaultAppsRepository implements AppsRepository {
   constructor(private remoteDataSource: AppsRemoteDataSource) {}
 

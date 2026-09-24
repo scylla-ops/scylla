@@ -14,14 +14,13 @@ const pipelineRepository = new DefaultPipelineRepository(pipelineRemoteDataSourc
 export const PipelineModule = {
   id: 'pipeline',
   domain: {
-    /** Repository interface — the module's data surface. */
     pipelineRepository: pipelineRepository,
   },
   routes: {
     project: [
       {
         permission: Permission.LIST_PIPELINES_BY_PROJECT,
-        page: () => import('./presentation/ui/dashboard/DashboardPipeline.page.svelte'),
+        page: () => import('./presentation/ui/dashboard/DashboardPipeline/DashboardPipeline.page.svelte'),
       },
       {
         path: 'create',
@@ -40,8 +39,7 @@ export const PipelineModule = {
         page: () => import('./presentation/ui/editor/PipelineUpdate.page.svelte'),
       },
       {
-        // Owned here rather than by `jobs`: the page needs a Run action, which is
-        // a pipeline operation. One job's page, from `jobs`, shows this crumb too.
+        // Here, not in `jobs`: the page has a Run action. The job page from `jobs` shows this crumb too.
         path: 'pipelines/:pipelineId/jobs',
         permission: Permission.LIST_JOBS_BY_PIPELINE,
         breadcrumb: ({ pipelineName }) => ({

@@ -11,10 +11,9 @@ const loginRepository: LoginRepository = new DefaultLoginRepository(loginRemoteD
 export const LoginModule = {
   id: 'login',
   domain: {
-    /** Repository interface — the module's data surface. */
     loginRepository: loginRepository,
   },
   routes: {
-    public: [{ path: 'login', page: () => import('./presentation/ui/Login.page.svelte') }],
+    public: [{ path: 'login', page: () => import('./presentation/ui/Login/Login.page.svelte') }],
   },
 } satisfies ScyllaModule;

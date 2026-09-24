@@ -2,30 +2,19 @@ import { Permission, can, type PermissionScope } from '@platform/authz';
 import { createQuery } from '@platform/query';
 import { humanizeRoleId, roleQueries, type RoleEntity } from '@/modules/features/roles';
 
-/** A role a member view may offer, whichever list it was found in. */
 export interface AssignableRole {
   roleId: string;
   name: string;
   description: string;
-  /** The catalog entry, when the caller may read the catalog. */
   role?: RoleEntity;
 }
 
 /**
- * The roles a member view may hand out at `scope`, and the labels for the ones
- * already held.
- *
- * Two lists back it, because no single one is both complete and readable by
- * everyone. `ListGrantableRoles` needs no permission but carries the builtins
- * only; the full catalog carries custom roles too but is gated behind
- * `MANAGE_ROLES`, which a tenant administrator does not hold. So the catalog is
- * requested only when it would be answered, and merged on top when it arrives —
- * a system administrator sees every role, everyone else sees the builtins, and
- * neither collects a denial for asking.
+ * The roles a member view can hand out at `scope`. `ListGrantableRoles` has only the
+ * builtins; the full catalog (custom roles too) needs `MANAGE_ROLES`, so it is asked
+ * only when it would be answered.
  */
 export const createAssignableRoles = (scope: PermissionScope) => {
-  // `can` is reactive here, so this recomputes the moment the permissions land
-  // — which is what turns the catalog query on without an effect.
   const canReadCatalog = $derived(can(Permission.MANAGE_ROLES));
 
   const catalogQuery = createQuery(() => roleQueries.catalog({ enabled: canReadCatalog }));
@@ -34,7 +23,7 @@ export const createAssignableRoles = (scope: PermissionScope) => {
   const roles = $derived(catalogQuery.data ?? []);
   const grantableRoles = $derived(grantableQuery.data ?? []);
 
-  /** Catalog entries by id — empty when the catalog is out of reach. */
+  /** Empty when the catalog is out of reach. */
   // Rebuilt whole by the `$derived` and never mutated after it is read, so a
   // reactive collection would only make a throwaway object track dependencies.
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
@@ -56,7 +45,7 @@ export const createAssignableRoles = (scope: PermissionScope) => {
       });
     }
 
-    // Custom roles bound to this scope: grantable, but never in the static list.
+    // Custom roles bound to this scope: grantable, but not in the static list.
     for (const role of roles) {
       if (role.scope !== scope || merged.has(role.id)) continue;
       merged.set(role.id, {
@@ -85,10 +74,7 @@ export const createAssignableRoles = (scope: PermissionScope) => {
     get isLoading() {
       return grantableQuery.isLoading;
     },
-    /**
-     * The display name of any role id, including one bound to another scope (an
-     * organization role seen from a project view) or dropped from the catalog.
-     */
+    /** Any role id, even one of another scope or no longer in the catalog. */
     labelFor: (roleId: string): string =>
       nameById.get(roleId) ?? roleById.get(roleId)?.name ?? humanizeRoleId(roleId),
   };

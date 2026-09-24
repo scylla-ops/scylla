@@ -4,13 +4,7 @@ export interface NavigationTarget {
   hash: string;
 }
 
-/**
- * Resolves a navigation target against the current pathname.
- *
- * A relative target starts from the current page, so `..` goes to the parent
- * page and `members` goes to a child page. The result never ends with a slash,
- * except for the root.
- */
+/** `..` goes to the parent page, `members` to a child page. No trailing slash, except `/`. */
 export const resolveTarget = (to: string, from: string): NavigationTarget => {
   const base = from.endsWith('/') ? from : `${from}/`;
   const url = new URL(to, `http://scylla${base}`);

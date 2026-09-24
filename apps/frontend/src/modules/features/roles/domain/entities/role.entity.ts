@@ -1,9 +1,6 @@
 import type { AccessEntity, AccessSpec, Permission, PermissionScope, } from '@platform/authz';
 
-/**
- * Where a role comes from. `unknown` means the backend sent an origin arm newer
- * than this build — never read it as "custom".
- */
+/** `unknown`: an origin arm newer than this build. Never read it as "custom". */
 export type RoleOrigin =
   | { kind: 'builtin'; key: string }
   | { kind: 'custom'; ownerOrganizationId?: string }
@@ -14,15 +11,11 @@ export interface RoleEntity {
   readonly name: string;
   readonly description: string;
 
-  /**
-   * The scope kind a grant of this role must bind to. todo: see if necessary in the entity
-   */
+  /** The scope kind a grant of this role binds to. */
   scope: PermissionScope;
 
-  /** Builtin (carries its stable key, e.g. "organization-admin") or custom. */
   origin: RoleOrigin;
 
-  /** Full control over the scope, or an explicit permission set. */
   access: AccessEntity;
 }
 
@@ -34,15 +27,9 @@ export interface RoleCreationData {
 }
 
 /**
- * Whether a role confers `permission`.
- *
- * An access arm this build cannot read — or a role missing from the catalog —
- * counts as conferring. That is the opposite of `canAccess`, deliberately:
- * there, denying on the unknown protects the UI from showing what the user may
- * not hold; here, the question is asked *about someone else's* role, so denying
- * would hide access that exists and let an administrator act on a list they
- * cannot trust. Reading the catalog is itself a permission not every
- * administrator holds, so `undefined` is a routine answer, not an anomaly.
+ * An unknown access arm, or a role missing from the catalog, counts as conferring,
+ * unlike `canAccess`: here the question is about someone else's role, and hiding
+ * access that exists would mislead an administrator.
  */
 export const roleConfers = (role: RoleEntity | undefined, permission: Permission): boolean => {
   if (!role) return true;

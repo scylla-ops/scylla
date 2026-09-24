@@ -4,28 +4,16 @@ import type {
   Shell,
 } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 
-/**
- * The pipeline editor's document format: JSON in, `PipelineStep[]` out, and
- * back.
- *
- * Pure, and tested without a DOM. `use-pipeline-script.ts` held this alongside
- * the React state that drove it; the two are separable, and separating them is
- * what lets the parsing rules — which are the fiddly part, since a script is
- * hand-written and may be half-finished — be pinned without a component.
- */
-
-/** A parsed script document, or the reason it could not be parsed. */
 export interface ParsedScript {
-  /** `null` for an empty editor as well as for malformed JSON. */
+  /** `null` for an empty editor and for malformed JSON. */
   document: Record<string, unknown> | null;
-  /** `null` when there is nothing wrong — including for an empty editor. */
   error: string | null;
 }
 
 export const DEFAULT_PIPELINE_NAME = 'my-pipeline';
 
 export const parseScript = (script: string): ParsedScript => {
-  // An empty editor isn't an error to report — it just isn't saveable yet.
+  // An empty editor is not an error, just not saveable yet.
   if (!script.trim()) return { document: null, error: null };
 
   try {
@@ -37,7 +25,7 @@ export const parseScript = (script: string): ParsedScript => {
 
 const parseShell = (value: unknown): Shell => (value === 'bash' ? 'bash' : 'sh');
 
-/** Parse the JSON `env` array into typed `EnvEntry[]`, tolerating partial input. */
+/** Tolerates partial input. */
 const parseEnv = (value: unknown): EnvEntry[] => {
   if (!Array.isArray(value)) return [];
 
@@ -71,8 +59,7 @@ const parseNode = (node: Record<string, unknown>): PipelineStep => {
     env: parseEnv(node.env),
   };
 
-  // An explicit `kind` wins; otherwise the field that is present says which it
-  // is, and a node carrying neither is an empty command waiting to be filled in.
+  // An explicit `kind` wins; else the present field decides.
   const hasCommand = typeof node.command === 'string';
   const hasScript = typeof node.script === 'string';
   const kind =
@@ -120,13 +107,7 @@ export const stepsOf = (document: Record<string, unknown> | null): PipelineStep[
 export const nameOf = (document: Record<string, unknown> | null): string =>
   (document?.name as string) ?? DEFAULT_PIPELINE_NAME;
 
-/**
- * The document with its steps replaced, pretty-printed.
- *
- * Everything else the document holds survives — its name above all, which the
- * blueprint does not know about and would otherwise drop on every edit. With
- * nothing parsed yet, a minimal document is seeded instead.
- */
+/** Replaces the steps and keeps the rest (the name). Seeds a minimal document when there is none. */
 export const withSteps = (
   document: Record<string, unknown> | null,
   steps: PipelineStep[],
@@ -136,7 +117,6 @@ export const withSteps = (
   return JSON.stringify({ ...base, nodes: steps.map(serializeNode) }, null, 2);
 };
 
-/** The document renamed, pretty-printed — `null` when there is nothing to rename. */
 export const withName = (
   document: Record<string, unknown> | null,
   name: string,
