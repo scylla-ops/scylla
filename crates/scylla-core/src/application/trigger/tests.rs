@@ -2,15 +2,17 @@
 
 use super::*;
 use crate::domain::agent::Agent;
-use crate::domain::ids::{AppId, PipelineId, ProjectId};
-use crate::domain::trigger::{CronSpec, WebhookSpec};
+use crate::domain::caller::CallerContext;
+use crate::domain::ids::{AppId, PipelineId, ProjectId, TriggerId};
+use crate::domain::permission::Permission;
+use crate::domain::trigger::{CronSpec, TriggerName, TriggerSource, WebhookSpec};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::pipelines::PipelineBuilder;
 use crate::test_support::projects::ProjectBuilder;
 use crate::test_support::stubs::{CountingPolicy, OnePipeline, OneProject, StubHash, alice};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla_extension::Actions;
+use scylla_extension::{Actions, Deleted};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -145,7 +147,7 @@ impl CronSchedule for StubSchedule {
     }
 }
 
-/// Grants everything but `RunPipeline`: a trigger manager who may not run the pipeline.
+/// Grants everything but `runPipeline`: a trigger manager who may not run the pipeline.
 #[derive(Default)]
 struct NoRunPermissionService {
     inner: RecordingPermissionService,
@@ -154,7 +156,7 @@ struct NoRunPermissionService {
 #[async_trait]
 impl PermissionService for NoRunPermissionService {
     async fn check(&self, caller: &CallerContext, permission: Permission) -> DomainResult<()> {
-        let refused = matches!(permission, Permission::RunPipeline(_));
+        let refused = permission.key() == "runPipeline";
         self.inner.check(caller, permission).await?;
         if refused {
             return Err(DomainError::forbidden("no run rights"));
@@ -174,6 +176,27 @@ struct Lab {
 impl Lab {
     async fn create(&self, source: TriggerSource) -> DomainResult<(Trigger, Option<String>)> {
         self.actions.run(&self.uc, &alice(), create(source)).await
+    }
+
+    async fn update(&self, id: &TriggerId) -> DomainResult<Trigger> {
+        self.actions
+            .run(
+                &self.uc,
+                &alice(),
+                UpdateTrigger {
+                    id: id.clone(),
+                    name: TriggerName::new("hourly").unwrap(),
+                    source: cron(),
+                    inputs: Vec::new(),
+                },
+            )
+            .await
+    }
+
+    async fn delete(&self, id: &TriggerId) -> DomainResult<Deleted<Trigger>> {
+        self.actions
+            .run(&self.uc, &alice(), DeleteTrigger { id: id.clone() })
+            .await
     }
 
     fn seed(&self) -> Trigger {
@@ -368,28 +391,43 @@ async fn a_pipeline_list_checks_manage_triggers() {
 }
 
 #[tokio::test]
-async fn an_update_checks_manage_and_run_on_the_loaded_triggers_pipeline() {
+async fn a_get_checks_manage_on_the_trigger() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let seeded = lab.seed();
 
-    let updated = lab
-        .uc
-        .update(
+    let trigger = lab
+        .actions
+        .run(
+            &lab.uc,
             &alice(),
-            seeded.id(),
-            TriggerName::new("hourly").unwrap(),
-            cron(),
-            Vec::new(),
+            GetTrigger {
+                id: seeded.id().clone(),
+            },
         )
         .await
         .unwrap();
 
+    assert_eq!(trigger.id(), seeded.id());
+    assert_eq!(
+        permissions.permissions(),
+        vec![Permission::ManageTrigger(seeded.id().clone())]
+    );
+}
+
+#[tokio::test]
+async fn an_update_checks_manage_and_run_on_the_trigger() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(permissions.clone());
+    let seeded = lab.seed();
+
+    let updated = lab.update(seeded.id()).await.unwrap();
+
     assert_eq!(
         permissions.permissions(),
         vec![
-            Permission::ManageTriggers(pipeline_id()),
-            Permission::RunPipeline(pipeline_id()),
+            Permission::ManageTrigger(seeded.id().clone()),
+            Permission::RunTriggerPipeline(seeded.id().clone()),
         ]
     );
     assert_eq!(updated.name().as_str(), "hourly");
@@ -397,25 +435,65 @@ async fn an_update_checks_manage_and_run_on_the_loaded_triggers_pipeline() {
 }
 
 #[tokio::test]
-async fn a_disable_then_a_delete_check_manage_triggers() {
+async fn a_manager_without_run_rights_cannot_update_a_trigger() {
+    let lab = lab(Arc::new(NoRunPermissionService::default()));
+    let seeded = lab.seed();
+
+    let err = lab.update(seeded.id()).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    let rows = lab.triggers.rows.lock().unwrap();
+    assert_eq!(rows[seeded.id()].0.name().as_str(), "nightly");
+}
+
+#[tokio::test]
+async fn a_disable_then_a_delete_check_manage_on_the_trigger() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let seeded = lab.seed();
 
     let disabled = lab
-        .uc
-        .set_enabled(&alice(), seeded.id(), false)
+        .actions
+        .run(
+            &lab.uc,
+            &alice(),
+            SetTriggerEnabled {
+                id: seeded.id().clone(),
+                enabled: false,
+            },
+        )
         .await
         .unwrap();
-    lab.uc.delete(&alice(), seeded.id()).await.unwrap();
+    let deleted = lab.delete(seeded.id()).await.unwrap();
 
     assert!(!disabled.is_enabled());
+    assert_eq!(deleted.last_state().id(), seeded.id());
     assert_eq!(
         permissions.permissions(),
         vec![
-            Permission::ManageTriggers(pipeline_id()),
-            Permission::ManageTriggers(pipeline_id()),
+            Permission::ManageTrigger(seeded.id().clone()),
+            Permission::ManageTrigger(seeded.id().clone()),
         ]
     );
     assert!(lab.triggers.rows.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn a_denied_delete_never_reads_or_removes() {
+    let lab = lab(Arc::new(DenyingPermissionService::new()));
+    let seeded = lab.seed();
+
+    let err = lab.delete(seeded.id()).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert!(lab.triggers.rows.lock().unwrap().contains_key(seeded.id()));
+}
+
+#[tokio::test]
+async fn an_allowed_action_on_an_unknown_trigger_is_not_found() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    let err = lab.delete(&TriggerId::new("missing")).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::NotFound { .. }));
 }

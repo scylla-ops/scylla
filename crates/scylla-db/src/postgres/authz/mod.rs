@@ -99,6 +99,28 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                     None => Ok(ResourceAncestors::default()),
                 }
             }
+            ResourceRef::Trigger(id) => {
+                let row = sqlx::query!(
+                    "SELECT t.pipeline_id AS \"pipeline_id!\", pl.project_id AS \"project_id!\", \
+                            pr.organization_id AS \"organization_id!\" \
+                     FROM pipeline_triggers t \
+                     JOIN pipelines pl ON pl.id = t.pipeline_id \
+                     JOIN projects pr ON pr.id = pl.project_id \
+                     WHERE t.id = $1",
+                    id.as_str(),
+                )
+                .fetch_optional(&self.pool)
+                .await
+                .to_domain()?;
+                match row {
+                    Some(r) => Ok(ResourceAncestors {
+                        organization: Some(OrganizationId::new(r.organization_id)),
+                        project: Some(ProjectId::new(r.project_id)),
+                        pipeline: Some(PipelineId::new(r.pipeline_id)),
+                    }),
+                    None => Ok(ResourceAncestors::default()),
+                }
+            }
             ResourceRef::App(id) => {
                 let row = sqlx::query!(
                     "SELECT organization_id FROM apps WHERE id = $1",

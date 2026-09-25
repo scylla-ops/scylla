@@ -282,7 +282,6 @@ pub(crate) async fn init_services(
         app_repo.clone(),
         pipeline_uc.clone(),
         dispatch_uc.clone(),
-        permission_checker.clone(),
     ));
     let webhook_ingress_uc = Arc::new(WebhookIngressUseCases::new(
         trigger_repo.clone(),

@@ -3,12 +3,12 @@
 
 use super::TriggerUseCases;
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::{OrganizationId, PipelineId};
+use crate::domain::ids::{OrganizationId, PipelineId, TriggerId};
 use crate::domain::permission::Permission;
 use crate::domain::trigger::{Trigger, TriggerInput, TriggerName, TriggerSource};
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 use uuid::Uuid;
 
@@ -97,6 +97,137 @@ impl Run<Persist<CreateTrigger>> for TriggerUseCases {
                     .create(&trigger, webhook_secret_enc.as_deref())
                     .await?;
                 Ok((stored, webhook_secret))
+            })
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct UpdateTrigger {
+    pub id: TriggerId,
+    pub name: TriggerName,
+    pub source: TriggerSource,
+    pub inputs: Vec<TriggerInput>,
+}
+
+impl Describe for UpdateTrigger {
+    fn permission(&self) -> Permission {
+        Permission::ManageTrigger(self.id.clone())
+    }
+}
+
+impl Command for UpdateTrigger {
+    type Staged = Draft<Trigger>;
+    type Committed = Trigger;
+}
+
+#[async_trait]
+impl Run<Prepare<UpdateTrigger>> for TriggerUseCases {
+    // Anti-escalation, as for a create: it refuses, so it runs before anything is read.
+    async fn run(&self, input: Authorized<UpdateTrigger>) -> DomainResult<Prepared<UpdateTrigger>> {
+        let cmd = input.command();
+        self.permission_service
+            .check(
+                input.caller(),
+                Permission::RunTriggerPipeline(cmd.id.clone()),
+            )
+            .await?;
+        let mut trigger = self.trigger_repo.find_by_id(&cmd.id).await?;
+        trigger.update(cmd.name.clone(), cmd.source.clone(), cmd.inputs.clone())?;
+        // Re-anchor from now so a changed expression takes effect at once.
+        self.schedule_next(&mut trigger)?;
+        Ok(input.prepared(Draft::new(trigger)))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<UpdateTrigger>> for TriggerUseCases {
+    async fn run(&self, input: Prepared<UpdateTrigger>) -> DomainResult<Committed<UpdateTrigger>> {
+        input
+            .commit(async |draft| self.trigger_repo.update(&draft.into_inner()).await)
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct SetTriggerEnabled {
+    pub id: TriggerId,
+    pub enabled: bool,
+}
+
+impl Describe for SetTriggerEnabled {
+    fn permission(&self) -> Permission {
+        Permission::ManageTrigger(self.id.clone())
+    }
+}
+
+impl Command for SetTriggerEnabled {
+    type Staged = Draft<Trigger>;
+    type Committed = Trigger;
+}
+
+#[async_trait]
+impl Run<Prepare<SetTriggerEnabled>> for TriggerUseCases {
+    async fn run(
+        &self,
+        input: Authorized<SetTriggerEnabled>,
+    ) -> DomainResult<Prepared<SetTriggerEnabled>> {
+        let cmd = input.command();
+        let mut trigger = self.trigger_repo.find_by_id(&cmd.id).await?;
+        // Re-anchor from now: no catch-up fire at a stale past time.
+        if cmd.enabled {
+            trigger.enable();
+            self.schedule_next(&mut trigger)?;
+        } else {
+            trigger.disable();
+        }
+        Ok(input.prepared(Draft::new(trigger)))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<SetTriggerEnabled>> for TriggerUseCases {
+    async fn run(
+        &self,
+        input: Prepared<SetTriggerEnabled>,
+    ) -> DomainResult<Committed<SetTriggerEnabled>> {
+        input
+            .commit(async |draft| self.trigger_repo.update(&draft.into_inner()).await)
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct DeleteTrigger {
+    pub id: TriggerId,
+}
+
+impl Describe for DeleteTrigger {
+    fn permission(&self) -> Permission {
+        Permission::ManageTrigger(self.id.clone())
+    }
+}
+
+impl Command for DeleteTrigger {
+    type Staged = Trigger;
+    type Committed = Deleted<Trigger>;
+}
+
+#[async_trait]
+impl Run<Prepare<DeleteTrigger>> for TriggerUseCases {
+    async fn run(&self, input: Authorized<DeleteTrigger>) -> DomainResult<Prepared<DeleteTrigger>> {
+        let trigger = self.trigger_repo.find_by_id(&input.command().id).await?;
+        Ok(input.prepared(trigger))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<DeleteTrigger>> for TriggerUseCases {
+    async fn run(&self, input: Prepared<DeleteTrigger>) -> DomainResult<Committed<DeleteTrigger>> {
+        input
+            .commit(async |trigger| {
+                self.trigger_repo.delete(trigger.id()).await?;
+                Ok(Deleted::new(trigger))
             })
             .await
     }

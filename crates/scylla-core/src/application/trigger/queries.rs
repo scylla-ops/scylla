@@ -3,11 +3,34 @@
 
 use super::TriggerUseCases;
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::PipelineId;
+use crate::domain::ids::{PipelineId, TriggerId};
 use crate::domain::permission::Permission;
 use crate::domain::trigger::Trigger;
 use async_trait::async_trait;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+
+#[derive(Debug)]
+pub struct GetTrigger {
+    pub id: TriggerId,
+}
+
+impl Describe for GetTrigger {
+    fn permission(&self) -> Permission {
+        Permission::ManageTrigger(self.id.clone())
+    }
+}
+
+impl Query for GetTrigger {
+    type Output = Trigger;
+}
+
+#[async_trait]
+impl Run<Fetch<GetTrigger>> for TriggerUseCases {
+    async fn run(&self, input: Authorized<GetTrigger>) -> DomainResult<Fetched<GetTrigger>> {
+        let trigger = self.trigger_repo.find_by_id(&input.command().id).await?;
+        Ok(input.fetched(trigger))
+    }
+}
 
 #[derive(Debug)]
 pub struct ListPipelineTriggers {

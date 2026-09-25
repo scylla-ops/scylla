@@ -36,14 +36,19 @@ disagree with itself about who is where.
 
 ## Items inside a project
 
-Pipelines, jobs and secrets are not scopes. You cannot grant a role on them. A
-check on one of these items finds the project that holds the item, and then
-applies the rule above to that project.
+Pipelines, jobs, triggers and secrets are not scopes. You cannot grant a role
+on them. A check on one of these items finds the project that holds the item,
+and then applies the rule above to that project.
 
-A check on an unknown secret finds no project. Only a System grant reaches it.
-Thus a caller without a System grant gets "forbidden" for an unknown secret,
-and does not learn if the secret exists. A caller with a System grant gets
-"not found".
+A check on one trigger uses the permissions of its pipeline: `manageTriggers`
+to read, change, enable, disable or delete it, and `runPipeline` to fire it
+now. A change also needs `runPipeline`. Thus the roles that give these
+permissions on the pipeline also give them on its triggers.
+
+A check on an unknown secret or trigger finds no project. Only a System grant
+reaches it. Thus a caller without a System grant gets "forbidden" for an
+unknown secret or trigger, and does not learn if it exists. A caller with a
+System grant gets "not found".
 
 ## Being somewhere
 

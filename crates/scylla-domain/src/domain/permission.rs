@@ -2,7 +2,9 @@ mod resource_ref;
 
 pub use resource_ref::*;
 
-use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId, SecretId, UserId};
+use crate::domain::ids::{
+    AppId, JobId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
+};
 use std::sync::LazyLock;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +42,10 @@ pub enum Permission {
     ExecuteJob(PipelineId),
     /// Does not confer `RunPipeline`.
     ManageTriggers(PipelineId),
+    /// `manageTriggers` on the trigger's pipeline. Shares its key, so it is not in the catalog.
+    ManageTrigger(TriggerId),
+    /// `runPipeline` on the trigger's pipeline. Shares its key, so it is not in the catalog.
+    RunTriggerPipeline(TriggerId),
     ListPipelines,
     ListPipelinesByProject(ProjectId),
     ListPipelinesByOrganization(OrganizationId),
@@ -109,9 +115,9 @@ impl Permission {
             Self::ReadPipeline(_) => "readPipeline",
             Self::UpdatePipeline(_) => "updatePipeline",
             Self::DeletePipeline(_) => "deletePipeline",
-            Self::RunPipeline(_) => "runPipeline",
+            Self::RunPipeline(_) | Self::RunTriggerPipeline(_) => "runPipeline",
             Self::ExecuteJob(_) => "executeJob",
-            Self::ManageTriggers(_) => "manageTriggers",
+            Self::ManageTriggers(_) | Self::ManageTrigger(_) => "manageTriggers",
             Self::ListPipelines => "listPipelines",
             Self::ListPipelinesByProject(_) => "listPipelinesByProject",
             Self::ListPipelinesByOrganization(_) => "listPipelinesByOrganization",
@@ -214,6 +220,10 @@ impl Permission {
 
             Self::DeleteSecret(id) => ResourceRef::Secret(id.clone()),
 
+            Self::ManageTrigger(id) | Self::RunTriggerPipeline(id) => {
+                ResourceRef::Trigger(id.clone())
+            }
+
             Self::ReadApp(id) | Self::ReadAppStats(id) | Self::DeleteApp(id) => {
                 ResourceRef::App(id.clone())
             }
@@ -234,6 +244,7 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "pipeline",
     "job",
     "secret",
+    "trigger",
     "app",
 ];
 
@@ -328,7 +339,10 @@ pub fn permission_resource_type(key: &str) -> Option<&'static str> {
 
 #[cfg(test)]
 mod catalog_tests {
-    use super::{PERMISSION_CATALOG, RESOURCE_TYPES, catalog_variants};
+    use super::{
+        PERMISSION_CATALOG, Permission, RESOURCE_TYPES, catalog_variants, is_known_permission,
+    };
+    use crate::domain::ids::TriggerId;
     use std::collections::HashSet;
 
     #[test]
@@ -345,5 +359,16 @@ mod catalog_tests {
             );
         }
         assert_eq!(PERMISSION_CATALOG.len(), catalog_variants().len());
+    }
+
+    #[test]
+    fn trigger_permissions_reuse_catalog_keys() {
+        let trigger = TriggerId::new("_");
+        for permission in [
+            Permission::ManageTrigger(trigger.clone()),
+            Permission::RunTriggerPipeline(trigger),
+        ] {
+            assert!(is_known_permission(permission.key()));
+        }
     }
 }

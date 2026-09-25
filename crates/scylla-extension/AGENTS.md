@@ -483,13 +483,22 @@ the row is still in the state the gate saw.
   `Forbidden`; with a System grant, `Prepare` gives `NotFound`. An action whose
   permission is on a parent that only the loaded row knows can use the same
   method.
-- `TriggerUseCases::get`, `update`, `set_enabled` and `delete`, and
-  `TriggerFireUseCases::fire_now`, stay outside the pipeline. Their permission
-  is on the trigger's pipeline, and only the loaded trigger knows that pipeline.
-- `CreateTrigger` asks for `RunPipeline` a second time in its `Prepare` runner.
-  This check refuses: managing triggers must not give run rights. A `Policy` on
-  `Prepare` therefore runs before it. The runner app of the organization is
-  provisioned in `Persist`, next to the trigger write.
+- `GetTrigger`, `UpdateTrigger`, `SetTriggerEnabled`, `DeleteTrigger` and
+  `FireTriggerNow` use the same method: they ask for their permission on the
+  trigger (`ResourceRef::Trigger`, one join to the pipeline). `ManageTrigger`
+  and `RunTriggerPipeline` have the keys `manageTriggers` and `runPipeline`, so
+  the same roles give them. They are not in the permission catalog, because a
+  key is there one time only. `CreateTrigger` and `ListPipelineTriggers` keep
+  `ManageTriggers` on the pipeline.
+- `CreateTrigger` asks for `RunPipeline` a second time in its `Prepare` runner,
+  and `UpdateTrigger` asks for `RunTriggerPipeline`. This check refuses:
+  managing triggers must not give run rights. A `Policy` on `Prepare`
+  therefore runs before it. The runner app of the organization is provisioned
+  in `Persist`, next to the trigger write.
+- `FireTriggerNow` fires in its `commit` closure as the trigger-runner App,
+  through `run_with_inputs`, as a scheduled fire does. `TriggerFireUseCases::fire`
+  (the scheduler and the webhook ingress) stays outside the pipeline: it runs
+  as the server, not for a caller.
 - `PipelineUseCases::run_with_inputs` and `assign_agent` stay outside the
   pipeline. A trigger fire calls them as the trigger-runner App, with an origin
   and inputs that no RPC sends. `RunPipeline` is the RPC path; the handler then

@@ -205,8 +205,9 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
 
         let leaf_parent = match resource {
             ResourceRef::Job(_) => pipeline_uid.as_ref(),
-            // An unknown secret sits under System: only a System grant reaches it, and the use case answers NotFound.
+            // An unknown secret or trigger sits under System: only a System grant reaches it, and the use case answers NotFound.
             ResourceRef::Secret(_) => project_uid.as_ref().or(Some(&system_uid)),
+            ResourceRef::Trigger(_) => pipeline_uid.as_ref().or(Some(&system_uid)),
             ResourceRef::Pipeline(_) => project_uid.as_ref(),
             ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
             // A user's parent is System too: without it a System grant stops reaching user-targeted actions.
@@ -391,7 +392,9 @@ mod tests {
     };
     use crate::authz::role::FULL_CONTROL;
     use crate::domain::caller::ServiceIdentity;
-    use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, SecretId, UserId};
+    use crate::domain::ids::{
+        AppId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
+    };
     use crate::domain::role::RoleName;
 
     /// Must match the seed migration: the templates are generated from these.
@@ -1271,6 +1274,88 @@ mod tests {
         assert!(
             system
                 .check(&CallerContext::User(UserId::new("u-admin")), delete())
+                .await
+                .is_ok()
+        );
+    }
+
+    fn trigger_in(project: &str) -> ResourceAncestors {
+        ResourceAncestors {
+            organization: Some(OrganizationId::new("o1")),
+            project: Some(ProjectId::new(project)),
+            pipeline: Some(PipelineId::new(format!("{project}-pl"))),
+        }
+    }
+
+    #[tokio::test]
+    async fn a_trigger_action_is_reached_through_the_trigger_pipeline_project() {
+        let caller = CallerContext::User(UserId::new("u1"));
+        let manage = || Permission::ManageTrigger(TriggerId::new("t1"));
+        let run = || Permission::RunTriggerPipeline(TriggerId::new("t1"));
+
+        let own = service(trigger_in("p1"), project_admin()).await;
+        assert!(own.check(&caller, manage()).await.is_ok());
+        assert!(own.check(&caller, run()).await.is_ok());
+
+        let other = service(trigger_in("p2"), project_admin()).await;
+        assert!(other.check(&caller, manage()).await.is_err());
+        assert!(other.check(&caller, run()).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn a_trigger_action_keeps_the_pipeline_action_roles() {
+        let developer = service(
+            trigger_in("p1"),
+            vec![Grant::new(
+                Principal::User(UserId::new("u1")),
+                role(PROJECT_DEVELOPER_ROLE),
+                Scope::Project(ProjectId::new("p1")),
+            )],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("u1"));
+        assert!(
+            developer
+                .check(
+                    &caller,
+                    Permission::RunTriggerPipeline(TriggerId::new("t1"))
+                )
+                .await
+                .is_ok()
+        );
+        assert!(
+            developer
+                .check(&caller, Permission::ManageTrigger(TriggerId::new("t1")))
+                .await
+                .is_err(),
+            "runPipeline does not confer manageTriggers"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_unknown_trigger_is_reached_only_by_a_system_grant() {
+        let manage = || Permission::ManageTrigger(TriggerId::new("missing"));
+
+        let project = service(ResourceAncestors::default(), project_admin()).await;
+        assert!(
+            project
+                .check(&CallerContext::User(UserId::new("u1")), manage())
+                .await
+                .is_err()
+        );
+
+        let system = service(
+            ResourceAncestors::default(),
+            vec![Grant::new(
+                Principal::User(UserId::new("u-admin")),
+                role(SYSTEM_ADMIN_ROLE),
+                Scope::System,
+            )],
+        )
+        .await;
+        assert!(
+            system
+                .check(&CallerContext::User(UserId::new("u-admin")), manage())
                 .await
                 .is_ok()
         );

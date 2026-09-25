@@ -14,32 +14,33 @@ import "scylla/common/v1/common.proto";
 // grants runPipeline only. The first CreateTrigger in an organization
 // provisions it.
 //
-// An RPC that takes a `trigger_id` looks the trigger up before it checks
-// the permission. An unknown id therefore fails with NOT_FOUND, also for a
-// caller without the permission.
+// An RPC that takes a `trigger_id` checks the permission on the trigger; a
+// grant on the trigger's project reaches it. An unknown trigger_id has no
+// project: it fails with PERMISSION_DENIED, and with NOT_FOUND only for a
+// System grant.
 service TriggerService {
   // Requires `manageTriggers` and `runPipeline` on `pipeline_id`. The new
   // trigger is enabled. A webhook secret is returned only here.
   rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse);
-  // Requires `manageTriggers` on the trigger's pipeline.
+  // Requires `manageTriggers` on the trigger.
   rpc GetTrigger(GetTriggerRequest) returns (GetTriggerResponse);
-  // Requires `manageTriggers` and `runPipeline` on the trigger's pipeline.
+  // Requires `manageTriggers` and `runPipeline` on the trigger.
   // Replaces name, source spec and inputs, not the enabled state. The source
   // kind cannot change: the other kind fails with FAILED_PRECONDITION; delete
   // and recreate instead. A cron source's next occurrence is recomputed from
   // now; a webhook's signing secret is kept.
   rpc UpdateTrigger(UpdateTriggerRequest) returns (UpdateTriggerResponse);
-  // Requires `manageTriggers` on the trigger's pipeline.
+  // Requires `manageTriggers` on the trigger.
   rpc DeleteTrigger(DeleteTriggerRequest) returns (DeleteTriggerResponse);
   // Requires `manageTriggers` on `pipeline_id`. Every trigger, oldest first,
   // no pagination.
   rpc ListPipelineTriggers(ListPipelineTriggersRequest) returns (ListPipelineTriggersResponse);
-  // Requires `manageTriggers` on the trigger's pipeline. A disabled trigger
+  // Requires `manageTriggers` on the trigger. A disabled trigger
   // never fires and its webhook URL answers 404, as for an unknown id.
   // Re-enabling a cron trigger schedules the next occurrence from now;
   // occurrences missed while disabled do not fire.
   rpc SetTriggerEnabled(SetTriggerEnabledRequest) returns (SetTriggerEnabledResponse);
-  // Requires `runPipeline` on the trigger's pipeline. Mints and dispatches a
+  // Requires `runPipeline` on the trigger. Mints and dispatches a
   // Job like a real fire and records a FireObservation, ignoring the cron
   // schedule and without a signed delivery. There is no payload, so
   // json_pointer inputs are skipped. A disabled trigger fails with

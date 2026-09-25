@@ -1,7 +1,7 @@
 // scylla — Cedar schema (V1). Validated against policies at startup.
 //
 // Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization,
-// Job ∈ Pipeline and Secret ∈ Project. Principals carry no attributes: what
+// Job ∈ Pipeline, Trigger ∈ Pipeline and Secret ∈ Project. Principals carry no attributes: what
 // someone may do comes entirely from the grants linked into the policy set.
 // Actions are fine-grained (one per use-case operation) so `appliesTo` pins the
 // resource type and policies stay readable.
@@ -24,6 +24,8 @@ namespace Scylla {
     entity Job in [Pipeline];
     // An unknown secret sits under System, so only a System grant reaches it.
     entity Secret in [Project, System];
+    // Same for an unknown trigger.
+    entity Trigger in [Pipeline, System];
 
     // Users are also `in [System]` so a System-scoped grant (system-admin)
     // reaches User-targeted actions (read/update/delete user) — without it,
@@ -76,13 +78,20 @@ namespace Scylla {
         appliesTo { principal: [User, Service], resource: [Project] };
 
     // ── Pipeline-targeted ──────────────────────────────────────────────
-    action "updatePipeline", "deletePipeline", "manageTriggers",
-           "listJobsByPipeline"
+    action "updatePipeline", "deletePipeline", "listJobsByPipeline"
         appliesTo { principal: [User, Service], resource: [Pipeline] };
-    // Also grantable to Apps: agents read the pipeline + execute its jobs; a
-    // trigger-runner App runs the pipeline (runPipeline) when a trigger fires.
-    action "readPipeline", "executeJob", "runPipeline"
+    // Also grantable to Apps: agents read the pipeline + execute its jobs.
+    action "readPipeline", "executeJob"
         appliesTo { principal: [User, Service, App], resource: [Pipeline] };
+
+    // ── Pipeline- or trigger-targeted ──────────────────────────────────
+    // An action on one trigger is checked on the trigger, which is in its
+    // pipeline, so a grant on the pipeline's project reaches it. A
+    // trigger-runner App runs the pipeline (runPipeline) when a trigger fires.
+    action "manageTriggers"
+        appliesTo { principal: [User, Service], resource: [Pipeline, Trigger] };
+    action "runPipeline"
+        appliesTo { principal: [User, Service, App], resource: [Pipeline, Trigger] };
 
     // ── Job-targeted ───────────────────────────────────────────────────
     action "readJob", "updateJob", "deleteJob", "readJobLogs", "writeJobLogs"

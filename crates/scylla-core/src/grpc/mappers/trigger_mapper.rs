@@ -1,6 +1,9 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
-use crate::application::trigger::{CreateTrigger, ListPipelineTriggers};
+use crate::application::trigger::{
+    CreateTrigger, DeleteTrigger, FireTriggerNow, GetTrigger, ListPipelineTriggers,
+    SetTriggerEnabled, UpdateTrigger,
+};
 use crate::grpc::convert::{Parse, id, ts, valid, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use scylla_domain::domain::pipeline::EnvKey;
@@ -9,10 +12,12 @@ use scylla_domain::domain::trigger::{
     TriggerName, TriggerSource, WebhookSpec,
 };
 use scylla_proto::trigger::v1::{
-    CreateTriggerRequest, CronSpec as ProtoCronSpec, FireObservation as ProtoFireObservation,
-    ListPipelineTriggersRequest, Trigger as ProtoTrigger, TriggerInput as ProtoTriggerInput,
-    WebhookSpec as ProtoWebhookSpec, create_trigger_request, fire_observation,
-    trigger as proto_trigger, trigger_input, update_trigger_request,
+    CreateTriggerRequest, CronSpec as ProtoCronSpec, DeleteTriggerRequest,
+    FireObservation as ProtoFireObservation, FireTriggerNowRequest, GetTriggerRequest,
+    ListPipelineTriggersRequest, SetTriggerEnabledRequest, Trigger as ProtoTrigger,
+    TriggerInput as ProtoTriggerInput, UpdateTriggerRequest, WebhookSpec as ProtoWebhookSpec,
+    create_trigger_request, fire_observation, trigger as proto_trigger, trigger_input,
+    update_trigger_request,
 };
 use tonic::Status;
 
@@ -29,7 +34,31 @@ impl Parse for CreateTriggerRequest {
     }
 }
 
+impl Parse for UpdateTriggerRequest {
+    type Into = UpdateTrigger;
+
+    fn parse(self) -> Result<UpdateTrigger, Status> {
+        Ok(UpdateTrigger {
+            id: id(self.trigger_id, "trigger_id")?,
+            name: valid(
+                self.name
+                    .ok_or_else(|| Status::invalid_argument("missing name"))?,
+                TriggerName::new,
+            )?,
+            source: update_source_to_domain(self.source)?,
+            inputs: proto_inputs_to_domain(self.inputs)?,
+        })
+    }
+}
+
+parse!(GetTriggerRequest => GetTrigger { id: id(trigger_id) });
 parse!(ListPipelineTriggersRequest => ListPipelineTriggers { pipeline_id: id(pipeline_id) });
+parse!(SetTriggerEnabledRequest => SetTriggerEnabled {
+    id: id(trigger_id),
+    enabled: copy,
+});
+parse!(DeleteTriggerRequest => DeleteTrigger { id: id(trigger_id) });
+parse!(FireTriggerNowRequest => FireTriggerNow { id: id(trigger_id) });
 
 fn create_source_to_domain(
     source: Option<create_trigger_request::Source>,
@@ -43,7 +72,7 @@ fn create_source_to_domain(
     }
 }
 
-pub fn update_source_to_domain(
+fn update_source_to_domain(
     source: Option<update_trigger_request::Source>,
 ) -> Result<TriggerSource, Status> {
     match source {
@@ -66,7 +95,7 @@ fn webhook_to_domain(w: ProtoWebhookSpec) -> Result<TriggerSource, Status> {
     ))
 }
 
-pub fn proto_inputs_to_domain(inputs: Vec<ProtoTriggerInput>) -> Result<Vec<TriggerInput>, Status> {
+fn proto_inputs_to_domain(inputs: Vec<ProtoTriggerInput>) -> Result<Vec<TriggerInput>, Status> {
     inputs
         .into_iter()
         .map(|input| {
