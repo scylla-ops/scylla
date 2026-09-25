@@ -14,7 +14,7 @@ use uuid::Uuid;
 
 const DEFAULT_APP_TOKEN_DURATION_DAYS: i64 = 30;
 
-/// No `Debug`: `secret` is the credential.
+#[derive(Debug)]
 pub struct IssueAppToken {
     pub app_id: AppId,
     pub secret: AppSecret,

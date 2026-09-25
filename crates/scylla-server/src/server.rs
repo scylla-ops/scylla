@@ -114,6 +114,7 @@ impl Server {
 
         let ctx = Context {
             db: db.clone(),
+            actions: services.actions.clone(),
             permissions: services.permission_checker.clone(),
             policy_control: services.permission_checker.clone(),
             visibility: services.permission_checker.clone(),

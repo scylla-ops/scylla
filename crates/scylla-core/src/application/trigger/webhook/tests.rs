@@ -34,19 +34,19 @@ impl TriggerRepository for StubRepo {
         Ok(Some(KEY.as_bytes().to_vec()))
     }
     async fn create(&self, _: &Trigger, _: Option<&[u8]>) -> DomainResult<Trigger> {
-        unimplemented!()
+        unreachable!("no trigger create in a webhook ingest")
     }
     async fn update(&self, _: &Trigger) -> DomainResult<Trigger> {
-        unimplemented!()
+        unreachable!("no trigger update in a webhook ingest")
     }
     async fn delete(&self, _: &TriggerId) -> DomainResult<()> {
-        unimplemented!()
+        unreachable!("no trigger delete in a webhook ingest")
     }
     async fn list_by_pipeline(&self, _: &PipelineId) -> DomainResult<Vec<Trigger>> {
-        unimplemented!()
+        unreachable!("no trigger listing in a webhook ingest")
     }
     async fn list_unscheduled_cron(&self) -> DomainResult<Vec<Trigger>> {
-        unimplemented!()
+        unreachable!("no cron scheduling in a webhook ingest")
     }
     async fn claim_due_cron(
         &self,
@@ -54,7 +54,7 @@ impl TriggerRepository for StubRepo {
         _: i64,
         _: &(dyn for<'a> Fn(&'a Trigger) -> DomainResult<DateTime<Utc>> + Sync),
     ) -> DomainResult<Vec<Trigger>> {
-        unimplemented!()
+        unreachable!("no cron claim in a webhook ingest")
     }
 }
 
@@ -106,14 +106,14 @@ impl TriggerFiring for StubFiring {
     }
 }
 
-struct Harness {
+struct Lab {
     ingress: WebhookIngressUseCases,
     deliveries: Arc<StubDeliveries>,
     firing: Arc<StubFiring>,
     trigger_id: TriggerId,
 }
 
-impl Harness {
+impl Lab {
     async fn ingest(
         &self,
         signature: Option<&str>,
@@ -150,7 +150,7 @@ impl Harness {
     }
 }
 
-fn harness() -> Harness {
+fn lab() -> Lab {
     use crate::test_support::{
         jobs::job, organizations::org, pipelines::pipeline, projects::project,
     };
@@ -175,7 +175,7 @@ fn harness() -> Harness {
         Arc::new(PlainCipher),
         firing.clone(),
     );
-    Harness {
+    Lab {
         ingress,
         deliveries,
         firing,
@@ -185,7 +185,7 @@ fn harness() -> Harness {
 
 #[tokio::test]
 async fn signed_ping_answers_without_firing_or_recording() {
-    let h = harness();
+    let h = lab();
     let outcome = h
         .ingest(Some(SIG), Some("d-1"), Some("ping"))
         .await
@@ -197,7 +197,7 @@ async fn signed_ping_answers_without_firing_or_recording() {
 
 #[tokio::test]
 async fn ping_event_name_is_trimmed_and_case_insensitive() {
-    let h = harness();
+    let h = lab();
     let outcome = h.ingest(Some(SIG), None, Some(" Ping ")).await.unwrap();
     assert!(matches!(outcome, IngestOutcome::Ping));
     assert_eq!(*h.firing.fired.lock().unwrap(), 0);
@@ -205,7 +205,7 @@ async fn ping_event_name_is_trimmed_and_case_insensitive() {
 
 #[tokio::test]
 async fn mis_signed_ping_is_rejected_before_the_event_check() {
-    let h = harness();
+    let h = lab();
     let err = h
         .ingest(Some("sha256=00"), None, Some("ping"))
         .await
@@ -216,7 +216,7 @@ async fn mis_signed_ping_is_rejected_before_the_event_check() {
 
 #[tokio::test]
 async fn unsigned_ping_is_rejected_before_the_event_check() {
-    let h = harness();
+    let h = lab();
     let err = h.ingest(None, None, Some("ping")).await.unwrap_err();
     assert!(matches!(err, DomainError::Unauthorized(_)));
     assert_eq!(*h.firing.fired.lock().unwrap(), 0);
@@ -224,7 +224,7 @@ async fn unsigned_ping_is_rejected_before_the_event_check() {
 
 #[tokio::test]
 async fn other_events_and_no_event_still_fire() {
-    let h = harness();
+    let h = lab();
     let push = h
         .ingest(Some(SIG), Some("d-1"), Some("push"))
         .await
@@ -237,7 +237,7 @@ async fn other_events_and_no_event_still_fire() {
 
 #[tokio::test]
 async fn a_repeated_delivery_is_a_duplicate_and_fires_once() {
-    let h = harness();
+    let h = lab();
     h.ingest(Some(SIG), Some("d-1"), None).await.unwrap();
     let again = h.ingest(Some(SIG), Some(" d-1 "), None).await.unwrap();
     assert!(matches!(again, IngestOutcome::Duplicate));
@@ -246,7 +246,7 @@ async fn a_repeated_delivery_is_a_duplicate_and_fires_once() {
 
 #[tokio::test]
 async fn an_unknown_trigger_is_not_found_without_asking_a_permission() {
-    let h = harness();
+    let h = lab();
     let err = h
         .ingest_to(&TriggerId::new("missing"), Some(SIG), None, None)
         .await

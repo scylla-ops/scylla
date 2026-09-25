@@ -342,11 +342,6 @@ pub static PERMISSION_CATALOG: LazyLock<Vec<(&'static str, &'static str)>> = Laz
 });
 
 #[must_use]
-pub fn is_known_permission(key: &str) -> bool {
-    PERMISSION_CATALOG.iter().any(|(k, _)| *k == key)
-}
-
-#[must_use]
 pub fn permission_resource_type(key: &str) -> Option<&'static str> {
     PERMISSION_CATALOG
         .iter()
@@ -357,10 +352,14 @@ pub fn permission_resource_type(key: &str) -> Option<&'static str> {
 #[cfg(test)]
 mod catalog_tests {
     use super::{
-        PERMISSION_CATALOG, Permission, RESOURCE_TYPES, catalog_variants, is_known_permission,
+        PERMISSION_CATALOG, Permission, RESOURCE_TYPES, catalog_variants, permission_resource_type,
     };
     use crate::domain::ids::{AppCredentialId, GrantId, InvitationId, TriggerId};
     use std::collections::HashSet;
+
+    fn is_known_permission(key: &str) -> bool {
+        permission_resource_type(key).is_some()
+    }
 
     #[test]
     fn permission_catalog_is_consistent() {

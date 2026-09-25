@@ -77,7 +77,7 @@ mod tests {
         let pending = job(&pl);
         let job_id = pending.id().clone();
         let jobs = Arc::new(StubJobs::with(vec![pending]));
-        let registry = Arc::new(StubRegistry::default());
+        let registry = Arc::new(StubRegistry::accepting());
         registry.connect(&AppId::new("agent-1"));
 
         assert_eq!(
@@ -85,7 +85,7 @@ mod tests {
             1,
             "the one pending job is dispatched"
         );
-        assert_eq!(registry.dispatched(), vec![AppId::new("agent-1")]);
+        assert_eq!(registry.dispatched_to(), vec![AppId::new("agent-1")]);
         assert_eq!(jobs.assigned(), vec![(job_id, AppId::new("agent-1"))]);
     }
 

@@ -1,7 +1,7 @@
 //! The session's reads. One block per query: the struct, its access, its output, what `Fetch`
 //! reads.
 
-use super::AuthUseCases;
+use super::{AuthUseCases, SessionLookup, look_up_session};
 use crate::domain::errors::DomainResult;
 use async_trait::async_trait;
 use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
@@ -21,7 +21,7 @@ impl Query for ValidateToken {
     type Output = bool;
 }
 
-/// An expired session is deleted on the way, best-effort, as the interceptor does.
+/// A lookup that fails is an invalid token, not an error: the answer is `false`.
 #[async_trait]
 impl Run<Fetch<ValidateToken>> for AuthUseCases {
     async fn run(&self, input: Authorized<ValidateToken>) -> DomainResult<Fetched<ValidateToken>> {
@@ -29,14 +29,10 @@ impl Run<Fetch<ValidateToken>> for AuthUseCases {
         let valid = if token.is_empty() {
             false
         } else {
-            match self.session_repo.find_by_token(token).await {
-                Ok(session) if session.is_expired() => {
-                    let _ = self.session_repo.delete_by_token(token).await;
-                    false
-                }
-                Ok(_) => true,
-                Err(_) => false,
-            }
+            matches!(
+                look_up_session(&*self.session_repo, token).await,
+                Ok(SessionLookup::Live(_))
+            )
         };
         Ok(input.fetched(valid))
     }

@@ -10,8 +10,8 @@ use scylla_core::application::{
     InvitationAcceptUseCases, InvitationUseCases, JobLogUseCases, JobReaper, JobUseCases, Mailer,
     NoopMailer, OAuthUseCases, OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer,
     PipelineUseCases, ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
-    TriggerCronScheduler, TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerUseCases,
-    UserUseCases, WebhookIngressUseCases,
+    SessionSweeper, TriggerCronScheduler, TriggerFireUseCases, TriggerFirer, TriggerFiring,
+    TriggerUseCases, UserUseCases, WebhookIngressUseCases,
 };
 use scylla_core::config::ControlPlaneConfig;
 use scylla_core::error::StartupError;
@@ -257,6 +257,7 @@ pub(crate) async fn init_services(
     let job_log_uc = Arc::new(JobLogUseCases::new(
         job_log_repo.clone(),
         job_log_stream.clone(),
+        job_repo.clone(),
     ));
     let trigger_repo = Arc::new(PgTriggerRepository::new(db.clone()));
     let trigger_delivery_repo = Arc::new(PgTriggerDeliveryRepository::new(db.clone()));
@@ -276,10 +277,7 @@ pub(crate) async fn init_services(
         trigger_uc.clone(),
         pipeline_uc.clone(),
     ));
-    let trigger_fire_uc = Arc::new(TriggerFireUseCases::new(
-        trigger_repo.clone(),
-        firing.clone(),
-    ));
+    let trigger_fire_uc = Arc::new(TriggerFireUseCases::new(firing.clone()));
     let webhook_ingress_uc = Arc::new(WebhookIngressUseCases::new(
         trigger_repo.clone(),
         trigger_delivery_repo.clone(),
@@ -328,6 +326,18 @@ pub(crate) async fn init_services(
             loop {
                 tick.tick().await;
                 reaper.reap(&registry.connected()).await;
+            }
+        });
+    }
+
+    {
+        let sweeper = SessionSweeper::new(actions.clone(), auth_uc.clone());
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(3600));
+            tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tick.tick().await;
+                sweeper.sweep().await;
             }
         });
     }
@@ -504,12 +514,12 @@ where
     let app_auth_handler =
         AppAuthHandler::new(services.actions.clone(), services.app_token_uc.clone());
     let agent_handler = AgentHandler::new(
-        services.agent_registry.clone(),
-        services.job_log_stream.clone(),
         services.actions.clone(),
         services.job_uc.clone(),
         services.job_log_uc.clone(),
         services.agent_uc.clone(),
+        services.agent_registry.clone(),
+        services.job_log_stream.clone(),
         services.pending_signal.clone(),
     );
     let agent_admin_handler =

@@ -34,6 +34,12 @@ pub struct NewTrigger {
     pub webhook_secret_enc: Option<Vec<u8>>,
 }
 
+/// No `Debug`: `webhook_secret` is the plaintext the caller sees once.
+pub struct CreatedTrigger {
+    pub trigger: Trigger,
+    pub webhook_secret: Option<String>,
+}
+
 // Managing triggers must not give run rights, so a create and an update also ask for them.
 impl Describe for CreateTrigger {
     fn access(&self) -> Access {
@@ -46,7 +52,7 @@ impl Describe for CreateTrigger {
 
 impl Command for CreateTrigger {
     type Staged = Draft<NewTrigger>;
-    type Committed = (Trigger, Option<String>);
+    type Committed = CreatedTrigger;
 }
 
 #[async_trait]
@@ -97,7 +103,10 @@ impl Run<Persist<CreateTrigger>> for TriggerUseCases {
                     .trigger_repo
                     .create(&trigger, webhook_secret_enc.as_deref())
                     .await?;
-                Ok((stored, webhook_secret))
+                Ok(CreatedTrigger {
+                    trigger: stored,
+                    webhook_secret,
+                })
             })
             .await
     }
@@ -286,7 +295,7 @@ impl Describe for ScheduleCronTriggers {
 }
 
 impl Command for ScheduleCronTriggers {
-    type Staged = Vec<Trigger>;
+    type Staged = Draft<Vec<Trigger>>;
     type Committed = Vec<Trigger>;
 }
 
@@ -310,7 +319,7 @@ impl Run<Prepare<ScheduleCronTriggers>> for TriggerUseCases {
                 }
             }
         }
-        Ok(input.prepared(staged))
+        Ok(input.prepared(Draft::new(staged)))
     }
 }
 
@@ -321,7 +330,8 @@ impl Run<Persist<ScheduleCronTriggers>> for TriggerUseCases {
         input: Prepared<ScheduleCronTriggers>,
     ) -> DomainResult<Committed<ScheduleCronTriggers>> {
         input
-            .commit(async |staged| {
+            .commit(async |draft| {
+                let staged = draft.into_inner();
                 let mut scheduled = Vec::with_capacity(staged.len());
                 for trigger in staged {
                     match self.trigger_repo.update(&trigger).await {

@@ -28,7 +28,8 @@ service JobService {
   // new lines as the agent reports them, none twice. The stream ends when
   // the agent reports the job complete or failed. A call made after that,
   // or before an agent starts the job, ends after the replay. A slow reader
-  // can miss live lines; ListJobLogs holds the full record.
+  // can miss live lines; ListJobLogs holds the full record. With `node_id`
+  // set, a node that has not started replays no stored line.
   rpc TailJobLogs(TailJobLogsRequest) returns (stream TailJobLogsResponse);
 }
 

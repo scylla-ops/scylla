@@ -2,8 +2,8 @@
 //! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::PipelineUseCases;
-use crate::domain::caller::CallerContext;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::application::actions::user_or_app;
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::{PipelineId, ProjectId};
 use crate::domain::job::{Job, JobOrigin};
 use crate::domain::permission::Permission;
@@ -169,19 +169,7 @@ impl Command for RunPipeline {
 #[async_trait]
 impl Run<Prepare<RunPipeline>> for PipelineUseCases {
     async fn run(&self, input: Authorized<RunPipeline>) -> DomainResult<Prepared<RunPipeline>> {
-        let origin = match input.caller() {
-            CallerContext::User(user_id) => JobOrigin::Human {
-                user_id: user_id.clone(),
-            },
-            CallerContext::App(app_id) => JobOrigin::App {
-                app_id: app_id.clone(),
-            },
-            CallerContext::Service(_) | CallerContext::Anonymous => {
-                return Err(DomainError::forbidden(
-                    "only a user or app can run a pipeline directly",
-                ));
-            }
-        };
+        let origin = user_or_app(input.caller())?;
         let pipeline = self.pipeline_repo.find_by_id(&input.command().id).await?;
         let job = Job::create_from_pipeline(&pipeline, origin).with_inputs(Vec::new());
         Ok(input.prepared(Draft::new(job)))

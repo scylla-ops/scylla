@@ -36,8 +36,8 @@ pub trait Wrap<S: Stage>: Send + Sync {
 }
 
 /// A typed side effect after one stage of one command succeeded: a notification, a cache
-/// invalidation. It runs before `send` returns, outside any transaction, and cannot fail the
-/// action; it logs and returns.
+/// invalidation. It runs before `Actions::run` returns, outside any transaction, and cannot
+/// fail the action; it logs and returns.
 #[async_trait]
 pub trait Listener<S: Stage>: Send + Sync {
     async fn listen(&self, output: &S::Out);

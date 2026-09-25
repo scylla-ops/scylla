@@ -52,6 +52,13 @@ impl ServiceIdentity {
     }
 
     #[must_use]
+    pub fn session_sweeper() -> Self {
+        Self {
+            name: "session-sweeper",
+        }
+    }
+
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         self.name
     }

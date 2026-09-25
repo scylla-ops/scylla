@@ -2,11 +2,11 @@
 
 Every write in Scylla is a command that moves through three typed stages,
 every read is a query that moves through two, and an extension attaches to
-each stage. This crate holds the pipeline. It depends
-on `scylla-domain` and nothing else: no access model, no database, no gRPC, no
-Cedar. A hook sees `CallerContext`, `Access` (with its `Permission` values)
-and `DomainError`, never a repository or a wire type. An Enterprise build
-compiles it from a pinned tag.
+each stage. This crate holds the pipeline. It depends on `scylla-domain` and
+nothing else: no access model, no database, no gRPC, no Cedar. A hook sees
+`CallerContext`, `Access` (with its `Permission` values) and `DomainError`,
+never a repository or a wire type. An Enterprise build compiles it from a
+pinned tag.
 
 Run `cargo test -p scylla-extension` for the in-crate checks. They drive the
 engine with a self-contained aggregate (`src/tests.rs`), so a change to the
@@ -17,21 +17,21 @@ pipeline is proven here before it reaches a use case.
 ```
 src/
   action/        the event
-    id.rs          ActionId: one per send
-    command.rs     Describe: access(); Command: Staged, Committed; Query: Output
+    id.rs          ActionId: one per run
+    command.rs     Describe: access(); Command: Staged, Committed; Query
     value.rs       Draft<T> (not stored), Deleted<T> (tombstone)
-    envelope.rs    Envelope<C>: id, at, caller, access, command; built once, shared by Arc
-    phase.rs       Requested, Authorized, Prepared, Committed, Fetched; Prepared::commit
-    erased.rs      Action: the erased view of any phase; Phase: gives the envelope
-  stage.rs       StageKind, Stage, Authorize/Prepare/Persist<C>, Fetch<Q>, Run<S>
-  authz.rs       Access, Granted (private constructor), Authorizer, AuthorizeStage
+    envelope.rs    Envelope<C>: id, at, caller, access, command; one Arc
+    phase.rs       Requested, Authorized, Prepared, Committed, Fetched
+    erased.rs      Action: the erased view of a phase; Phase: its envelope
+  stage.rs       StageKind, Stage, Authorize/Prepare/Persist, Fetch, Run<S>
+  authz.rs       Access, Granted, Authorizer, AuthorizeStage
   hooks/         the extension seam
     position.rs    Policy, Gate, Around, Wrap, Listener, Observer
-    next.rs        Next: the rest of a typed chain; Proceed and Done: the erased one
+    next.rs        Next: rest of a typed chain; Proceed, Done: the erased one
     registry.rs    Hooks: registration and run()
     extension.rs   Extension: register(self: &Arc<Self>, &mut Hooks)
-  path.rs        Path<K, R>: the chain after Authorize, one impl per marker (Write, Read)
-  actions.rs     Actions: run(runner, caller, action) for a command or a query
+  path.rs        Path<K, R>: the chain after Authorize (Write, Read)
+  actions.rs     Actions: run(runner, caller, action)
   tests.rs       the checks, on a fake aggregate
 ```
 
@@ -44,11 +44,11 @@ use case (`commands.rs`, `queries.rs`, the ports in `mod.rs`), and
 
 One action is one event. It is born in `Requested<C>`, where `C` is the
 command or the query. `Requested<C>` holds an `Arc<Envelope<C>>`: the action
-id, the time, the caller, the access rule and the complete command. Every later phase keeps
-the same envelope. All phases deref to it, so `caller()`, `access()`,
-`command()` and `id()` are available at each step. No phase has a public
-constructor. The only way to get a later phase is a transition method on the
-earlier phase, and each transition consumes its input.
+id, the time, the caller, the access rule and the complete command. Every
+later phase keeps the same envelope. All phases deref to it, so `caller()`,
+`access()`, `command()` and `id()` are available at each step. No phase has a
+public constructor. The only way to get a later phase is a transition method
+on the earlier phase, and each transition consumes its input.
 
 | phase           | new data                       | who produces it       |
 |-----------------|--------------------------------|-----------------------|
@@ -171,10 +171,11 @@ field is `public`, `authenticated` or the permission keys joined by `+`; the
 `resource` field is there only when a permission is required.
 
 The access check is a stage and not a hook for two reasons. It runs with
-zero hooks registered, because `send` calls it in code; a hook is something a
-binary may or may not register. And it has an output, `Authorized<C>`, that a
-`Gate` cannot produce: the use case's `Run<Prepare<C>>` takes `Authorized<C>`,
-so its signature is the proof that the check ran.
+zero hooks registered, because `Actions::run` calls it in code; a hook is
+something a binary may or may not register. And it has an output,
+`Authorized<C>`, that a `Gate` cannot produce: the use case's
+`Run<Prepare<C>>` takes `Authorized<C>`, so its signature is the proof that
+the check ran.
 
 ### The use case and the adapter
 
@@ -208,6 +209,7 @@ steps, with `Anonymous` as the caller, so only a `Public` action passes. An
 HTTP route uses `rest::adapter::run_public`: the route builds the command from
 the path, the headers and the body, and maps the `DomainError` to its own
 status.
+
 The request types implement `Parse` in the aggregate's mapper
 (`grpc/mappers/project_mapper.rs`), built from the small converters in
 `grpc::convert`: `id` for a required id wrapper, `valid` for a domain value
@@ -226,19 +228,44 @@ A use case is one directory: `mod.rs` holds the struct with its ports,
 order it runs: the struct with public fields, `impl Describe` with the
 access, `impl Command` with the two payload types, `impl Run<Prepare<C>>`
 (read through the port, build the domain value, `input.prepared(staged)`),
-`impl Run<Persist<C>>` (`input.commit(async |staged| self.repo.write(&staged).await).await`).
+`impl Run<Persist<C>>`
+(`input.commit(async |staged| self.repo.write(&staged).await).await`).
 Inside `queries.rs`, one block per query: the struct, `impl Describe`,
 `impl Query` with the output type, `impl Run<Fetch<Q>>` (read,
 `input.fetched(output)`). A new action is one block in the right file, and
-the outline of the file is the list of actions.
+the outline of the file is the list of actions. A helper method of the use
+case goes in `mod.rs`, not between two blocks.
 
-A `tests.rs` gets its engine from `test_support::authz::actions(permissions)`:
-the `PermissionAuthorizer` and no hooks. Use `actions_with(permissions, hooks)`
-when the test registers hooks. The stubs that more than one use case needs are
-in `test_support::stubs` (compiled for tests only): `CountingPolicy`,
-`StubHash`, `StubRegistry`, `StubRoles`, `StubGrants`, `StubJobs`, `NoUsers`,
-`OneProject`, `OnePipeline`, `EchoResolver`, `empty_page` and `alice`. Keep a stub in the
-`tests.rs` of the use case when its behavior is specific to that use case.
+`Staged` is a `Draft<T>` when `Prepare` builds or changes a domain value that
+is not written yet: a new row, a changed row, a list of changed rows, or a
+tuple of them. It is the loaded value for a delete, and a bare type only for
+a parameter that is not a domain value (a count, a time, an id).
+
+An aggregate with a second runner puts it in a subdirectory with the same
+files: `mod.rs`, `commands.rs` (or `queries.rs`), `tests.rs`. For example
+`app/token/`, `job/log/`, `trigger/fire/`, `trigger/webhook/` and
+`agent/dispatch_use_case/`. A driver that holds `Actions` (a reaper, a
+scheduler, a sweeper) has its own file, and its tests check only the driver;
+the tests of the actions it sends are in the `tests.rs` of the use case.
+
+A command derives `Debug` when each secret field is a redacting type
+(`Password`, `AppSecret`): their `Debug` shows `[REDACTED]`. A command that
+holds a secret as a raw `String` or as bytes has no `Debug`: `RevokeToken`,
+`ValidateToken`, `OAuthCallback`, `CreateSecret`, `IngestWebhook` and
+`AcceptInvitation` (its `token`).
+
+A `tests.rs` gets its engine from
+`test_support::authz::actions(permissions)`: the `PermissionAuthorizer` and
+no hooks. Use `actions_with(permissions, hooks)` when the test registers
+hooks. The stubs that more than one use case needs are in
+`test_support::stubs` (compiled for tests only): `CountingPolicy`,
+`StubHash`, `StubRegistry`, `StubRoles`, `StubGrants`, `StubJobs`,
+`StubSessions`, `StubSignups`, `NoUsers`, `OneUser`, `OneProject`,
+`OnePipeline`, `EchoResolver`, `empty_page` and `alice`. `StubRegistry`
+fails a test that dispatches a job; `StubRegistry::accepting()` records each
+dispatch with its payload. Keep a stub in the `tests.rs` of the use case when
+its behavior is specific to that use case, and give it a name that tells what
+it does (`RowJobs`, `CountingRoles`), not the name of a shared stub.
 
 A permission check that never refuses is not a gate. `ListOrganizationProjects`
 asks a second time for `ListProjectsByOrganization` only to choose between
@@ -342,7 +369,8 @@ outermost. Every `Around` runs outside every `Wrap`.
 ### Wrap
 
 A typed hook that controls how the stage's work runs for one command.
-Signature: `wrap(&self, input: S::In, next: Next<'_, S>) -> DomainResult<S::Out>`.
+Signature:
+`wrap(&self, input: S::In, next: Next<'_, S>) -> DomainResult<S::Out>`.
 
 Use it for: a cache in front of a read, a dry-run mode, anything that needs
 the typed input or output. It calls `next.run(input)` exactly once in normal
@@ -353,7 +381,8 @@ run is a `Wrap<Persist<C>>` that never calls `next` and builds its output with
 
 Do not use it for: a business rule (a `Wrap` that returns `Err` to refuse is
 a `Gate` in disguise), a side effect after success (use a `Listener`), a
-retry (the input is moved into `next`; a retry must start from `send`).
+retry (the input is moved into `next`; a retry must start from a new
+`Actions::run`).
 
 A `Wrap` may skip `next` only for a simulation, and then it must build the
 output itself through the phase API. It cannot build an `Authorized<C>`,
@@ -370,7 +399,7 @@ A typed side effect after one stage of one command succeeded. Signature:
 
 Use it for: a notification, an email, a webhook call, a cache invalidation
 for one entity, a search index update. It reads the output and the caller
-from the same value. It runs before `send` returns.
+from the same value. It runs before `Actions::run` returns.
 
 Do not use it for: a decision (too late, the work is done), a write that must
 be consistent with the stage's write (put it in the `commit` closure or in a
@@ -403,8 +432,8 @@ hook wants to be a `Listener`).
 ### Failure and order
 
 - A `Policy` or a `Gate` that returns `Err` stops the action. Nothing to its
-  right runs except the observers, no later stage runs, and `send` returns
-  the error.
+  right runs except the observers, no later stage runs, and `Actions::run`
+  returns the error.
 - A `Run`, an `Around` or a `Wrap` that returns `Err` stops the action. The
   `Listener` of that stage does not run; the observers run with the error.
 - `Listener` runs only on success. `Observer` runs on both and cannot change
@@ -456,7 +485,7 @@ A row that `Prepare` reads and `Persist` writes carries a `version`. The store
 writes an update or a delete only if the stored version is the staged one and
 increments it on an update. If the row changed between the read and the
 write, the write fails with `DomainError::Conflict` and nothing is written.
-The caller starts again from a fresh `send`; a `Wrap<Persist<C>>` cannot
+The caller starts again with a new `Actions::run`; a `Wrap<Persist<C>>` cannot
 retry, because its input is the stale staged value. A `Gate<Persist<C>>` that
 decided on the staged value is therefore safe: the write goes through only if
 the row is still in the state the gate saw.
@@ -468,55 +497,71 @@ the row is still in the state the gate saw.
   session (`Login`, `ValidateToken`, `RevokeToken`), `Signup`, the OAuth flow
   (`GetAuthUrl`, `OAuthCallback`), `IssueAppToken`, `AcceptInvitation` and
   `IngestWebhook` are on it too, as `Public` actions. The writes of the server
-  drivers and of the agent stream are on it too. The other aggregates keep
-  their hand-written sequence until they migrate.
+  drivers and of the agent stream are on it too. Every use case is on the
+  pipeline.
 - A `Public` action runs as `Anonymous`, so a `Policy` on `Authorize` sees
   every sign-in, signup and webhook delivery. The check that the use case does
   itself (the password, the app secret, the OAuth code, the invitation token,
-  the webhook signature) is in `Prepare`, before the write. A command that
-  holds a credential has no `Debug`.
+  the webhook signature) is in `Prepare`, before the write. The `Debug` rule
+  of a command with a secret is in "Adding a command or a query".
 - Every sign-in path stages its session with `auth::new_session`, and a
   signup and a first OAuth login build the account with
   `signup::NewAccount`. The `commit` closure writes the account, then reloads
   the policy, then stores the session, as before.
-- `ValidateToken` is a query. Its `Fetch` deletes an expired session,
-  best-effort, as before: a failed delete is ignored and the answer is
-  `false`.
+- `ValidateToken` is a query, and its `Fetch` only reads: an expired
+  session gives `false` and stays in the store. A failed read also gives
+  `false`. `PurgeExpiredSessions` deletes the expired sessions: it is a pass
+  that `SessionSweeper` (`session-sweeper`) sends one time each hour.
 - `IngestWebhook` gives `NotFound` for an unknown, disabled or non-webhook
   trigger and `Unauthorized` for a missing or wrong signature. Every other
   failure becomes `Internal`, so the route answers 404, 401 or 500 as before.
 - The `AuthInterceptor` stays outside the pipeline. It is not an action: it
-  makes the caller that the actions get.
+  makes the caller that the actions get. It only reads. It and
+  `ValidateToken` use the same session rule, `auth::look_up_session`. A
+  failed read is `INTERNAL` in the interceptor and `false` in
+  `ValidateToken`. The interceptor also accepts an app token.
 - The agent stream sends each write through `Actions`, as the agent's own
   token: `RecordJobStatus` and `AppendJobLog` for each report (the
   `WriteJobStatus` and `AppendJobLog` checks are the authorize stage), and
   `TouchAgent` and `RecordAgentHost` for the heartbeat and the host report. No
   permission gets to the agent's own App, because its grant is on an
   organization or a project. Thus these two are `Authenticated`, the target is
-  the caller, and `Prepare` refuses a caller that is not an App. The read loop,
-  the live fan-out (`InMemoryJobLogStream::publish`) and the registry stay
-  outside the pipeline.
+  the caller, and `Prepare` refuses a caller that is not an App
+  (`application::actions::app_only`). The stream sends `TouchAgent` before it
+  registers the connection: if the action fails, the stream is refused with
+  its status and the agent is not registered. The stream opens and closes
+  the live log of a job, and frees the agent slot, only after
+  `RecordJobStatus` is written. The read loop, the live fan-out
+  (`InMemoryJobLogStream::publish`) and the registry stay outside the
+  pipeline.
 - `TailJobLogs` is a query: its `Fetch` returns the stream, so hooks see the
   subscription open, not each line. `JobLogLiveStream` is `Sync` for that
   reason, because a query output is.
-- `ListJobLogs` with a node sends `GetJob` first, from the handler. That
-  `ReadJob` check refuses, so it is not a scope inside `Fetch`; a node that is
-  not readable yet gives an empty page, as before.
+- `ListJobLogs` with a node is `RequiresAll` of `ReadJobLogs` and `ReadJob`.
+  Its `Fetch` reads the job through the job port and applies
+  `Job::logs_readable_for`: a node that is not readable yet gives an empty
+  page. `TailJobLogs` with a node applies the same rule: it replays no stored
+  line for that node.
 - Each write of a server driver goes through `Actions`, as a sealed
   `CallerContext::Service`, with one identity for each driver: `JobReaper`
   (`job-reaper`) sends `ReapOrphanedJobs`, `PendingJobScheduler`
   (`job-dispatcher`) sends `DispatchPendingJobs`, `TriggerCronScheduler`
-  (`cron-scheduler`) sends `ScheduleCronTriggers` and `ClaimDueTriggers`, and
-  `TriggerFirer` (`trigger-firer`) sends `RecordTriggerFire`. The loops stay
-  outside the pipeline: they are not requests.
+  (`cron-scheduler`) sends `ScheduleCronTriggers` and `ClaimDueTriggers`,
+  `TriggerFirer` (`trigger-firer`) sends `ResolveTriggerRun` and
+  `RecordTriggerFire`, and `SessionSweeper` (`session-sweeper`) sends
+  `PurgeExpiredSessions`. The loops stay outside the pipeline: they are not
+  requests.
 - A pass over many rows (`ReapOrphanedJobs`, `DispatchPendingJobs`,
-  `ScheduleCronTriggers`, `ClaimDueTriggers`) has no resource for Cedar. Thus
-  it is `Authenticated`, and `Prepare` refuses a caller that is not a service
-  (`application::actions::service_only`). A pass that runs each 15 or 30
-  seconds does not write an audit row each time. A write on one row asks for
-  the permission of that row, as the bootstrap does: `RecordTriggerFire` asks
-  for `ManageTrigger`, and the `service` rule of the Cedar policies permits it.
-  That check writes one audit row for each fire.
+  `ScheduleCronTriggers`, `ClaimDueTriggers`, `PurgeExpiredSessions`) has no
+  resource for Cedar. Thus it is `Authenticated`, and `Prepare` refuses a
+  caller that is not a service (`application::actions::service_only`). The
+  read `ResolveTriggerRun` does the same in its `Fetch`. The guards on the
+  kind of caller are together in `application/actions.rs`: `service_only`,
+  `app_only` and `user_or_app` (the origin of a `RunPipeline`). A pass that
+  runs each 15 or 30 seconds does not write an audit row each time. A write
+  on one row asks for the permission of that row, as the bootstrap does:
+  `RecordTriggerFire` asks for `ManageTrigger`, and the `service` rule of the
+  Cedar policies permits it. That check writes one audit row for each fire.
 - A run gives its job to an agent in its `commit` closure, after the job row
   is written: `DispatchUseCases::place` sends the job to an agent and records
   that agent. `RunPipeline`, `RunPipelineWithInputs` and `DispatchPendingJobs`
@@ -585,16 +630,24 @@ the row is still in the state the gate saw.
 - `FireTriggerNow` fires in its `commit` closure through the `TriggerFiring`
   port, as a scheduled fire does. `IngestWebhook` records the delivery and
   fires in its `commit` closure. `TriggerFirer` is that port for the cron
-  scheduler, the webhook ingress and `FireTriggerNow`. It reads the trigger,
-  sends `RunPipelineWithInputs` as the trigger-runner App of the organization
-  (one `RunPipeline` check), then sends `RecordTriggerFire`, best-effort. It
-  holds `Actions`, thus it is a driver and not a use case: a use case gets to
-  it through the port.
+  scheduler, the webhook ingress and `FireTriggerNow`. It reads the trigger
+  and the trigger-runner App of the organization with `ResolveTriggerRun`,
+  which refuses a disabled trigger. Then it sends `RunPipelineWithInputs` as
+  that App (one `RunPipeline` check), then sends `RecordTriggerFire`,
+  best-effort. A runner App that is not found is a failed run: the fire
+  records it. `FireTriggerNow` stages only the id, because the fire reads the
+  trigger. `TriggerFirer` holds `Actions`, thus it is a driver and not a use
+  case: a use case gets to it through the port.
 - `RunPipelineWithInputs` is the fire path of a run: the origin is the trigger
   and the inputs come from the trigger, so no RPC sends it. `RunPipeline` is
   the RPC path.
-- `RecordTriggerFire` carries the trigger row that the fire read, and writes it
-  back with its observation, as before.
+- `RecordTriggerFire` carries the trigger row that `ResolveTriggerRun` read,
+  and writes it back with its observation, as before.
+- A `scylla_server::Feature` gets `actions` in its `Context`. An installed
+  service authorizes through `Actions::run`, as the core does, so its
+  actions go through the hooks. `permissions` stays in the `Context` until
+  the Enterprise features use `actions`; `policy_control` and `visibility`
+  serve a scope in a `Fetch`.
 - The policy reload after a create or a delete sits inside the `commit`
   closure, so a failed reload still fails the call, as before. It is a
   `Listener<Persist<C>>` once a failed reload may only be logged.

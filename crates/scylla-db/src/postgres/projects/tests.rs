@@ -161,29 +161,6 @@ async fn list_by_organization_filters_other_orgs(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn list_active_filters_inactive(pool: PgPool) {
-    let org = seed_org(&pool, "org").await;
-    let repo = PgProjectRepository::new(pool);
-    repo.create(&project(&org, "active")).await.unwrap();
-    repo.create(
-        &ProjectBuilder::new(&org, "dormant")
-            .is_active(false)
-            .build(),
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(
-        repo.list_active(None)
-            .await
-            .unwrap()
-            .metadata()
-            .total_count(),
-        1,
-    );
-}
-
-#[sqlx::test(migrations = "../../migrations")]
 async fn cascade_organization_delete_removes_projects(pool: PgPool) {
     let org = seed_org(&pool, "doomed").await;
     let project_repo = PgProjectRepository::new(pool.clone());

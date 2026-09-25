@@ -14,8 +14,8 @@ use scylla_auth::authz::{PermissionService, PolicyControl, VisibilityResolver};
 use std::sync::Arc;
 
 /// The project aggregate's stage runners, one block per action in `commands.rs` and
-/// `queries.rs`. It has no method of its own; `Actions::run` drives it. `permission_service` serves one scoping decision in `fetch.rs`,
-/// never a gate.
+/// `queries.rs`. It has no method of its own; `Actions::run` drives it. `permission_service`
+/// serves one scoping decision in `queries.rs`, never a gate.
 #[derive(Constructor)]
 pub struct ProjectUseCases {
     pub(super) project_repo: Arc<dyn ProjectRepository>,

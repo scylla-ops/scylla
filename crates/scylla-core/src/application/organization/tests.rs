@@ -60,12 +60,6 @@ impl OrganizationRepository for StubOrganizations {
             .cloned()
             .ok_or_else(|| DomainError::not_found("Organization", id.to_string()))
     }
-    async fn find_by_ids(&self, _: &[OrganizationId]) -> DomainResult<Vec<Organization>> {
-        Ok(Vec::new())
-    }
-    async fn find_by_name(&self, name: &OrganizationName) -> DomainResult<Organization> {
-        Err(DomainError::not_found("Organization", name.to_string()))
-    }
     async fn update(&self, organization: &Organization) -> DomainResult<Organization> {
         self.create(organization).await
     }
@@ -74,12 +68,6 @@ impl OrganizationRepository for StubOrganizations {
         Ok(())
     }
     async fn list_all(
-        &self,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Organization>> {
-        empty_page()
-    }
-    async fn list_active(
         &self,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Organization>> {

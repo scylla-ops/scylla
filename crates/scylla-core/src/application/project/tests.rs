@@ -60,9 +60,6 @@ impl ProjectRepository for StubProjects {
             .cloned()
             .ok_or_else(|| DomainError::not_found("Project", id.to_string()))
     }
-    async fn find_by_ids(&self, _: &[ProjectId]) -> DomainResult<Vec<Project>> {
-        Ok(Vec::new())
-    }
     async fn update(&self, project: &Project) -> DomainResult<Project> {
         self.create(project).await
     }
@@ -71,12 +68,6 @@ impl ProjectRepository for StubProjects {
         Ok(())
     }
     async fn list_all(
-        &self,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty_page()
-    }
-    async fn list_active(
         &self,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {

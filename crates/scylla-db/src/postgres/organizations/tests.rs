@@ -33,16 +33,6 @@ async fn round_trip_with_some_description(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn find_by_name(pool: PgPool) {
-    let repo = PgOrganizationRepository::new(pool);
-    let org = org("Initech");
-    repo.create(&org).await.expect("create");
-
-    let found = repo.find_by_name(org.name()).await.expect("find");
-    assert_eq!(found.id(), org.id());
-}
-
-#[sqlx::test(migrations = "../../migrations")]
 async fn name_exists_reflects_state(pool: PgPool) {
     let repo = PgOrganizationRepository::new(pool);
     let org = org("Hooli");
@@ -53,7 +43,7 @@ async fn name_exists_reflects_state(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn list_active_filters_inactive(pool: PgPool) {
+async fn list_all_includes_inactive(pool: PgPool) {
     let repo = PgOrganizationRepository::new(pool);
     repo.create(&org("Active1")).await.expect("seed");
     repo.create(&org("Active2")).await.expect("seed");
@@ -61,8 +51,6 @@ async fn list_active_filters_inactive(pool: PgPool) {
         .await
         .expect("seed inactive");
 
-    let active = repo.list_active(None).await.expect("list");
-    assert_eq!(active.metadata().total_count(), 2);
     let all = repo.list_all(None).await.expect("list");
     assert_eq!(all.metadata().total_count(), 3);
 }

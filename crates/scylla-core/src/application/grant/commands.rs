@@ -3,21 +3,18 @@
 //! sits next to the write that changes the grant set.
 
 use super::GrantUseCases;
-use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::GrantId;
-use crate::domain::permission::{Permission, ResourceRef};
+use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{
-    FULL_CONTROL, Grant, Principal, Scope, is_owner_role, permissions_by_role,
-    removal_orphans_scope, validate_role_in_db,
+    Grant, Principal, Scope, is_owner_role, removal_orphans_scope, validate_role_in_db,
 };
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
     Run,
 };
-use std::collections::BTreeSet;
 
 #[derive(Debug)]
 pub struct CreateGrant {
@@ -61,97 +58,6 @@ impl Run<Persist<CreateGrant>> for GrantUseCases {
                 Ok(grant)
             })
             .await
-    }
-}
-
-enum Holding {
-    Full,
-    Keys(BTreeSet<String>),
-}
-
-impl GrantUseCases {
-    /// The tenant boundary: without it a project admin could attach any account in the installation.
-    /// Org and System grants are the admission itself; Apps are owned by their org by construction.
-    async fn require_grantee_in_organization(&self, grant: &Grant) -> DomainResult<()> {
-        let Principal::User(_) = &grant.principal else {
-            return Ok(());
-        };
-        let Scope::Project(project_id) = &grant.scope else {
-            return Ok(());
-        };
-        let org_id = self
-            .entity_provider
-            .resource_ancestors(&ResourceRef::Project(project_id.clone()))
-            .await?
-            .organization
-            .ok_or_else(|| DomainError::not_found("Project", project_id.to_string()))?;
-
-        let admitted = self.grant_repo.list_all().await?.into_iter().any(|g| {
-            g.principal == grant.principal
-                && matches!(&g.scope, Scope::Organization(o) if o == &org_id)
-        });
-
-        if admitted {
-            Ok(())
-        } else {
-            Err(DomainError::business_rule(
-                "the user must already have access to this organization before \
-                 receiving a grant on one of its projects",
-            ))
-        }
-    }
-
-    /// A delegator may only confer what it holds at the scope; otherwise `manageOrgGrants` alone could grant `organization-admin`.
-    /// Project scope is not subset-checked yet; it stays gated by `manageProjectGrants`.
-    async fn check_no_escalation(&self, caller: &CallerContext, grant: &Grant) -> DomainResult<()> {
-        let Some(principal) = Principal::from_caller(caller) else {
-            return Ok(());
-        };
-        if matches!(grant.scope, Scope::Project(_)) {
-            return Ok(());
-        }
-
-        let allowed = match (
-            self.holding_at(&principal, &grant.scope).await?,
-            self.role_keys(&grant.role).await?,
-        ) {
-            (Holding::Full, _) => true,
-            (Holding::Keys(_), None) => false,
-            (Holding::Keys(have), Some(want)) => want.iter().all(|k| have.contains(k)),
-        };
-        if allowed {
-            Ok(())
-        } else {
-            Err(DomainError::business_rule(
-                "cannot grant permissions you do not hold at this scope (no privilege escalation)",
-            ))
-        }
-    }
-
-    async fn role_keys(&self, role: &RoleName) -> DomainResult<Option<BTreeSet<String>>> {
-        match self.role_repo.get(role.as_str()).await? {
-            Some(r) if r.is_full_control() => Ok(None),
-            Some(r) => Ok(Some(r.permissions.into_iter().collect())),
-            None => Ok(Some(BTreeSet::new())),
-        }
-    }
-
-    async fn holding_at(&self, principal: &Principal, scope: &Scope) -> DomainResult<Holding> {
-        let role_perms = permissions_by_role(self.role_repo.as_ref()).await?;
-        let grants = self.grant_repo.list_all().await?;
-
-        let mut keys = BTreeSet::new();
-        for g in grants.iter().filter(|g| g.principal == *principal) {
-            if !(matches!(g.scope, Scope::System) || &g.scope == scope) {
-                continue;
-            }
-            let perms: Vec<String> = role_perms.get(g.role.as_str()).cloned().unwrap_or_default();
-            if perms.iter().any(|p| p == FULL_CONTROL) {
-                return Ok(Holding::Full);
-            }
-            keys.extend(perms);
-        }
-        Ok(Holding::Keys(keys))
     }
 }
 

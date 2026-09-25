@@ -7,7 +7,7 @@ use scylla_core::application::{JobLogRepository, JobRepository};
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn create_then_find_by_id(pool: PgPool) {
+async fn create_then_list_by_job(pool: PgPool) {
     let (_, _, pipeline) = seed_org_project_pipeline(&pool, "l").await;
     let job = seed_job(&pool, &pipeline).await;
     let repo = PgJobLogRepository::new(pool);
@@ -15,7 +15,11 @@ async fn create_then_find_by_id(pool: PgPool) {
     let log = job_log(job.id(), "a", "hello");
     repo.create(&log).await.unwrap();
 
-    let found = repo.find_by_id(log.id()).await.unwrap();
+    let listed = repo.list_all_by_job(job.id(), None).await.unwrap();
+    let [found] = listed.as_slice() else {
+        panic!("expected one log, got {}", listed.len());
+    };
+    assert_eq!(found.id(), log.id());
     assert_eq!(found.line(), "hello");
     assert_eq!(found.node_id().as_str(), "a");
 }

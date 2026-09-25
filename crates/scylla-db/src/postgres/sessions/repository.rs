@@ -1,4 +1,4 @@
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::{SessionId, UserId};
 use crate::domain::session::Session;
 use async_trait::async_trait;
@@ -32,11 +32,6 @@ impl SessionRepository for PgSessionRepository {
         queries::find_by_token(&self.pool, token).await
     }
 
-    #[instrument(skip_all, fields(session_id = %session.id()))]
-    async fn update(&self, session: &Session) -> DomainResult<Session> {
-        queries::update(&self.pool, session).await
-    }
-
     #[instrument(skip(self, token))]
     async fn delete_by_token(&self, token: &str) -> DomainResult<()> {
         queries::delete_by_token(&self.pool, token).await
@@ -45,11 +40,6 @@ impl SessionRepository for PgSessionRepository {
     #[instrument(skip(self))]
     async fn delete_expired(&self) -> DomainResult<u64> {
         queries::delete_expired(&self.pool).await
-    }
-
-    #[instrument(skip_all, fields(user_id = %user_id))]
-    async fn list_for_user(&self, user_id: &UserId) -> DomainResult<Vec<Session>> {
-        queries::list_for_user(&self.pool, user_id).await
     }
 }
 
@@ -105,32 +95,6 @@ pub mod queries {
         ))
     }
 
-    pub async fn update<'e, E>(executor: E, session: &Session) -> DomainResult<Session>
-    where
-        E: PgExecutor<'e>,
-    {
-        let res = sqlx::query!(
-            r#"
-            UPDATE sessions
-            SET token = $2,
-                expires_at = $3,
-                last_active_at = $4
-            WHERE id = $1
-            "#,
-            session.id().as_str(),
-            session.token(),
-            session.expires_at(),
-            session.last_active_at(),
-        )
-        .execute(executor)
-        .await
-        .to_domain()?;
-        if res.rows_affected() == 0 {
-            return Err(DomainError::not_found("Session", session.id().to_string()));
-        }
-        Ok(session.clone())
-    }
-
     pub async fn delete_by_token<'e, E>(executor: E, token: &str) -> DomainResult<()>
     where
         E: PgExecutor<'e>,
@@ -151,36 +115,5 @@ pub mod queries {
             .await
             .to_domain()?;
         Ok(res.rows_affected())
-    }
-
-    pub async fn list_for_user<'e, E>(executor: E, user_id: &UserId) -> DomainResult<Vec<Session>>
-    where
-        E: PgExecutor<'e>,
-    {
-        let rows = sqlx::query!(
-            r#"
-            SELECT id, token, user_id, created_at, expires_at, last_active_at
-            FROM sessions
-            WHERE user_id = $1
-            ORDER BY last_active_at DESC
-            "#,
-            user_id.as_str(),
-        )
-        .fetch_all(executor)
-        .await
-        .to_domain()?;
-        Ok(rows
-            .into_iter()
-            .map(|r| {
-                Session::from_persistence(
-                    SessionId::new(r.id),
-                    r.token,
-                    UserId::new(r.user_id),
-                    r.created_at,
-                    r.expires_at,
-                    r.last_active_at,
-                )
-            })
-            .collect())
     }
 }

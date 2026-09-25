@@ -43,9 +43,8 @@ impl JobReaper {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::errors::DomainError;
     use crate::test_support::authz::{RecordingPermissionService, actions};
-    use crate::test_support::stubs::{StubJobs, alice};
+    use crate::test_support::stubs::StubJobs;
 
     fn reaper(jobs: Arc<StubJobs>) -> JobReaper {
         JobReaper::new(
@@ -74,22 +73,5 @@ mod tests {
     #[tokio::test]
     async fn reap_reports_zero_when_nothing_is_stranded() {
         assert_eq!(reaper(Arc::new(StubJobs::orphaning(0))).reap(&[]).await, 0);
-    }
-
-    #[tokio::test]
-    async fn a_pass_asks_no_permission_and_refuses_a_caller_that_is_not_a_service() {
-        let permissions = Arc::new(RecordingPermissionService::new());
-        let jobs = Arc::new(StubJobs::orphaning(1));
-        let uc = JobUseCases::new(jobs.clone());
-        let actions = actions(permissions.clone());
-        let reap = || ReapOrphanedJobs { connected: vec![] };
-
-        let service = CallerContext::Service(ServiceIdentity::job_reaper());
-        assert_eq!(actions.run(&uc, &service, reap()).await.unwrap(), 1);
-        let err = actions.run(&uc, &alice(), reap()).await.unwrap_err();
-
-        assert!(matches!(err, DomainError::Forbidden(_)));
-        assert!(permissions.permissions().is_empty());
-        assert_eq!(jobs.swept().len(), 1);
     }
 }

@@ -2,6 +2,7 @@
 //! its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::{AuthUseCases, new_session};
+use crate::application::actions::service_only;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::session::Session;
 use crate::domain::user::{Email, Password, Username};
@@ -10,7 +11,8 @@ use scylla_extension::{
     Access, Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 
-/// No `Debug`: `password` is the credential. `identifier` is a username or an email.
+/// `identifier` is a username or an email.
+#[derive(Debug)]
 pub struct Login {
     pub identifier: String,
     pub password: Password,
@@ -95,6 +97,45 @@ impl Run<Persist<RevokeToken>> for AuthUseCases {
     async fn run(&self, input: Prepared<RevokeToken>) -> DomainResult<Committed<RevokeToken>> {
         input
             .commit(async |token| self.session_repo.delete_by_token(&token).await)
+            .await
+    }
+}
+
+/// One pass over the sessions whose time is over. It has no resource for Cedar, so it is
+/// `Authenticated` and `Prepare` refuses a caller that is not a service. `Committed` is the count.
+#[derive(Debug)]
+pub struct PurgeExpiredSessions;
+
+impl Describe for PurgeExpiredSessions {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Command for PurgeExpiredSessions {
+    type Staged = ();
+    type Committed = u64;
+}
+
+#[async_trait]
+impl Run<Prepare<PurgeExpiredSessions>> for AuthUseCases {
+    async fn run(
+        &self,
+        input: Authorized<PurgeExpiredSessions>,
+    ) -> DomainResult<Prepared<PurgeExpiredSessions>> {
+        service_only(input.caller())?;
+        Ok(input.prepared(()))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<PurgeExpiredSessions>> for AuthUseCases {
+    async fn run(
+        &self,
+        input: Prepared<PurgeExpiredSessions>,
+    ) -> DomainResult<Committed<PurgeExpiredSessions>> {
+        input
+            .commit(async |()| self.session_repo.delete_expired().await)
             .await
     }
 }

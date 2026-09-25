@@ -4,6 +4,7 @@
 use super::JobUseCases;
 use crate::application::actions::service_only;
 use crate::application::job::JobEvent;
+use crate::domain::clock;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, JobId};
 use crate::domain::job::{Job, NodeOutcome};
@@ -42,7 +43,7 @@ impl Run<Prepare<RecordJobStatus>> for JobUseCases {
     ) -> DomainResult<Prepared<RecordJobStatus>> {
         let cmd = input.command();
         let job = self.job_repo.find_by_id(&cmd.job_id).await?;
-        let now = chrono::Utc::now();
+        let now = clock::now();
         let job = match &cmd.event {
             JobEvent::JobStarted => job.start()?,
             JobEvent::NodeStarted { node_id } => {

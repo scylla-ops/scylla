@@ -1,11 +1,11 @@
 //! The adapter: each RPC is one `run` and its response.
 
 use crate::application::{TriggerFireUseCases, TriggerUseCases};
+use crate::domain::trigger::Trigger;
 use crate::grpc::adapter::run;
 use crate::grpc::convert::wrap;
 use crate::grpc::mappers::trigger_mapper::trigger_to_proto;
 use derive_more::Constructor;
-use scylla_domain::domain::trigger::Trigger;
 use scylla_extension::Actions;
 use scylla_proto::trigger::v1::{
     CreateTriggerRequest, CreateTriggerResponse, DeleteTriggerRequest, DeleteTriggerResponse,
@@ -21,7 +21,7 @@ use tonic::{Request, Response, Status};
 pub struct TriggerHandler {
     actions: Arc<Actions>,
     triggers: Arc<TriggerUseCases>,
-    fire_uc: Arc<TriggerFireUseCases>,
+    fires: Arc<TriggerFireUseCases>,
     webhook_base_url: Option<String>,
 }
 
@@ -37,10 +37,10 @@ impl TriggerService for TriggerHandler {
         &self,
         request: Request<CreateTriggerRequest>,
     ) -> Result<Response<CreateTriggerResponse>, Status> {
-        let (trigger, webhook_secret) = run(&self.actions, &*self.triggers, request).await?;
+        let created = run(&self.actions, &*self.triggers, request).await?;
         Ok(Response::new(CreateTriggerResponse {
-            trigger: Some(self.view(&trigger)),
-            webhook_secret,
+            trigger: Some(self.view(&created.trigger)),
+            webhook_secret: created.webhook_secret,
         }))
     }
 
@@ -96,7 +96,7 @@ impl TriggerService for TriggerHandler {
         &self,
         request: Request<FireTriggerNowRequest>,
     ) -> Result<Response<FireTriggerNowResponse>, Status> {
-        let job = run(&self.actions, &*self.fire_uc, request).await?;
+        let job = run(&self.actions, &*self.fires, request).await?;
         Ok(Response::new(FireTriggerNowResponse {
             job_id: wrap(job.id().to_string()),
         }))

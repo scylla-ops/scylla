@@ -1,7 +1,7 @@
 use crate::domain::ids::new_id;
 use std::fmt;
 
-/// One id per `send`, so a journal can group the stages of one action across hooks.
+/// One id per `Actions::run`, so a journal can group the stages of one action across hooks.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ActionId(String);
 

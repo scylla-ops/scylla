@@ -114,7 +114,7 @@ runtime-defined roles, so this list is exhaustive.
 ### Permission
 The atomic capability — a verb on a resource type, e.g. `runPipeline` on a
 pipeline. Closed, code-owned catalog: the `Permission` enum
-(`domain/value_objects/permission/`), one variant per real enforced capability.
+(`domain/permission.rs`), one variant per real enforced capability.
 `Permission::key()` is its canonical id (`"runPipeline"`) — the value a role
 stores and the Cedar `Action::"…"` eid. A permission cannot be created at runtime
 (only the code that enforces it gives it meaning); **roles** are the dynamic part.
@@ -176,9 +176,9 @@ template per role, instantiated once per grant. There is no runtime-authored
 policy. Not a synonym for permission or grant.
 
 ### `PermissionService`
-Port (`application/authz/service.rs`) used by every use case to check a
-permission: `check(caller, Permission) -> DomainResult<()>` (fail-closed — never
-a bool). The production adapter is **Cedar**-backed (`CedarPermissionService`):
+Port (`scylla-auth`, `authz/service.rs`) that the `Authorize` stage asks,
+through `PermissionAuthorizer`, for each permission an action requires:
+`check(caller, Permission) -> DomainResult<()>` (fail-closed, never a bool). The production adapter is **Cedar**-backed (`CedarPermissionService`):
 it builds the principal/resource entities, snapshots the live policy set, asks
 Cedar, and records an audit-log row.
 
@@ -264,17 +264,15 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 
 `crates/scylla-domain/src/` (the kernel, shared with the agent):
 
-- `domain/entities/` — objects with identity and mutable state.
-- `domain/value_objects/` — immutable validated wrappers.
-- `domain/dag.rs` — the DAG planner, see [Kahn's algorithm](#kahns-algorithm).
+- `domain/<aggregate>.rs` and `domain/<aggregate>/`: the entities and their value objects.
+- `domain/pipeline/dag.rs`: the DAG planner, see [Kahn's algorithm](#kahns-algorithm).
 - `domain/errors.rs` — `DomainError` / `DomainResult`.
 - `domain/caller.rs` — [`CallerContext`](#caller), the identity every use case and hook receives.
 - `domain/job/event.rs`: [`JobEvent`](#jobevent).
 
 `crates/scylla-core/src/`:
 
-- `application/<feature>/repository.rs` and `service.rs` — the ports.
-- `application/<feature>/use_case.rs` — the orchestrators that consume them.
+- `application/<feature>/repository.rs`: the ports; `mod.rs`: the use case struct; `commands.rs` / `queries.rs`: the actions and their `Run` impls.
 - `infrastructure/`: the adapters that need no database, `messaging/*` (in-process dispatch and log fan-out), `services/argon2_hash_service.rs`, and the rest.
 - `grpc/` and `rest/` — the inbound adapters.
 - `config.rs`: the server configuration and its TOML loader.
@@ -290,19 +288,19 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 Every crate re-exports the kernel's `domain` module, so `crate::domain::...` names the model from anywhere even though it lives in another crate. That is the only re-export of its kind: the access model is reached as `scylla_auth::authz`, and the Postgres adapters import the ports they implement from `scylla_core::application`.
 
 ### Port
-A trait describing something the use cases need from the outside world (persistence, hashing, permission checks), declared next to its use case in `application/<feature>/`. Examples: `PipelineRepository`, `HashService`, `PermissionService`.
+A trait describing something the use cases need from the outside world (persistence, hashing, permission checks), declared next to its use case in `application/<feature>/`. Examples: `PipelineRepository`, `HashService`. `PermissionService` is declared in `scylla-auth`.
 
 ### Adapter
 A concrete implementation of a port. **Driven** adapters, the ones the use cases call out to, live in the crate that owns their dependency: `scylla-db/src/postgres/*` for repositories, `scylla-auth/src/cedar/` for the policy engine, `scylla-core/src/infrastructure/` for the rest (hashing, encryption, mail, OAuth, in-process messaging). **Driving** adapters, the ones that call into the use cases, sit in `scylla-core`: `grpc/` and `rest/`.
 
 ### Use case
-A struct in `application/<feature>/use_case.rs` grouping operations on one aggregate (e.g. `PipelineUseCases`, `JobUseCases`). Holds `Arc<dyn Port>` fields and exposes async methods. The gRPC handlers call these.
+A struct in `application/<feature>/mod.rs` (e.g. `PipelineUseCases`, `JobUseCases`) that holds `Arc<dyn Port>` fields and implements the `Run` stages of its commands and queries. It has no methods. Handlers run the actions through `Actions` (`grpc::adapter::run`).
 
 ### Entity
-A domain object with an identity and mutable state (e.g. `Pipeline`, `Job`, `App`, `Organization`). Defined in `domain/entities/`.
+A domain object with an identity and mutable state (e.g. `Pipeline`, `Job`, `App`, `Organization`). Defined in `domain/<aggregate>.rs`.
 
 ### Value object
-An immutable, validated wrapper in `domain/value_objects/` (e.g. `PipelineName`, `NodeId`, `WorkingDir`, `JobStatus`). Built via a fallible constructor that enforces the invariant.
+An immutable, validated wrapper in `domain/<aggregate>.rs` or `domain/<aggregate>/` (e.g. `PipelineName`, `NodeId`, `WorkingDir`, `JobStatus`). Built via a fallible constructor that enforces the invariant.
 
 ### Repository
 A port describing persistence for one aggregate (`PipelineRepository`, `JobRepository`, ...). The trait lives in `application/<feature>/repository.rs`; the PostgreSQL implementation lives in `scylla-db/src/postgres/` (one `Pg…Repository` per aggregate, queries via `sqlx::query!` / `query_as!`).
@@ -311,10 +309,10 @@ A port describing persistence for one aggregate (`PipelineRepository`, `JobRepos
 `DomainError` from `domain/errors.rs` with variants like `validation`, `business_rule`, `not_found`. Returned as `DomainResult<T>` from the kernel and mapped to gRPC statuses by the control plane's handlers.
 
 ### `JobEvent`
-The lifecycle vocabulary a running agent reports: `JobStarted`, `NodeStarted`, `NodeCompleted`, `NodeFailed`, `NodeSkipped`, `JobCompleted`, `JobFailed`. Defined in the kernel because both binaries must agree on it: the agent emits it, the gRPC adapter maps it to and from its wire form, and `JobUseCases::record_status` applies it to the `Job` aggregate.
+The lifecycle vocabulary a running agent reports: `JobStarted`, `NodeStarted`, `NodeCompleted`, `NodeFailed`, `NodeSkipped`, `JobCompleted`, `JobFailed`. Defined in the kernel because both binaries must agree on it: the agent emits it, the gRPC adapter maps it to and from its wire form, and the agent stream sends it as `RecordJobStatus`, which applies it to the `Job` aggregate.
 
 ### Kahn's algorithm
-The topological-sort routine behind `DagPlan` (`domain/dag.rs`). One implementation serves both sides: the control plane calls `drains_completely()` once to reject a pipeline containing a cycle, and an agent drives the same structure incrementally (`drain_ready` / `mark_completed` / `mark_terminal`) to decide what to launch next. Keeping it single is what stops the two from disagreeing about which nodes are runnable.
+The topological-sort routine behind `DagPlan` (`domain/pipeline/dag.rs`). One implementation serves both sides: the control plane calls `drains_completely()` once to reject a pipeline containing a cycle, and an agent drives the same structure incrementally (`drain_ready` / `mark_completed` / `mark_terminal`) to decide what to launch next. Keeping it single is what stops the two from disagreeing about which nodes are runnable.
 
 ### Cargo features
 Two in the whole workspace. `register` exposes the public self-service signup RPC, off by default so a deployment stays invite-only; it is declared on `scylla-core` and forwarded by `scylla-server` and `scylla-ce`. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth` and `scylla-extension` have none.

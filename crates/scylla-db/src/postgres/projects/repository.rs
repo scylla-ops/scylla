@@ -82,11 +82,6 @@ impl ProjectRepository for PgProjectRepository {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip_all, fields(n = ids.len()))]
-    async fn find_by_ids(&self, ids: &[ProjectId]) -> DomainResult<Vec<Project>> {
-        queries::find_by_ids(&self.pool, ids).await
-    }
-
     #[instrument(skip_all, fields(project_id = %project.id(), version = project.version()))]
     async fn update(&self, project: &Project) -> DomainResult<Project> {
         match queries::update(&self.pool, project).await? {
@@ -113,18 +108,6 @@ impl ProjectRepository for PgProjectRepository {
         let unrestricted = queries::VisibilityFilter::unrestricted();
         let total = queries::count(&self.pool, false, None, &unrestricted).await?;
         let items = queries::list_page(&self.pool, &params, false, None, &unrestricted).await?;
-        Ok(PaginatedResult::new(items, &params, total))
-    }
-
-    #[instrument(skip(self, pagination))]
-    async fn list_active(
-        &self,
-        pagination: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        let params = pagination.copied().unwrap_or_default();
-        let unrestricted = queries::VisibilityFilter::unrestricted();
-        let total = queries::count(&self.pool, true, None, &unrestricted).await?;
-        let items = queries::list_page(&self.pool, &params, true, None, &unrestricted).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
 
@@ -349,41 +332,6 @@ pub mod queries {
             rec.updated_at,
             rec.version,
         )
-    }
-
-    pub async fn find_by_ids<'e, E>(executor: E, ids: &[ProjectId]) -> DomainResult<Vec<Project>>
-    where
-        E: PgExecutor<'e>,
-    {
-        if ids.is_empty() {
-            return Ok(Vec::new());
-        }
-        let id_strs: Vec<String> = ids.iter().map(|i| i.as_str().to_owned()).collect();
-        let rows = sqlx::query!(
-            r#"
-            SELECT id, name, description, organization_id, is_active, created_at, updated_at, version
-            FROM projects
-            WHERE id = ANY($1::text[])
-            "#,
-            &id_strs,
-        )
-        .fetch_all(executor)
-        .await
-        .to_domain()?;
-        rows.into_iter()
-            .map(|r| {
-                row_into_project(
-                    r.id,
-                    r.name,
-                    r.description,
-                    r.organization_id,
-                    r.is_active,
-                    r.created_at,
-                    r.updated_at,
-                    r.version,
-                )
-            })
-            .collect()
     }
 
     /// `None` when no row carries the staged version: the caller tells a stale read from a

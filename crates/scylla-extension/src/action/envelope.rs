@@ -5,8 +5,8 @@ use crate::domain::caller::CallerContext;
 use crate::domain::clock;
 use chrono::{DateTime, Utc};
 
-/// Built once per `send` and shared by every phase. The access rule is computed here, once, so a
-/// hook reads it without calling the command again.
+/// Built once per `Actions::run` and shared by every phase. The access rule is computed here,
+/// once, so a hook reads it without calling the command again.
 pub struct Envelope<C> {
     id: ActionId,
     at: DateTime<Utc>,

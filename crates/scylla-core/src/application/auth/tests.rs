@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::domain::app::{AppSecret, AppSecretHash};
-use crate::domain::caller::CallerContext;
+use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::user::{Password, PasswordHash};
 use crate::test_support::authz::{DenyingPermissionService, actions};
@@ -114,7 +114,7 @@ async fn an_inactive_account_cannot_log_in() {
 }
 
 #[tokio::test]
-async fn a_live_token_is_valid_and_an_expired_one_is_deleted() {
+async fn a_live_token_is_valid_and_a_check_deletes_nothing() {
     let user_id = UserId::new("kevin");
     let live = lab(
         true,
@@ -134,7 +134,44 @@ async fn a_live_token_is_valid_and_an_expired_one_is_deleted() {
     assert!(!live.validate("unknown").await);
     assert!(!live.validate("").await);
     assert!(!expired.validate("expired").await);
-    assert_eq!(expired.sessions.deleted(), vec!["expired".to_string()]);
+    assert!(expired.sessions.deleted().is_empty());
+    assert_eq!(expired.sessions.rows().len(), 1);
+}
+
+#[tokio::test]
+async fn a_purge_deletes_the_expired_sessions_and_refuses_a_caller_that_is_not_a_service() {
+    let user_id = UserId::new("kevin");
+    let lab = lab(
+        true,
+        StubSessions::with(SessionBuilder::new(&user_id).token("live").build()),
+    );
+    lab.sessions
+        .create(
+            &SessionBuilder::new(&user_id)
+                .token("expired")
+                .expired(true)
+                .build(),
+        )
+        .await
+        .unwrap();
+    let service = CallerContext::Service(ServiceIdentity::session_sweeper());
+
+    let refused = lab
+        .actions
+        .run(&lab.uc, &CallerContext::Anonymous, PurgeExpiredSessions)
+        .await
+        .unwrap_err();
+    let purged = lab
+        .actions
+        .run(&lab.uc, &service, PurgeExpiredSessions)
+        .await
+        .unwrap();
+
+    assert!(matches!(refused, DomainError::Forbidden(_)));
+    assert_eq!(purged, 1);
+    let rows = lab.sessions.rows();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].token(), "live");
 }
 
 #[tokio::test]

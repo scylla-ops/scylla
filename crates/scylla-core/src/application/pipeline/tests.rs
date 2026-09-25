@@ -117,7 +117,7 @@ impl Lab {
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let pipelines = Arc::new(StubPipelines::default());
     let jobs = Arc::new(StubJobs::default());
-    let registry = Arc::new(StubRegistry::default());
+    let registry = Arc::new(StubRegistry::accepting());
     let project = ProjectBuilder::for_org_id(OrganizationId::new("acme"), "rocket")
         .id(project_id())
         .build();
@@ -355,7 +355,11 @@ async fn a_run_hands_the_job_to_a_connected_agent_and_records_it() {
         .unwrap();
 
     assert_eq!(job.agent_app_id(), Some(&agent));
-    assert_eq!(lab.registry.dispatched(), vec![agent.clone()]);
+    let [(to, sent)] = lab.registry.dispatched().try_into().unwrap();
+    assert_eq!(to, agent);
+    assert_eq!(sent.job_id, job.id().to_string());
+    assert_eq!(sent.pipeline_id, seeded.id().to_string());
+    assert_eq!(sent.nodes.len(), seeded.nodes().len());
     assert_eq!(lab.jobs.assigned(), vec![(job.id().clone(), agent)]);
 }
 
@@ -434,5 +438,9 @@ async fn a_trigger_run_checks_run_pipeline_and_keeps_its_origin_and_inputs() {
     );
     assert_eq!(job.origin(), &origin);
     assert_eq!(job.inputs(), inputs.as_slice());
+    let [(to, sent)] = lab.registry.dispatched().try_into().unwrap();
+    assert_eq!(to, agent);
+    assert_eq!(sent.job_id, job.id().to_string());
+    assert_eq!(sent.nodes.len(), seeded.nodes().len());
     assert_eq!(lab.jobs.assigned(), vec![(job.id().clone(), agent)]);
 }

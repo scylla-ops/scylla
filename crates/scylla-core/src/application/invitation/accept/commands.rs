@@ -14,8 +14,8 @@ use scylla_extension::{
     Access, Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 
-/// No `Debug`: `token` and `password` are credentials. `Prepare` hashes the password, so only
-/// the hash is staged.
+/// No `Debug`: `token` is the credential. `Prepare` hashes the password, so only the hash is
+/// staged.
 pub struct AcceptInvitation {
     pub token: String,
     pub username: Username,

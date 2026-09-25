@@ -1,10 +1,6 @@
-use crate::application::job::GetJob;
-use crate::application::pagination::PaginatedResult;
 use crate::application::{JobLogUseCases, JobUseCases};
-use crate::extract_auth_context;
 use crate::grpc::adapter::run;
-use crate::grpc::convert::Parse;
-use crate::grpc::mappers::{domain_error_to_status, job_to_proto};
+use crate::grpc::mappers::job_to_proto;
 use crate::grpc::streaming::spawn_log_forwarder;
 use derive_more::Constructor;
 use scylla_extension::Actions;
@@ -82,31 +78,7 @@ impl JobService for JobHandler {
         &self,
         request: Request<ListJobLogsRequest>,
     ) -> Result<Response<ListJobLogsResponse>, Status> {
-        let caller = caller!(request);
-        let query = request.into_inner().parse()?;
-
-        if let Some(node_id) = &query.node_id {
-            // Log rows can be persisted before the matching status update; the domain rule gates them.
-            let get = GetJob {
-                id: query.job_id.clone(),
-            };
-            let job = self
-                .actions
-                .run(&*self.jobs, &caller, get)
-                .await
-                .map_err(domain_error_to_status)?;
-            if !job.logs_readable_for(node_id) {
-                let params = query.pagination.unwrap_or_default();
-                let empty = PaginatedResult::new(Vec::new(), &params, 0);
-                return Ok(Response::new(empty.into()));
-            }
-        }
-
-        let page = self
-            .actions
-            .run(&*self.logs, &caller, query)
-            .await
-            .map_err(domain_error_to_status)?;
+        let page = run(&self.actions, &*self.logs, request).await?;
         Ok(Response::new(page.into()))
     }
 

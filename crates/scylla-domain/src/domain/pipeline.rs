@@ -216,11 +216,6 @@ impl Pipeline {
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }
-
-    #[must_use]
-    pub fn get_node(&self, node_id: &NodeId) -> Option<&PipelineNode> {
-        self.nodes.iter().find(|n| n.id() == node_id)
-    }
 }
 
 #[cfg(test)]
@@ -259,15 +254,6 @@ mod tests {
         ];
         let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
         assert_eq!(pipeline.nodes().len(), 3);
-    }
-
-    #[test]
-    fn get_node_returns_correct_node() {
-        let nodes = vec![action("a", &[]), action("b", &["a"])];
-        let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
-        let node = pipeline.get_node(&node_id("a")).unwrap();
-        assert_eq!(node.id(), &node_id("a"));
-        assert!(pipeline.get_node(&node_id("z")).is_none());
     }
 
     fn create_err(nodes: Vec<PipelineNode>) -> DomainError {
@@ -323,8 +309,8 @@ mod tests {
         pipeline.update_nodes(new_nodes).unwrap();
 
         assert_eq!(pipeline.nodes().len(), 2);
-        assert!(pipeline.get_node(&node_id("x")).is_some());
-        assert!(pipeline.get_node(&node_id("a")).is_none());
+        let ids: Vec<&NodeId> = pipeline.nodes().iter().map(PipelineNode::id).collect();
+        assert_eq!(ids, [&node_id("x"), &node_id("y")]);
     }
 
     #[test]

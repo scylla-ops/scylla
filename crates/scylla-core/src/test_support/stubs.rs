@@ -18,6 +18,7 @@ use async_trait::async_trait;
 use scylla_auth::authz::{
     Grant, GrantRepository, PolicyControl, Principal, Role, RoleRepository, Scope, Visibility,
 };
+use std::collections::HashMap;
 use std::sync::Mutex;
 
 const HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$abc$def";
@@ -109,24 +110,43 @@ impl HashService for StubHash {
     }
 }
 
+/// The default registry fails a test that dispatches; `accepting` records each dispatch and
+/// counts it as a load until `release`.
 #[derive(Default)]
 pub struct StubRegistry {
+    accepts: bool,
     connected: Mutex<Vec<AppId>>,
     disconnected: Mutex<Vec<AppId>>,
-    dispatched: Mutex<Vec<AppId>>,
+    dispatched: Mutex<Vec<(AppId, JobDispatch)>>,
+    loads: Mutex<HashMap<AppId, usize>>,
 }
 
 impl StubRegistry {
+    pub fn accepting() -> Self {
+        Self {
+            accepts: true,
+            ..Self::default()
+        }
+    }
+
     pub fn connect(&self, app_id: &AppId) {
         self.connected.lock().unwrap().push(app_id.clone());
+    }
+
+    pub fn load(&self, app_id: &AppId, in_flight: usize) {
+        self.loads.lock().unwrap().insert(app_id.clone(), in_flight);
     }
 
     pub fn disconnected(&self) -> Vec<AppId> {
         self.disconnected.lock().unwrap().clone()
     }
 
-    pub fn dispatched(&self) -> Vec<AppId> {
+    pub fn dispatched(&self) -> Vec<(AppId, JobDispatch)> {
         self.dispatched.lock().unwrap().clone()
+    }
+
+    pub fn dispatched_to(&self) -> Vec<AppId> {
+        self.dispatched().into_iter().map(|(id, _)| id).collect()
     }
 }
 
@@ -135,17 +155,31 @@ impl AgentDispatch for StubRegistry {
     fn connected(&self) -> Vec<AppId> {
         self.connected.lock().unwrap().clone()
     }
-    async fn dispatch(&self, app_id: &AppId, _: &JobDispatch) -> DomainResult<()> {
-        self.dispatched.lock().unwrap().push(app_id.clone());
+    async fn dispatch(&self, app_id: &AppId, dispatch: &JobDispatch) -> DomainResult<()> {
+        assert!(self.accepts, "no dispatch in this action");
+        self.dispatched
+            .lock()
+            .unwrap()
+            .push((app_id.clone(), dispatch.clone()));
+        *self
+            .loads
+            .lock()
+            .unwrap()
+            .entry(app_id.clone())
+            .or_insert(0) += 1;
         Ok(())
     }
     fn disconnect(&self, app_id: &AppId) {
         self.disconnected.lock().unwrap().push(app_id.clone());
     }
     fn in_flight(&self, app_id: &AppId) -> usize {
-        usize::from(self.connected.lock().unwrap().contains(app_id))
+        self.loads.lock().unwrap().get(app_id).copied().unwrap_or(0)
     }
-    fn release(&self, _: &AppId) {}
+    fn release(&self, app_id: &AppId) {
+        if let Some(n) = self.loads.lock().unwrap().get_mut(app_id) {
+            *n = n.saturating_sub(1);
+        }
+    }
 }
 
 /// Lists its pending rows that no agent holds, records each attribution, and orphans a fixed
@@ -349,9 +383,6 @@ impl ProjectRepository for OneProject {
             Err(DomainError::not_found("Project", id.to_string()))
         }
     }
-    async fn find_by_ids(&self, _: &[ProjectId]) -> DomainResult<Vec<Project>> {
-        Ok(Vec::new())
-    }
     async fn update(&self, _: &Project) -> DomainResult<Project> {
         unreachable!("no project write in this action")
     }
@@ -359,12 +390,6 @@ impl ProjectRepository for OneProject {
         unreachable!("no project write in this action")
     }
     async fn list_all(
-        &self,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty_page()
-    }
-    async fn list_active(
         &self,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
@@ -596,19 +621,16 @@ impl SessionRepository for StubSessions {
             .cloned()
             .ok_or_else(|| DomainError::not_found("Session", token))
     }
-    async fn update(&self, _: &Session) -> DomainResult<Session> {
-        unreachable!("no session update in this action")
-    }
     async fn delete_by_token(&self, token: &str) -> DomainResult<()> {
         self.rows.lock().unwrap().retain(|s| s.token() != token);
         self.deleted.lock().unwrap().push(token.to_string());
         Ok(())
     }
     async fn delete_expired(&self) -> DomainResult<u64> {
-        unreachable!("no session sweep in this action")
-    }
-    async fn list_for_user(&self, _: &UserId) -> DomainResult<Vec<Session>> {
-        unreachable!("no session listing in this action")
+        let mut rows = self.rows.lock().unwrap();
+        let before = rows.len();
+        rows.retain(|s| !s.is_expired());
+        Ok((before - rows.len()) as u64)
     }
 }
 

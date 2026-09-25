@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::domain::caller::CallerContext;
+use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::job::{Job, JobStatus};
@@ -10,7 +10,7 @@ use crate::domain::permission::Permission;
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::jobs::job;
 use crate::test_support::pipelines::PipelineBuilder;
-use crate::test_support::stubs::empty_page;
+use crate::test_support::stubs::{alice, empty_page};
 use async_trait::async_trait;
 use scylla_auth::authz::PermissionService;
 use scylla_extension::Actions;
@@ -18,13 +18,14 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 #[derive(Default)]
-struct StubJobs {
+struct RowJobs {
     rows: Mutex<HashMap<JobId, Job>>,
     deletes: Mutex<usize>,
+    swept: Mutex<Vec<Vec<AppId>>>,
 }
 
 #[async_trait]
-impl JobRepository for StubJobs {
+impl JobRepository for RowJobs {
     async fn create(&self, job: &Job) -> DomainResult<Job> {
         self.rows
             .lock()
@@ -49,8 +50,16 @@ impl JobRepository for StubJobs {
     async fn list_pending_unassigned(&self) -> DomainResult<Vec<Job>> {
         unreachable!("the scheduler reads pending jobs, not a job action")
     }
-    async fn orphan_running_without_agents(&self, _: &[AppId]) -> DomainResult<u64> {
-        unreachable!("the reaper orphans jobs, not a job action")
+    async fn orphan_running_without_agents(&self, connected: &[AppId]) -> DomainResult<u64> {
+        self.swept.lock().unwrap().push(connected.to_vec());
+        let running = self
+            .rows
+            .lock()
+            .unwrap()
+            .values()
+            .filter(|j| j.status() == JobStatus::Running)
+            .count();
+        Ok(running as u64)
     }
     async fn delete(&self, id: &JobId) -> DomainResult<()> {
         *self.deletes.lock().unwrap() += 1;
@@ -86,13 +95,17 @@ impl JobRepository for StubJobs {
 struct Lab {
     actions: Actions,
     uc: JobUseCases,
-    jobs: Arc<StubJobs>,
+    jobs: Arc<RowJobs>,
 }
 
 impl Lab {
     fn seed(&self) -> Job {
-        let pipeline = PipelineBuilder::for_project_id(ProjectId::new("p")).build();
-        let job = job(&pipeline);
+        self.insert(job(
+            &PipelineBuilder::for_project_id(ProjectId::new("p")).build()
+        ))
+    }
+
+    fn insert(&self, job: Job) -> Job {
         self.jobs
             .rows
             .lock()
@@ -103,7 +116,7 @@ impl Lab {
 }
 
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
-    let jobs = Arc::new(StubJobs::default());
+    let jobs = Arc::new(RowJobs::default());
     Lab {
         actions: actions(permissions),
         uc: JobUseCases::new(jobs.clone()),
@@ -283,4 +296,25 @@ async fn each_read_checks_its_own_permission() {
             Permission::ListJobsByOrganization(OrganizationId::new("acme")),
         ]
     );
+}
+
+#[tokio::test]
+async fn a_reap_pass_asks_no_permission_and_refuses_a_caller_that_is_not_a_service() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(permissions.clone());
+    lab.insert(lab.seed().start().unwrap());
+    let reap = || ReapOrphanedJobs { connected: vec![] };
+
+    let service = CallerContext::Service(ServiceIdentity::job_reaper());
+    let reaped = lab.actions.run(&lab.uc, &service, reap()).await.unwrap();
+    let err = lab
+        .actions
+        .run(&lab.uc, &alice(), reap())
+        .await
+        .unwrap_err();
+
+    assert_eq!(reaped, 1);
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert!(permissions.permissions().is_empty());
+    assert_eq!(lab.jobs.swept.lock().unwrap().len(), 1);
 }

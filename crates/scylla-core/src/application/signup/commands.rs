@@ -12,7 +12,8 @@ use scylla_extension::{
     Access, Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 
-/// No `Debug`: `password` is the credential. `Prepare` hashes it, so only the hash is staged.
+/// `Prepare` hashes `password`, so only the hash is staged.
+#[derive(Debug)]
 pub struct Signup {
     pub username: Username,
     pub email: Email,

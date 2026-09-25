@@ -425,11 +425,6 @@ impl Job {
         Ok(())
     }
 
-    #[must_use]
-    pub fn can_cancel(&self) -> bool {
-        matches!(self.state, JobState::Pending | JobState::Running { .. })
-    }
-
     /// A pending node has no execution behind it: log rows keyed to it are stale or early.
     #[must_use]
     pub fn logs_readable_for(&self, node_id: &NodeId) -> bool {
@@ -777,7 +772,6 @@ mod tests {
     fn cannot_cancel_terminal_job() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
         let job = running_job(&pipeline).complete().unwrap();
-        assert!(!job.can_cancel());
         assert!(job.cancel().is_err());
     }
 

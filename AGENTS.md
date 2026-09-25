@@ -26,9 +26,9 @@ Dependencies point one way: `domain <- auth <- core <- db <- server <- ce`, with
 this one by git tag and registers its own hooks; nothing here depends on it.
 
 Every package sits exactly two directories below the root, and for two of
-them that depth is load-bearing: `sqlx::migrate!("../../migrations")` (scylla-db)
-and the rust-embed `#[folder = "../../apps/frontend/dist/"]` (scylla-core)
-resolve against `CARGO_MANIFEST_DIR`.
+them that depth is load-bearing: `sqlx::migrate!("../../migrations")`
+(scylla-db) and the rust-embed `#[folder = "../../apps/frontend/dist/"]`
+(scylla-core) resolve against `CARGO_MANIFEST_DIR`.
 
 ## Guides
 

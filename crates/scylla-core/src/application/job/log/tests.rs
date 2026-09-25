@@ -3,13 +3,18 @@
 use super::*;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::caller::CallerContext;
+use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::{AppId, JobId, JobLogId};
+use crate::domain::ids::ProjectId;
+use crate::domain::ids::{AppId, JobId};
 use crate::domain::job::JobLog;
 use crate::domain::permission::Permission;
 use crate::domain::pipeline::NodeId;
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::job_logs::{JobLogBuilder, job_log};
+use crate::test_support::jobs::JobBuilder;
+use crate::test_support::pipelines::{PipelineBuilder, node};
+use crate::test_support::stubs::StubJobs;
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use futures_util::{StreamExt, stream};
@@ -33,9 +38,6 @@ impl JobLogRepository for StubLogs {
     async fn create(&self, log: &JobLog) -> DomainResult<JobLog> {
         self.rows.lock().unwrap().push(log.clone());
         Ok(log.clone())
-    }
-    async fn find_by_id(&self, _: &JobLogId) -> DomainResult<JobLog> {
-        unreachable!("no job log action reads one line by id")
     }
     async fn list_by_job(
         &self,
@@ -87,14 +89,36 @@ struct Lab {
     live: Arc<StubLive>,
 }
 
+/// `job-1` runs `build`; `test` has not started.
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
+    let pipeline = PipelineBuilder::for_project_id(ProjectId::new("p"))
+        .nodes(vec![node("build", &[]), node("test", &["build"])])
+        .build();
+    let job = JobBuilder::new(&pipeline)
+        .id(JobId::new("job-1"))
+        .running(true)
+        .build()
+        .apply_node_started(&NodeId::new("build").unwrap(), clock::now())
+        .unwrap();
     let logs = Arc::new(StubLogs::default());
     let live = Arc::new(StubLive::default());
     Lab {
         actions: actions(permissions),
-        uc: JobLogUseCases::new(logs.clone(), live.clone()),
+        uc: JobLogUseCases::new(
+            logs.clone(),
+            live.clone(),
+            Arc::new(StubJobs::with(vec![job])),
+        ),
         logs,
         live,
+    }
+}
+
+fn list(node: Option<&str>) -> ListJobLogs {
+    ListJobLogs {
+        job_id: JobId::new("job-1"),
+        node_id: node.map(|n| NodeId::new(n).unwrap()),
+        pagination: None,
     }
 }
 
@@ -150,28 +174,12 @@ async fn a_list_reads_every_node_or_the_one_it_names() {
 
     let all = lab
         .actions
-        .run(
-            &lab.uc,
-            &agent(),
-            ListJobLogs {
-                job_id: job_id.clone(),
-                node_id: None,
-                pagination: None,
-            },
-        )
+        .run(&lab.uc, &agent(), list(None))
         .await
         .unwrap();
     let one = lab
         .actions
-        .run(
-            &lab.uc,
-            &agent(),
-            ListJobLogs {
-                job_id: job_id.clone(),
-                node_id: Some(NodeId::new("test").unwrap()),
-                pagination: None,
-            },
-        )
+        .run(&lab.uc, &agent(), list(Some("build")))
         .await
         .unwrap();
 
@@ -182,9 +190,57 @@ async fn a_list_reads_every_node_or_the_one_it_names() {
         permissions.permissions(),
         vec![
             Permission::ReadJobLogs(job_id.clone()),
-            Permission::ReadJobLogs(job_id),
+            Permission::ReadJobLogs(job_id.clone()),
+            Permission::ReadJob(job_id),
         ]
     );
+}
+
+#[tokio::test]
+async fn a_list_of_a_node_that_has_not_started_is_empty() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let job_id = JobId::new("job-1");
+    lab.logs
+        .rows
+        .lock()
+        .unwrap()
+        .push(job_log(&job_id, "test", "early"));
+
+    let page = lab
+        .actions
+        .run(&lab.uc, &agent(), list(Some("test")))
+        .await
+        .unwrap();
+
+    assert!(page.items().is_empty());
+    assert_eq!(page.metadata().total_count(), 0);
+    assert!(lab.logs.reads.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn a_tail_of_a_node_that_has_not_started_replays_nothing() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let job_id = JobId::new("job-1");
+    let early = job_log(&job_id, "test", "early");
+    let live = job_log(&job_id, "test", "live");
+    lab.logs.rows.lock().unwrap().push(early);
+    lab.live.lines.lock().unwrap().push(live);
+
+    let tail = lab
+        .actions
+        .run(
+            &lab.uc,
+            &agent(),
+            TailJobLogs {
+                job_id,
+                node_id: Some(NodeId::new("test").unwrap()),
+            },
+        )
+        .await
+        .unwrap();
+    let lines: Vec<String> = tail.map(|l| l.unwrap().line().to_string()).collect().await;
+
+    assert_eq!(lines, vec!["live"]);
 }
 
 #[tokio::test]

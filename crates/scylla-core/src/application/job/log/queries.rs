@@ -24,7 +24,11 @@ pub struct ListJobLogs {
 
 impl Describe for ListJobLogs {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ReadJobLogs(self.job_id.clone()))
+        let logs = Permission::ReadJobLogs(self.job_id.clone());
+        match self.node_id {
+            Some(_) => Access::RequiresAll(vec![logs, Permission::ReadJob(self.job_id.clone())]),
+            None => Access::Requires(logs),
+        }
     }
 }
 
@@ -37,6 +41,13 @@ impl Run<Fetch<ListJobLogs>> for JobLogUseCases {
     async fn run(&self, input: Authorized<ListJobLogs>) -> DomainResult<Fetched<ListJobLogs>> {
         let query = input.command();
         let pagination = query.pagination.as_ref();
+        if !self
+            .node_readable(&query.job_id, query.node_id.as_ref())
+            .await?
+        {
+            let params = query.pagination.unwrap_or_default();
+            return Ok(input.fetched(PaginatedResult::new(Vec::new(), &params, 0)));
+        }
         let page = match &query.node_id {
             Some(node_id) => {
                 self.log_repo
@@ -49,7 +60,8 @@ impl Run<Fetch<ListJobLogs>> for JobLogUseCases {
     }
 }
 
-/// The persisted lines, then the live ones; a live line already in the snapshot is dropped.
+/// The persisted lines, then the live ones; a live line already in the snapshot is dropped. A
+/// node that has not started replays nothing.
 #[derive(Debug)]
 pub struct TailJobLogs {
     pub job_id: JobId,
@@ -58,7 +70,11 @@ pub struct TailJobLogs {
 
 impl Describe for TailJobLogs {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ReadJobLogs(self.job_id.clone()))
+        let logs = Permission::ReadJobLogs(self.job_id.clone());
+        match self.node_id {
+            Some(_) => Access::RequiresAll(vec![logs, Permission::ReadJob(self.job_id.clone())]),
+            None => Access::Requires(logs),
+        }
     }
 }
 
@@ -72,10 +88,13 @@ impl Run<Fetch<TailJobLogs>> for JobLogUseCases {
         let query = input.command();
         let node_id = query.node_id.as_ref();
         let live = self.stream_port.subscribe(&query.job_id, node_id).await?;
-        let historical = self
-            .log_repo
-            .list_all_by_job(&query.job_id, node_id)
-            .await?;
+        let historical = if self.node_readable(&query.job_id, node_id).await? {
+            self.log_repo
+                .list_all_by_job(&query.job_id, node_id)
+                .await?
+        } else {
+            Vec::new()
+        };
         let cutoff = historical.last().map(JobLog::timestamp);
 
         let seen: HashSet<(DateTime<Utc>, NodeId, LogStream, String)> = historical

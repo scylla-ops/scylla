@@ -5,11 +5,12 @@
 //! is on an organization or a project, so they are `Authenticated` and the target is the caller.
 
 use super::AgentUseCases;
+use crate::application::actions::app_only;
 use crate::application::app::mint_app_secret;
 use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential, AppName, AppSecret, AppSecretLabel};
-use crate::domain::caller::CallerContext;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::clock;
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
@@ -143,15 +144,6 @@ impl Run<Persist<DeleteAgent>> for AgentUseCases {
     }
 }
 
-fn reporting_agent(caller: &CallerContext) -> DomainResult<AppId> {
-    match caller {
-        CallerContext::App(app_id) => Ok(app_id.clone()),
-        _ => Err(DomainError::forbidden(
-            "only an agent reports its own state",
-        )),
-    }
-}
-
 #[derive(Debug)]
 pub struct TouchAgent;
 
@@ -169,8 +161,8 @@ impl Command for TouchAgent {
 #[async_trait]
 impl Run<Prepare<TouchAgent>> for AgentUseCases {
     async fn run(&self, input: Authorized<TouchAgent>) -> DomainResult<Prepared<TouchAgent>> {
-        let app_id = reporting_agent(input.caller())?;
-        Ok(input.prepared(Draft::new((app_id, Utc::now()))))
+        let app_id = app_only(input.caller())?;
+        Ok(input.prepared(Draft::new((app_id, clock::now()))))
     }
 }
 
@@ -209,7 +201,7 @@ impl Run<Prepare<RecordAgentHost>> for AgentUseCases {
         &self,
         input: Authorized<RecordAgentHost>,
     ) -> DomainResult<Prepared<RecordAgentHost>> {
-        let app_id = reporting_agent(input.caller())?;
+        let app_id = app_only(input.caller())?;
         let host = input.command().host.clone();
         Ok(input.prepared(Draft::new((app_id, host))))
     }

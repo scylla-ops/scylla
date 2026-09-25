@@ -8,12 +8,12 @@ pub mod scheduler;
 pub mod webhook;
 
 pub use commands::{
-    ClaimDueTriggers, CreateTrigger, DeleteTrigger, NewTrigger, RecordTriggerFire,
+    ClaimDueTriggers, CreateTrigger, CreatedTrigger, DeleteTrigger, NewTrigger, RecordTriggerFire,
     ScheduleCronTriggers, SetTriggerEnabled, UpdateTrigger,
 };
 pub use delivery::TriggerDeliveryRepository;
 pub use fire::{FireTriggerNow, TriggerFireUseCases, TriggerFirer, TriggerFiring};
-pub use queries::{GetTrigger, ListPipelineTriggers};
+pub use queries::{GetTrigger, ListPipelineTriggers, ResolveTriggerRun, TriggerRun};
 pub use repository::TriggerRepository;
 pub use schedule::{CronSchedule, next_fire_time};
 pub use scheduler::TriggerCronScheduler;
@@ -28,7 +28,7 @@ use crate::application::{
 use crate::domain::app::{App, AppCredential, AppName, AppSecretLabel};
 use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::OrganizationId;
+use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::role::RoleName;
 use crate::domain::trigger::Trigger;
 use derive_more::Constructor;
@@ -42,8 +42,8 @@ pub(crate) const TRIGGER_RUNNER_APP_NAME: &str = "trigger-runner";
 const RUNNER_SECRET_LABEL: &str = "default";
 
 /// The trigger aggregate's stage runners, one block per action in `commands.rs` and
-/// `queries.rs`. It has no public method; `Actions::run` drives it, also for the writes of the
-/// cron scheduler and of the trigger firer.
+/// `queries.rs`. It has no public method; `Actions::run` drives it, also for the reads and the
+/// writes of the cron scheduler and of the trigger firer.
 #[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct TriggerUseCases {
@@ -65,12 +65,28 @@ impl TriggerUseCases {
         Ok(())
     }
 
+    async fn runner_app(&self, organization_id: &OrganizationId) -> DomainResult<Option<AppId>> {
+        Ok(self
+            .app_repo
+            .list_by_organization(organization_id)
+            .await?
+            .into_iter()
+            .find(|app| app.name().to_string() == TRIGGER_RUNNER_APP_NAME)
+            .map(|app| app.id().clone()))
+    }
+
+    async fn trigger_runner(&self, trigger: &Trigger) -> DomainResult<AppId> {
+        let pipeline = self.pipeline_repo.find_by_id(trigger.pipeline_id()).await?;
+        let project = self.project_repo.find_by_id(pipeline.project_id()).await?;
+        self.runner_app(project.organization_id())
+            .await?
+            .ok_or_else(|| {
+                DomainError::internal("trigger-runner App is not provisioned for this organization")
+            })
+    }
+
     async fn ensure_runner_app(&self, organization_id: &OrganizationId) -> DomainResult<()> {
-        let existing = self.app_repo.list_by_organization(organization_id).await?;
-        if existing
-            .iter()
-            .any(|app| app.name().to_string() == TRIGGER_RUNNER_APP_NAME)
-        {
+        if self.runner_app(organization_id).await?.is_some() {
             return Ok(());
         }
 

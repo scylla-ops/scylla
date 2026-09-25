@@ -227,6 +227,7 @@ async fn reads_check_their_permission_and_join_the_live_registry() {
     let lab = lab(permissions.clone());
     let id = lab.create().await.unwrap().app.id().clone();
     lab.registry.connect(&id);
+    lab.registry.load(&id, 1);
 
     let views = lab
         .actions

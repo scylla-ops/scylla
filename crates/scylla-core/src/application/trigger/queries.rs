@@ -2,8 +2,9 @@
 //! its output type, what `Fetch` reads.
 
 use super::TriggerUseCases;
-use crate::domain::errors::DomainResult;
-use crate::domain::ids::{PipelineId, TriggerId};
+use crate::application::actions::service_only;
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::{AppId, PipelineId, TriggerId};
 use crate::domain::permission::Permission;
 use crate::domain::trigger::Trigger;
 use async_trait::async_trait;
@@ -58,5 +59,44 @@ impl Run<Fetch<ListPipelineTriggers>> for TriggerUseCases {
             .list_by_pipeline(&input.command().pipeline_id)
             .await?;
         Ok(input.fetched(triggers))
+    }
+}
+
+/// What a fire needs, read by the trigger firer service: the trigger, refused when it is
+/// disabled, and the trigger-runner App of its organization. A runner that cannot be found is a
+/// failed run, not a refusal, so the fire still records it.
+#[derive(Debug)]
+pub struct ResolveTriggerRun {
+    pub id: TriggerId,
+}
+
+pub struct TriggerRun {
+    pub trigger: Trigger,
+    pub runner: DomainResult<AppId>,
+}
+
+impl Describe for ResolveTriggerRun {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Query for ResolveTriggerRun {
+    type Output = TriggerRun;
+}
+
+#[async_trait]
+impl Run<Fetch<ResolveTriggerRun>> for TriggerUseCases {
+    async fn run(
+        &self,
+        input: Authorized<ResolveTriggerRun>,
+    ) -> DomainResult<Fetched<ResolveTriggerRun>> {
+        service_only(input.caller())?;
+        let trigger = self.trigger_repo.find_by_id(&input.command().id).await?;
+        if !trigger.is_enabled() {
+            return Err(DomainError::business_rule("trigger is disabled"));
+        }
+        let runner = self.trigger_runner(&trigger).await;
+        Ok(input.fetched(TriggerRun { trigger, runner }))
     }
 }

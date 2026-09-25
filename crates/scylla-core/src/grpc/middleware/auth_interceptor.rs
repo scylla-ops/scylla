@@ -1,3 +1,4 @@
+use crate::application::auth::{SessionLookup, look_up_session};
 use crate::application::{AppTokenRepository, SessionRepository};
 use crate::domain::caller::CallerContext;
 use crate::grpc::mappers::domain_error_to_status;
@@ -66,13 +67,12 @@ impl AsyncInterceptor for AuthInterceptor {
         Box::pin(async move {
             let token = extract_bearer_token(&request)?;
 
-            // Only a genuine not-found falls through to the App token; a DB failure must surface as INTERNAL.
-            match session_repo.find_by_token(&token).await {
-                Ok(session) => {
-                    if session.is_expired() {
-                        let _ = session_repo.delete_by_token(&token).await;
-                        return Err(Status::unauthenticated("Token has expired"));
-                    }
+            // Only an unknown session falls through to the App token; a DB failure must surface as INTERNAL.
+            match look_up_session(&*session_repo, &token)
+                .await
+                .map_err(domain_error_to_status)?
+            {
+                SessionLookup::Live(session) => {
                     request
                         .extensions_mut()
                         .insert(AuthContext::new(CallerContext::User(
@@ -80,8 +80,8 @@ impl AsyncInterceptor for AuthInterceptor {
                         )));
                     return Ok(request);
                 }
-                Err(e) if e.is_not_found() => {}
-                Err(e) => return Err(domain_error_to_status(e)),
+                SessionLookup::Expired => return Err(Status::unauthenticated("Token has expired")),
+                SessionLookup::Unknown => {}
             }
 
             match app_token_repo.find_by_token(&token).await {
@@ -120,28 +120,21 @@ mod tests {
 
     struct StubSessionRepo {
         find_by_token_fn: Box<dyn Fn(&str) -> DomainResult<Session> + Send + Sync>,
-        delete_by_token_fn: Box<dyn Fn(&str) -> DomainResult<()> + Send + Sync>,
     }
 
     #[async_trait]
     impl SessionRepository for StubSessionRepo {
         async fn create(&self, _s: &Session) -> DomainResult<Session> {
-            unimplemented!()
+            unreachable!("the interceptor opens no session")
         }
         async fn find_by_token(&self, token: &str) -> DomainResult<Session> {
             (self.find_by_token_fn)(token)
         }
-        async fn update(&self, _s: &Session) -> DomainResult<Session> {
-            unimplemented!()
-        }
-        async fn delete_by_token(&self, token: &str) -> DomainResult<()> {
-            (self.delete_by_token_fn)(token)
+        async fn delete_by_token(&self, _: &str) -> DomainResult<()> {
+            unreachable!("the interceptor only reads")
         }
         async fn delete_expired(&self) -> DomainResult<u64> {
-            unimplemented!()
-        }
-        async fn list_for_user(&self, _uid: &UserId) -> DomainResult<Vec<Session>> {
-            unimplemented!()
+            unreachable!("the interceptor only reads")
         }
     }
 
@@ -152,7 +145,7 @@ mod tests {
     #[async_trait]
     impl AppTokenRepository for StubAppTokenRepo {
         async fn create(&self, _t: &AppToken) -> DomainResult<()> {
-            unimplemented!()
+            unreachable!("the interceptor issues no token")
         }
         async fn find_by_token(&self, token: &str) -> DomainResult<AppToken> {
             (self.find_by_token_fn)(token)
@@ -206,7 +199,6 @@ mod tests {
 
         let repo = Arc::new(StubSessionRepo {
             find_by_token_fn: Box::new(move |_| Ok(s.clone())),
-            delete_by_token_fn: Box::new(|_| Ok(())),
         });
 
         let mut interceptor = AuthInterceptor::new(repo, no_app_tokens());
@@ -234,7 +226,6 @@ mod tests {
 
         let session_repo = Arc::new(StubSessionRepo {
             find_by_token_fn: Box::new(|tok| Err(DomainError::not_found("Session", tok))),
-            delete_by_token_fn: Box::new(|_| Ok(())),
         });
         let app_repo = Arc::new(StubAppTokenRepo {
             find_by_token_fn: Box::new(move |_| Ok(t.clone())),
@@ -256,7 +247,6 @@ mod tests {
     async fn interceptor_missing_auth_header() {
         let repo = Arc::new(StubSessionRepo {
             find_by_token_fn: Box::new(|_| unreachable!()),
-            delete_by_token_fn: Box::new(|_| unreachable!()),
         });
 
         let mut interceptor = AuthInterceptor::new(repo, no_app_tokens());
@@ -273,7 +263,6 @@ mod tests {
 
         let repo = Arc::new(StubSessionRepo {
             find_by_token_fn: Box::new(move |_| Ok(s.clone())),
-            delete_by_token_fn: Box::new(|_| Ok(())),
         });
 
         let mut interceptor = AuthInterceptor::new(repo, no_app_tokens());
@@ -290,7 +279,6 @@ mod tests {
     async fn interceptor_unknown_token() {
         let repo = Arc::new(StubSessionRepo {
             find_by_token_fn: Box::new(|_| Err(DomainError::not_found("Session", "x"))),
-            delete_by_token_fn: Box::new(|_| Ok(())),
         });
 
         let mut interceptor = AuthInterceptor::new(repo, no_app_tokens());

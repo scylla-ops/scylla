@@ -5,7 +5,7 @@ use crate::application::{DispatchUseCases, PipelineUseCases};
 use crate::domain::agent::Agent;
 use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::ids::{AppId, PipelineId, ProjectId, TriggerId};
-use crate::domain::job::{Job, JobOrigin};
+use crate::domain::job::Job;
 use crate::domain::permission::Permission;
 use crate::domain::trigger::{CronSpec, TriggerName, TriggerSource, WebhookSpec};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
@@ -99,8 +99,8 @@ impl TriggerRepository for StubTriggers {
 }
 
 #[derive(Default)]
-struct StubApps {
-    apps: Mutex<Vec<App>>,
+pub(super) struct StubApps {
+    pub(super) apps: Mutex<Vec<App>>,
     grants: Mutex<Vec<Grant>>,
 }
 
@@ -184,18 +184,18 @@ impl PermissionService for NoRunPermissionService {
     }
 }
 
-struct Lab {
-    actions: Arc<Actions>,
-    uc: Arc<TriggerUseCases>,
+pub(super) struct Lab {
+    pub(super) actions: Arc<Actions>,
+    pub(super) uc: Arc<TriggerUseCases>,
     triggers: Arc<StubTriggers>,
-    apps: Arc<StubApps>,
+    pub(super) apps: Arc<StubApps>,
     policy: Arc<CountingPolicy>,
     pipelines: Arc<PipelineUseCases>,
-    jobs: Arc<StubJobs>,
+    pub(super) jobs: Arc<StubJobs>,
 }
 
 impl Lab {
-    async fn create(&self, source: TriggerSource) -> DomainResult<(Trigger, Option<String>)> {
+    pub(super) async fn create(&self, source: TriggerSource) -> DomainResult<CreatedTrigger> {
         self.actions.run(&*self.uc, &alice(), create(source)).await
     }
 
@@ -220,7 +220,7 @@ impl Lab {
             .await
     }
 
-    fn firer(&self) -> Arc<TriggerFirer> {
+    pub(super) fn firer(&self) -> Arc<TriggerFirer> {
         Arc::new(TriggerFirer::new(
             self.actions.clone(),
             self.uc.clone(),
@@ -228,11 +228,11 @@ impl Lab {
         ))
     }
 
-    fn stored(&self, id: &TriggerId) -> Trigger {
+    pub(super) fn stored(&self, id: &TriggerId) -> Trigger {
         self.triggers.rows.lock().unwrap()[id].0.clone()
     }
 
-    fn seed(&self) -> Trigger {
+    pub(super) fn seed(&self) -> Trigger {
         let trigger = Trigger::create(
             pipeline_id(),
             TriggerName::new("nightly").unwrap(),
@@ -249,7 +249,7 @@ impl Lab {
     }
 }
 
-fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
+pub(super) fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let project = ProjectBuilder::for_org_id(organization_id(), "rocket")
         .id(ProjectId::new("proj-1"))
         .build();
@@ -299,11 +299,11 @@ fn organization_id() -> OrganizationId {
     OrganizationId::new("acme")
 }
 
-fn pipeline_id() -> PipelineId {
+pub(super) fn pipeline_id() -> PipelineId {
     PipelineId::new("pl-1")
 }
 
-fn cron() -> TriggerSource {
+pub(super) fn cron() -> TriggerSource {
     TriggerSource::Cron(CronSpec::new("0 3 * * *").unwrap())
 }
 
@@ -325,7 +325,10 @@ async fn a_create_checks_manage_then_run_and_provisions_the_runner_app_once() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
 
-    let (trigger, secret) = lab.create(cron()).await.unwrap();
+    let CreatedTrigger {
+        trigger,
+        webhook_secret: secret,
+    } = lab.create(cron()).await.unwrap();
     lab.create(cron()).await.unwrap();
 
     assert_eq!(
@@ -351,7 +354,10 @@ async fn a_create_checks_manage_then_run_and_provisions_the_runner_app_once() {
 async fn a_webhook_create_answers_the_plaintext_once_and_stores_it_encrypted() {
     let lab = lab(Arc::new(RecordingPermissionService::new()));
 
-    let (trigger, secret) = lab.create(webhook()).await.unwrap();
+    let CreatedTrigger {
+        trigger,
+        webhook_secret: secret,
+    } = lab.create(webhook()).await.unwrap();
 
     let secret = secret.expect("a webhook trigger has a secret");
     assert_eq!(secret.len(), 64);
@@ -366,7 +372,7 @@ async fn a_webhook_create_answers_the_plaintext_once_and_stores_it_encrypted() {
 async fn a_denied_caller_writes_nothing() {
     let lab = lab(Arc::new(DenyingPermissionService::new()));
 
-    let err = lab.create(cron()).await.unwrap_err();
+    let err = lab.create(cron()).await.err().unwrap();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert!(lab.triggers.rows.lock().unwrap().is_empty());
@@ -378,7 +384,7 @@ async fn a_manager_without_run_rights_cannot_create_a_trigger() {
     let permissions = Arc::new(NoRunPermissionService::default());
     let lab = lab(permissions.clone());
 
-    let err = lab.create(cron()).await.unwrap_err();
+    let err = lab.create(cron()).await.err().unwrap();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert_eq!(
@@ -407,7 +413,8 @@ async fn a_create_on_an_unknown_pipeline_is_not_found_and_writes_nothing() {
             },
         )
         .await
-        .unwrap_err();
+        .err()
+        .unwrap();
 
     assert!(matches!(err, DomainError::NotFound { .. }));
     assert!(lab.triggers.rows.lock().unwrap().is_empty());
@@ -548,118 +555,8 @@ async fn an_allowed_action_on_an_unknown_trigger_is_not_found() {
     assert!(matches!(err, DomainError::NotFound { .. }));
 }
 
-fn runner(lab: &Lab) -> CallerContext {
-    CallerContext::App(lab.apps.apps.lock().unwrap()[0].id().clone())
-}
-
-fn firer() -> CallerContext {
-    CallerContext::Service(ServiceIdentity::trigger_firer())
-}
-
 fn cron_scheduler() -> CallerContext {
     CallerContext::Service(ServiceIdentity::cron_scheduler())
-}
-
-#[tokio::test]
-async fn a_fire_runs_as_the_runner_app_then_records_the_outcome_as_the_firer() {
-    let permissions = Arc::new(RecordingPermissionService::new());
-    let lab = lab(permissions.clone());
-    let (trigger, _) = lab.create(cron()).await.unwrap();
-    let before = permissions.checks().len();
-
-    let job = lab.firer().fire(trigger.id(), None, None).await.unwrap();
-
-    assert_eq!(
-        permissions.checks()[before..],
-        [
-            (runner(&lab), Permission::RunPipeline(pipeline_id())),
-            (firer(), Permission::ManageTrigger(trigger.id().clone())),
-        ]
-    );
-    assert_eq!(
-        job.origin(),
-        &JobOrigin::Cron {
-            trigger_id: trigger.id().clone()
-        }
-    );
-    assert_eq!(lab.jobs.rows().len(), 1);
-    assert_eq!(lab.stored(trigger.id()).last_status(), Some("ok"));
-}
-
-#[tokio::test]
-async fn a_disabled_trigger_does_not_fire_and_records_nothing() {
-    let permissions = Arc::new(RecordingPermissionService::new());
-    let lab = lab(permissions.clone());
-    let (trigger, _) = lab.create(cron()).await.unwrap();
-    lab.actions
-        .run(
-            &*lab.uc,
-            &alice(),
-            SetTriggerEnabled {
-                id: trigger.id().clone(),
-                enabled: false,
-            },
-        )
-        .await
-        .unwrap();
-    let before = permissions.checks().len();
-
-    let err = lab
-        .firer()
-        .fire(trigger.id(), None, None)
-        .await
-        .unwrap_err();
-
-    assert!(matches!(err, DomainError::BusinessRule(_)));
-    assert_eq!(permissions.checks().len(), before);
-    assert!(lab.jobs.rows().is_empty());
-    assert_eq!(lab.stored(trigger.id()).last_status(), None);
-}
-
-#[tokio::test]
-async fn a_failed_run_is_recorded_as_an_error() {
-    let lab = lab(Arc::new(RecordingPermissionService::new()));
-    let trigger = lab.seed();
-
-    let err = lab
-        .firer()
-        .fire(trigger.id(), None, None)
-        .await
-        .unwrap_err();
-
-    assert!(matches!(err, DomainError::Internal(_)), "no runner app");
-    assert_eq!(lab.stored(trigger.id()).last_status(), Some("error"));
-}
-
-#[tokio::test]
-async fn a_fire_now_checks_run_on_the_trigger_then_fires_it() {
-    let permissions = Arc::new(RecordingPermissionService::new());
-    let lab = lab(permissions.clone());
-    let (trigger, _) = lab.create(cron()).await.unwrap();
-    let firing: Arc<dyn TriggerFiring> = lab.firer();
-    let uc = TriggerFireUseCases::new(lab.triggers.clone(), firing);
-    let before = permissions.checks().len();
-
-    let job = lab
-        .actions
-        .run(
-            &uc,
-            &alice(),
-            FireTriggerNow {
-                id: trigger.id().clone(),
-            },
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(
-        permissions.checks()[before],
-        (
-            alice(),
-            Permission::RunTriggerPipeline(trigger.id().clone())
-        )
-    );
-    assert_eq!(lab.jobs.rows()[0].id(), job.id());
 }
 
 #[derive(Default)]
@@ -743,7 +640,7 @@ async fn one_fire_failure_does_not_abort_the_pass() {
 #[tokio::test]
 async fn a_webhook_trigger_is_never_seeded_as_cron() {
     let lab = lab(Arc::new(RecordingPermissionService::new()));
-    let (hook, _) = lab.create(webhook()).await.unwrap();
+    let hook = lab.create(webhook()).await.unwrap().trigger;
 
     lab.scheduler(Arc::default()).tick().await;
 
