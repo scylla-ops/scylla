@@ -20,7 +20,7 @@ The shared kernel, and the only Rust code both binaries run. Holds the domain mo
 Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
 
 ### `scylla-proto`
-Library crate that generates the Rust bindings. The `.proto` files are in `crates/scylla-proto/proto/`, a git submodule of [`scylla-ops/scylla-protos`](https://github.com/scylla-ops/scylla-protos). The frontend generates its TypeScript bindings from the same submodule, so the backend and the frontend use one pinned version.
+Library crate with the Rust bindings of the `.proto` files and the conversions to the domain types. The `.proto` files are in `crates/scylla-proto/proto/`, a git submodule of [`scylla-ops/scylla-protos`](https://github.com/scylla-ops/scylla-protos). The web UI pins the same repository with its own submodule.
 
 ### `postgres`
 Primary datastore. PostgreSQL 18 in the compose stack, listening on port `5432`. Schema is managed by versioned SQL files in `migrations/` applied via `sqlx::migrate!` at boot. The offline query cache lives in `.sqlx/` so Docker builds can compile without a live database.
@@ -219,16 +219,13 @@ Primary transport between API and internal services. Defined in `.proto` files i
 Two packages are deliberate leaves that others may import: `scylla.common.v1` (id wrappers, `Email`, pagination) and `scylla.exec.v1` (the step contract shared by pipelines and agents). Feature packages never import each other — they reference across contexts by id.
 
 ### gRPC-Web
-Browser-compatible variant of gRPC spoken by the frontend via `@protobuf-ts/grpcweb-transport`. Served by the control plane through `tonic-web`.
+Browser-compatible variant of gRPC, spoken by the web UI. Served by the control plane through `tonic-web`.
 
 ### Tonic
 Rust gRPC server/client framework used by all backend services.
 
 ### Prost
 Protobuf code generator used by Tonic. Converts `.proto` → Rust structs.
-
-### `protobuf-ts`
-TypeScript protobuf toolchain used by the frontend to generate clients from `.proto`.
 
 ### Auth interceptor
 Async Tonic interceptor (`crates/scylla-core/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal: a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
@@ -251,12 +248,6 @@ Task runner recipes: `just up`, `just down`, `just logs`, `just release <version
 
 ### `config/*.toml`
 Per-environment config for `scylla-ce` (under `binaries/scylla-ce/config/`): `local.toml` (host-native dev), `docker.toml` (compose), `prod.toml` (production).
-
-### `VITE_API_URL`
-Frontend env var pointing the gRPC-Web client at the API (default: same origin). Set in `apps/frontend/.env.local` to override.
-
-### Lingui
-i18n framework used by the frontend. `pnpm extract` / `pnpm compile` manage message catalogs under `apps/frontend/src/locales/`.
 
 ## Architecture terms
 

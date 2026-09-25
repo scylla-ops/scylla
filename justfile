@@ -19,14 +19,14 @@ default:
 
 # -- Dev (local stack) --
 
-# A release `cargo build` compiles apps/frontend/dist into the control-plane
+# A release `cargo build` compiles web/dist into the control-plane
 # binary, so this has to run first when building outside Docker. The image does
 # it on its own, in the Dockerfile's `ui` stage.
-# Build the web UI into apps/frontend/dist (prerequisite of a native release build)
+# Build the web UI (the scylla-web submodule) into web/dist (prerequisite of a native release build)
 [group('dev')]
 [no-exit-message]
 ui-build:
-    cd apps/frontend && pnpm install --frozen-lockfile && pnpm run build
+    cd web && pnpm install --frozen-lockfile && pnpm run build
 
 # Build all services for local dev (native arch)
 [group('dev')]

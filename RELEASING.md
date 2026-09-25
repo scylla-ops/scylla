@@ -82,9 +82,10 @@ thin and check none of them:
       points at a commit that does not describe them
 - [ ] `.sqlx/` is present and current (`just db-prepare`) — the backend builds
       with `SQLX_OFFLINE=true` and dies deep inside the Rust compile without it
-- [ ] `git submodule status` shows no `+` or `-` prefix, and the pinned
-      `scylla-protos` commit is pushed: the build context needs the protos,
-      and nobody else can build a tag whose pin is not on GitHub
+- [ ] `git submodule status --recursive` shows no `+` or `-` prefix, and the
+      pinned `scylla-web` and `scylla-protos` commits are pushed: the build
+      needs both, and nobody else can build a tag whose pins are not on
+      GitHub
 - [ ] you are logged in to Docker Hub
 
 Then:

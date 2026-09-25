@@ -22,7 +22,7 @@ The workspace is a stack of library crates under `crates/` with the two binaries
 crates/
   scylla-extension/   the edition boundary: the action pipeline every write goes through (depends on scylla-domain only)
   scylla-domain/      the shared kernel: domain model, JobEvent (no I/O, no crypto)
-  scylla-proto/       the Rust bindings; the .proto files are the scylla-protos submodule in proto/ (the frontend reads it too)
+  scylla-proto/       the Rust bindings and their conversions; the .proto files are the scylla-protos submodule in proto/
   scylla-auth/        the access model: RBAC ports and types, the Cedar adapter
   scylla-core/        use cases and their ports, gRPC + HTTP surfaces, server config, in-memory adapters
   scylla-db/          the Postgres adapters, the pool, the embedded migrations
@@ -30,9 +30,15 @@ crates/
 binaries/
   scylla-ce/          the Community Edition binary: a main.rs and config/*.toml
   scylla-agent/       the worker binary (depends on scylla-domain + scylla-proto only)
-apps/frontend/        the web UI, compiled into scylla-ce through scylla-core
+web/                  the scylla-web submodule: the web UI, compiled into scylla-ce through scylla-core
 migrations/           the SQL schema, embedded by scylla-db
 ```
+
+The `.proto` files are in
+[scylla-ops/scylla-protos](https://github.com/scylla-ops/scylla-protos) and the
+web UI is in [scylla-ops/scylla-web](https://github.com/scylla-ops/scylla-web).
+Both are git submodules, so clone with `--recurse-submodules`, or run
+`git submodule update --init --recursive`.
 
 Dependencies point one way, bottom to top:
 
@@ -125,22 +131,19 @@ The stack above is enough to run Scylla. To work on it:
 just db-up                                        # Postgres alone
 cargo run -p scylla-ce -- \
     --config binaries/scylla-ce/config/local.toml --no-ui
-cd apps/frontend && pnpm install && pnpm dev       # http://localhost:5173
 ```
 
-`--no-ui` is what makes this work: the web UI is compiled into the release
-binary, and in dev there is nothing to compile in — Vite owns it on `:5173`.
-The flag drops the UI routes entirely so the binary serves only the API.
-(`config/local.toml` already sets `[ui].enabled = false`, so the flag is
-belt-and-braces.) `apps/frontend/.env` points the dev bundle at `:8080`;
-`local.toml` allows that origin through CORS.
+`--no-ui` drops the UI routes, so the binary serves only the API.
+(`config/local.toml` already sets `[ui].enabled = false`.) To work on the UI,
+run the dev server of [scylla-web](https://github.com/scylla-ops/scylla-web)
+against `:8080`; `local.toml` allows its origin through CORS.
 
 To run the real thing natively, build the UI first — a release `cargo build`
-embeds whatever is in `apps/frontend/dist`. The protos are a git submodule, so
+embeds whatever is in `web/dist`. The UI and the protos are git submodules, so
 get them first (or clone with `--recurse-submodules`):
 
 ```sh
-git submodule update --init
+git submodule update --init --recursive
 just ui-build
 cargo build --release -p scylla-ce
 ```
@@ -181,7 +184,7 @@ Run `just --list` to see every recipe.
 
 **`scylla-ce` fails to connect to PostgreSQL.** Ensure `postgres` is `healthy` via `just status` (or `docker compose ps`). If it's stuck, run `just clean` to reset the volume and try again.
 
-**Frontend shows gRPC errors.** The UI and the API share an origin, so there is no CORS step to get wrong; check that `scylla-ce` is `healthy` (`just status`) and read its logs. `curl http://localhost:8080/healthz` should answer `ok`.
+**The web UI shows gRPC errors.** The UI and the API share an origin, so there is no CORS step to get wrong; check that `scylla-ce` is `healthy` (`just status`) and read its logs. `curl http://localhost:8080/healthz` should answer `ok`.
 
 **Agent not picking up jobs.** Agents run out-of-band (not in this compose stack). Check the agent's own logs and confirm it can reach the control plane at its `--control-plane-url` with a valid `--app-id` / `--app-secret`. In the UI the app shows as connected once its worker stream is open.
 
@@ -192,11 +195,7 @@ Run `just --list` to see every recipe.
 
 ## Optional: local development
 
-The Docker workflow above is self-contained — **Node.js and Rust are not required** to run Scylla. The sections below are only for contributors who want to iterate on the frontend or crates outside Docker.
-
-### Frontend (Vite dev server on `:5173`)
-
-Requires Node.js >= 20 and pnpm >= 9 (`corepack enable`). See [apps/frontend/README.md](apps/frontend/README.md) for setup.
+The Docker workflow above is self-contained: **Node.js and Rust are not required** to run Scylla. The section below is only for contributors who want to build the crates outside Docker.
 
 ### Building crates locally
 
