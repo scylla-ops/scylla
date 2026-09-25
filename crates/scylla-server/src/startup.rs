@@ -220,7 +220,6 @@ pub(crate) async fn init_services(
         org_repo.clone(),
         role_repo.clone(),
         mailer.clone(),
-        permission_checker.clone(),
     ));
     let invitation_accept_uc = Arc::new(InvitationAcceptUseCases::new(
         invite_repo.clone(),

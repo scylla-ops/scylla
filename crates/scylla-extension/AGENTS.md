@@ -457,9 +457,6 @@ the row is still in the state the gate saw.
   loaded credential knows that app. `DeleteApp` and `SetAppActive` stage the id
   alone: the row is not read before the write, so a missing app behaves as
   before.
-- `InvitationUseCases::revoke` stays outside the pipeline. Its permission is
-  `ManageInvitations` on the invitation's organization, and only the loaded
-  invitation knows that organization.
 - `InvitationAcceptUseCases::accept` stays outside the pipeline. The invitee
   has no account yet: the token is the credential, and no permission is asked.
   The invite mail is sent in the `commit` closure of `CreateInvitation`, after
@@ -490,6 +487,11 @@ the row is still in the state the gate saw.
   the same roles give them. They are not in the permission catalog, because a
   key is there one time only. `CreateTrigger` and `ListPipelineTriggers` keep
   `ManageTriggers` on the pipeline.
+- `RevokeInvitation` uses the same method: it asks for `RevokeInvitation` on
+  the invitation (`ResourceRef::Invitation`, one read to the organization).
+  It has the key `manageInvitations`, so the same roles give it, and it is not
+  in the permission catalog. `CreateInvitation` and `ListInvitations` keep
+  `ManageInvitations` on the organization.
 - `CreateTrigger` asks for `RunPipeline` a second time in its `Prepare` runner,
   and `UpdateTrigger` asks for `RunTriggerPipeline`. This check refuses:
   managing triggers must not give run rights. A `Policy` on `Prepare`

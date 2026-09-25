@@ -18,9 +18,10 @@ service InvitationService {
   // invitations, newest first. Expired ones stay listed while PENDING;
   // compare `expires_at` to filter them out.
   rpc ListInvitations(ListInvitationsRequest) returns (ListInvitationsResponse);
-  // Requires `manageInvitations` on the invitation's organization. The lookup
-  // runs first: an unknown `invitation_id` returns NOT_FOUND before the
-  // permission check. Sets the status to REVOKED. Revoking an ACCEPTED
+  // Requires `manageInvitations` on the invitation; a grant on the
+  // invitation's organization reaches it. An unknown `invitation_id` has no
+  // organization: it fails with PERMISSION_DENIED, and with NOT_FOUND only for
+  // a System grant. Sets the status to REVOKED. Revoking an ACCEPTED
   // invitation succeeds but keeps the membership that acceptance granted.
   rpc RevokeInvitation(RevokeInvitationRequest) returns (RevokeInvitationResponse);
 }

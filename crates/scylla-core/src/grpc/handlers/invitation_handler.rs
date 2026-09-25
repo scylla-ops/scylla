@@ -1,10 +1,7 @@
 use crate::application::InvitationUseCases;
-use crate::extract_auth_context;
 use crate::grpc::adapter::run;
-use crate::grpc::convert::id;
-use crate::grpc::mappers::{domain_error_to_status, invitation_to_proto};
+use crate::grpc::mappers::invitation_to_proto;
 use derive_more::Constructor;
-use scylla_domain::domain::ids::InvitationId;
 use scylla_extension::Actions;
 use scylla_proto::invitation::v1::{
     CreateInvitationRequest, CreateInvitationResponse, ListInvitationsRequest,
@@ -46,12 +43,7 @@ impl InvitationService for InvitationHandler {
         &self,
         request: Request<RevokeInvitationRequest>,
     ) -> Result<Response<RevokeInvitationResponse>, Status> {
-        let caller = caller!(request);
-        let id: InvitationId = id(request.into_inner().invitation_id, "invitation_id")?;
-        self.invitations
-            .revoke(&caller, &id)
-            .await
-            .map_err(domain_error_to_status)?;
+        run(&self.actions, &*self.invitations, request).await?;
         Ok(Response::new(RevokeInvitationResponse {}))
     }
 }

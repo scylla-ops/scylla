@@ -1,6 +1,6 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
-use crate::application::invitation::{CreateInvitation, ListInvitations};
+use crate::application::invitation::{CreateInvitation, ListInvitations, RevokeInvitation};
 use crate::grpc::convert::{Parse, id, optional, required, ts, valid, wrap};
 use scylla_domain::domain::invitation::{
     Invitation as DomainInvitation, InvitationStatus as DomainInvitationStatus,
@@ -9,6 +9,7 @@ use scylla_domain::domain::role::RoleName;
 use scylla_domain::domain::user::Email;
 use scylla_proto::invitation::v1::{
     CreateInvitationRequest, Invitation, InvitationStatus, ListInvitationsRequest,
+    RevokeInvitationRequest,
 };
 use tonic::Status;
 
@@ -46,6 +47,8 @@ impl Parse for CreateInvitationRequest {
 }
 
 parse!(ListInvitationsRequest => ListInvitations { organization_id: id(organization_id) });
+
+parse!(RevokeInvitationRequest => RevokeInvitation { id: id(invitation_id) });
 
 #[cfg(test)]
 mod tests {

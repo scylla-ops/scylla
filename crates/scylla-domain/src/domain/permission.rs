@@ -3,7 +3,7 @@ mod resource_ref;
 pub use resource_ref::*;
 
 use crate::domain::ids::{
-    AppId, JobId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
+    AppId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
 };
 use std::sync::LazyLock;
 
@@ -23,6 +23,8 @@ pub enum Permission {
     ListOrganizationMembers(OrganizationId),
     /// Separate from member listing so a plain member cannot enumerate invitee emails.
     ManageInvitations(OrganizationId),
+    /// `manageInvitations` on the invitation's organization. Shares its key, so it is not in the catalog.
+    RevokeInvitation(InvitationId),
     ListUserOrganizations(UserId),
 
     CreateProject(OrganizationId),
@@ -99,7 +101,7 @@ impl Permission {
             Self::DeleteOrganization(_) => "deleteOrganization",
             Self::ListOrganizations => "listOrganizations",
             Self::ListOrganizationMembers(_) => "listOrganizationMembers",
-            Self::ManageInvitations(_) => "manageInvitations",
+            Self::ManageInvitations(_) | Self::RevokeInvitation(_) => "manageInvitations",
             Self::ListUserOrganizations(_) => "listUserOrganizations",
 
             Self::CreateProject(_) => "createProject",
@@ -191,6 +193,8 @@ impl Permission {
             | Self::ListAgents(id)
             | Self::ManageOrgGrants(id) => ResourceRef::Organization(id.clone()),
 
+            Self::RevokeInvitation(id) => ResourceRef::Invitation(id.clone()),
+
             Self::ReadProject(id)
             | Self::UpdateProject(id)
             | Self::DeleteProject(id)
@@ -240,6 +244,7 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "system",
     "user",
     "organization",
+    "invitation",
     "project",
     "pipeline",
     "job",
@@ -342,7 +347,7 @@ mod catalog_tests {
     use super::{
         PERMISSION_CATALOG, Permission, RESOURCE_TYPES, catalog_variants, is_known_permission,
     };
-    use crate::domain::ids::TriggerId;
+    use crate::domain::ids::{InvitationId, TriggerId};
     use std::collections::HashSet;
 
     #[test]
@@ -370,5 +375,12 @@ mod catalog_tests {
         ] {
             assert!(is_known_permission(permission.key()));
         }
+    }
+
+    #[test]
+    fn invitation_permissions_reuse_catalog_keys() {
+        assert!(is_known_permission(
+            Permission::RevokeInvitation(InvitationId::new("_")).key()
+        ));
     }
 }

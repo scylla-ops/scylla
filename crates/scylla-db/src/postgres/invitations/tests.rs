@@ -43,7 +43,6 @@ async fn lab(pool: &sqlx::PgPool) -> Lab {
             Arc::new(PgOrganizationRepository::new(pool.clone())),
             Arc::new(PgRoleRepository::new(pool.clone())),
             mailer,
-            permission.clone(),
         ),
         accept: InvitationAcceptUseCases::new(
             invite_repo,

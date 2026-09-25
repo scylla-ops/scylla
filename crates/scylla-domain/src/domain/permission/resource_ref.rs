@@ -1,5 +1,5 @@
 use crate::domain::ids::{
-    AppId, JobId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
+    AppId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -7,6 +7,7 @@ pub enum ResourceRef {
     System,
     User(UserId),
     Organization(OrganizationId),
+    Invitation(InvitationId),
     Project(ProjectId),
     Pipeline(PipelineId),
     Job(JobId),
@@ -22,6 +23,7 @@ impl ResourceRef {
             Self::System => "system",
             Self::User(_) => "user",
             Self::Organization(_) => "organization",
+            Self::Invitation(_) => "invitation",
             Self::Project(_) => "project",
             Self::Pipeline(_) => "pipeline",
             Self::Job(_) => "job",
@@ -38,6 +40,7 @@ impl std::fmt::Display for ResourceRef {
             Self::System => write!(f, "{}", self.kind()),
             Self::User(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Organization(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Invitation(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Project(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Pipeline(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Job(id) => write!(f, "{}:{}", self.kind(), id.as_str()),

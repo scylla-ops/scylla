@@ -74,6 +74,14 @@ impl Invitation {
     }
 
     #[must_use]
+    pub fn revoked(self) -> Self {
+        Self {
+            status: InvitationStatus::Revoked,
+            ..self
+        }
+    }
+
+    #[must_use]
     pub fn is_acceptable(&self) -> bool {
         self.status == InvitationStatus::Pending && clock::now() <= self.expires_at
     }

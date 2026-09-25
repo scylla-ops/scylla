@@ -2,17 +2,18 @@
 
 use super::*;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::domain::errors::DomainError;
-use crate::domain::ids::{OrganizationId, UserId};
-use crate::domain::invitation::Invitation;
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::{InvitationId, OrganizationId, UserId};
+use crate::domain::invitation::{Invitation, InvitationStatus};
 use crate::domain::organization::{Organization, OrganizationName};
+use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, User};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::organizations::OrgBuilder;
 use crate::test_support::stubs::{alice, empty_page};
 use async_trait::async_trait;
-use scylla_auth::authz::{Grant, Role, ScopeKind};
+use scylla_auth::authz::{Grant, PermissionService, Role, RoleRepository, ScopeKind};
 use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -193,6 +194,12 @@ impl Lab {
     async fn create(&self, cmd: CreateInvitation) -> DomainResult<Invitation> {
         self.actions.run(&self.uc, &alice(), cmd).await
     }
+
+    async fn revoke(&self, id: &InvitationId) -> DomainResult<Invitation> {
+        self.actions
+            .run(&self.uc, &alice(), RevokeInvitation { id: id.clone() })
+            .await
+    }
 }
 
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
@@ -204,7 +211,7 @@ fn lab_with(permissions: Arc<dyn PermissionService>, mailer: StubMailer) -> Lab 
     let roles = Arc::new(StubRoles::default());
     let mailer = Arc::new(mailer);
     Lab {
-        actions: actions(permissions.clone()),
+        actions: actions(permissions),
         uc: InvitationUseCases::new(
             invitations.clone(),
             Arc::new(StubOrganizations(
@@ -212,7 +219,6 @@ fn lab_with(permissions: Arc<dyn PermissionService>, mailer: StubMailer) -> Lab 
             )),
             roles.clone(),
             mailer.clone(),
-            permissions,
         ),
         invitations,
         roles,
@@ -336,16 +342,51 @@ async fn a_list_checks_its_permission_and_reads_the_pending_invitations() {
 }
 
 #[tokio::test]
-async fn a_revoke_checks_the_permission_on_the_loaded_invitation_organization() {
+async fn a_revoke_checks_the_permission_on_the_invitation_then_revokes_it() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let created = lab.create(create(None)).await.unwrap();
 
-    lab.uc.revoke(&alice(), created.id()).await.unwrap();
+    let revoked = lab.revoke(created.id()).await.unwrap();
 
+    assert_eq!(revoked.id(), created.id());
+    assert_eq!(revoked.status(), InvitationStatus::Revoked);
     assert_eq!(
         permissions.permissions()[1],
-        Permission::ManageInvitations(organization())
+        Permission::RevokeInvitation(created.id().clone())
     );
     assert!(lab.invitations.rows.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn a_denied_revoke_never_reads_or_revokes() {
+    let lab = lab(Arc::new(DenyingPermissionService::new()));
+    let invitation = Invitation::create(
+        organization(),
+        Email::new("newbie@example.com").unwrap(),
+        None,
+        UserId::new("alice"),
+        "token".to_string(),
+    );
+    lab.invitations.create(&invitation).await.unwrap();
+
+    let err = lab.revoke(invitation.id()).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert!(
+        lab.invitations
+            .rows
+            .lock()
+            .unwrap()
+            .contains_key(invitation.id())
+    );
+}
+
+#[tokio::test]
+async fn an_allowed_revoke_of_an_unknown_invitation_is_not_found() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    let err = lab.revoke(&InvitationId::new("missing")).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::NotFound { .. }));
 }

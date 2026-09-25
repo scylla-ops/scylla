@@ -50,6 +50,18 @@ reaches it. Thus a caller without a System grant gets "forbidden" for an
 unknown secret or trigger, and does not learn if it exists. A caller with a
 System grant gets "not found".
 
+## Invitations
+
+An invitation is not a scope. A check on one invitation, for example to revoke
+it, finds the organization that holds the invitation. Then it applies the rule
+above to that organization, with the permission `manageInvitations`. Thus the
+roles that give this permission on the organization also give it on its
+invitations.
+
+A check on an unknown invitation finds no organization. As for an unknown
+secret or trigger, only a System grant reaches it. A caller without a System
+grant gets "forbidden", and a caller with a System grant gets "not found".
+
 ## Being somewhere
 
 Being in an organization, or on a project, means **holding a role on it**. It is

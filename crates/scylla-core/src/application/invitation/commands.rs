@@ -5,7 +5,7 @@ use super::InvitationUseCases;
 use crate::application::invitation::token::mint_invitation_token;
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::{OrganizationId, UserId};
+use crate::domain::ids::{InvitationId, OrganizationId, UserId};
 use crate::domain::invitation::Invitation;
 use crate::domain::organization::OrganizationName;
 use crate::domain::permission::Permission;
@@ -104,6 +104,48 @@ impl Run<Persist<CreateInvitation>> for InvitationUseCases {
                     tracing::warn!(error = %e, invite_id = %invitation.id(), "invite email send failed");
                 }
                 Ok(invitation)
+            })
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct RevokeInvitation {
+    pub id: InvitationId,
+}
+
+impl Describe for RevokeInvitation {
+    fn permission(&self) -> Permission {
+        Permission::RevokeInvitation(self.id.clone())
+    }
+}
+
+impl Command for RevokeInvitation {
+    type Staged = Invitation;
+    type Committed = Invitation;
+}
+
+#[async_trait]
+impl Run<Prepare<RevokeInvitation>> for InvitationUseCases {
+    async fn run(
+        &self,
+        input: Authorized<RevokeInvitation>,
+    ) -> DomainResult<Prepared<RevokeInvitation>> {
+        let invitation = self.invite_repo.find_by_id(&input.command().id).await?;
+        Ok(input.prepared(invitation))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<RevokeInvitation>> for InvitationUseCases {
+    async fn run(
+        &self,
+        input: Prepared<RevokeInvitation>,
+    ) -> DomainResult<Committed<RevokeInvitation>> {
+        input
+            .commit(async |invitation| {
+                self.invite_repo.revoke(invitation.id()).await?;
+                Ok(invitation.revoked())
             })
             .await
     }

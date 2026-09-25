@@ -205,9 +205,10 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
 
         let leaf_parent = match resource {
             ResourceRef::Job(_) => pipeline_uid.as_ref(),
-            // An unknown secret or trigger sits under System: only a System grant reaches it, and the use case answers NotFound.
+            // An unknown secret, trigger or invitation sits under System: only a System grant reaches it, and the use case answers NotFound.
             ResourceRef::Secret(_) => project_uid.as_ref().or(Some(&system_uid)),
             ResourceRef::Trigger(_) => pipeline_uid.as_ref().or(Some(&system_uid)),
+            ResourceRef::Invitation(_) => org_uid.as_ref().or(Some(&system_uid)),
             ResourceRef::Pipeline(_) => project_uid.as_ref(),
             ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
             // A user's parent is System too: without it a System grant stops reaching user-targeted actions.
@@ -393,7 +394,7 @@ mod tests {
     use crate::authz::role::FULL_CONTROL;
     use crate::domain::caller::ServiceIdentity;
     use crate::domain::ids::{
-        AppId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
+        AppId, InvitationId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
     };
     use crate::domain::role::RoleName;
 
@@ -1356,6 +1357,75 @@ mod tests {
         assert!(
             system
                 .check(&CallerContext::User(UserId::new("u-admin")), manage())
+                .await
+                .is_ok()
+        );
+    }
+
+    fn invitation_in(organization: &str) -> ResourceAncestors {
+        ResourceAncestors {
+            organization: Some(OrganizationId::new(organization)),
+            project: None,
+            pipeline: None,
+        }
+    }
+
+    fn org_grant(role_name: &str) -> Vec<Grant> {
+        vec![Grant::new(
+            Principal::User(UserId::new("u1")),
+            role(role_name),
+            Scope::Organization(OrganizationId::new("o1")),
+        )]
+    }
+
+    #[tokio::test]
+    async fn an_invitation_revoke_is_reached_through_the_invitation_organization() {
+        let caller = CallerContext::User(UserId::new("u1"));
+        let revoke = || Permission::RevokeInvitation(InvitationId::new("i1"));
+
+        let own = service(invitation_in("o1"), org_grant(ORGANIZATION_ADMIN_ROLE)).await;
+        assert!(own.check(&caller, revoke()).await.is_ok());
+
+        let other = service(invitation_in("o2"), org_grant(ORGANIZATION_ADMIN_ROLE)).await;
+        assert!(
+            other.check(&caller, revoke()).await.is_err(),
+            "a grant on o1 confers nothing on an invitation of o2"
+        );
+
+        let viewer = service(invitation_in("o1"), org_grant(ORGANIZATION_VIEWER_ROLE)).await;
+        assert!(
+            viewer.check(&caller, revoke()).await.is_err(),
+            "an organization viewer does not manage invitations"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_unknown_invitation_is_reached_only_by_a_system_grant() {
+        let revoke = || Permission::RevokeInvitation(InvitationId::new("missing"));
+
+        let org = service(
+            ResourceAncestors::default(),
+            org_grant(ORGANIZATION_ADMIN_ROLE),
+        )
+        .await;
+        assert!(
+            org.check(&CallerContext::User(UserId::new("u1")), revoke())
+                .await
+                .is_err()
+        );
+
+        let system = service(
+            ResourceAncestors::default(),
+            vec![Grant::new(
+                Principal::User(UserId::new("u-admin")),
+                role(SYSTEM_ADMIN_ROLE),
+                Scope::System,
+            )],
+        )
+        .await;
+        assert!(
+            system
+                .check(&CallerContext::User(UserId::new("u-admin")), revoke())
                 .await
                 .is_ok()
         );
