@@ -28,9 +28,10 @@ const PROTOS: &[&str] = &[
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
     let proto_root = manifest_dir.join("proto");
-    if !proto_root.join("scylla").is_dir() {
-        panic!("crates/scylla-proto/proto is empty: run `git submodule update --init`");
-    }
+    assert!(
+        proto_root.join("scylla").is_dir(),
+        "crates/scylla-proto/proto is empty: run `git submodule update --init`"
+    );
 
     let protos: Vec<PathBuf> = PROTOS.iter().map(|f| proto_root.join(f)).collect();
 
