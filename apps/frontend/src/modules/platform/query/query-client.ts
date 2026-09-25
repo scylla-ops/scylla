@@ -46,4 +46,13 @@ export const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onError: error => reportError(error, 'Mutation Error', false),
   }),
+  defaultOptions: {
+    queries: {
+      // `onError` above only runs once a query settles into its final error
+      // state, after retries: an expired token cannot become valid between
+      // attempts, so retrying it only delays the sign-out.
+      retry: (failureCount, error) =>
+        error instanceof ScyllaError && error.getCode() === 'UNAUTHENTICATED' ? false : failureCount < 3,
+    },
+  },
 });
