@@ -14,7 +14,7 @@ min_connections = 1
 acquire_timeout = "30s"
 run_migrations = true
 
-# The UI is same-origin now, so CORS is only for `pnpm dev` on :5173 and for
+# The UI is same-origin now, so CORS is only for the scylla-web dev server on :5173 and for
 # third-party API clients.
 [cors]
 allow_origins = ["http://localhost:5173"]
