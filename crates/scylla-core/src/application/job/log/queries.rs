@@ -1,4 +1,4 @@
-//! The job log's reads. One block per query, in the order it runs: the struct, its permission,
+//! The job log's reads. One block per query, in the order it runs: the struct, its access,
 //! its output type, what `Fetch` reads.
 
 use super::JobLogUseCases;
@@ -12,7 +12,7 @@ use crate::domain::pipeline::NodeId;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use futures_util::stream::{self, StreamExt, TryStreamExt};
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 use std::collections::HashSet;
 
 #[derive(Debug)]
@@ -23,8 +23,8 @@ pub struct ListJobLogs {
 }
 
 impl Describe for ListJobLogs {
-    fn permission(&self) -> Permission {
-        Permission::ReadJobLogs(self.job_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadJobLogs(self.job_id.clone()))
     }
 }
 
@@ -57,8 +57,8 @@ pub struct TailJobLogs {
 }
 
 impl Describe for TailJobLogs {
-    fn permission(&self) -> Permission {
-        Permission::ReadJobLogs(self.job_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadJobLogs(self.job_id.clone()))
     }
 }
 

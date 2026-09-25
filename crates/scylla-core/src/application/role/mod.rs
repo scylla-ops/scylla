@@ -2,10 +2,11 @@ pub mod commands;
 pub mod queries;
 
 pub use commands::{CreateRole, DeleteRole, UpdateRole};
-pub use queries::{GetEffectivePermissions, GetRole, ListAuthzVocabulary, ListRoles};
+pub use queries::{
+    GetEffectivePermissions, GetMyPermissions, GetRole, ListAuthzVocabulary, ListRoles,
+};
 
-use crate::domain::caller::CallerContext;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use derive_more::Constructor;
 use scylla_auth::authz::{
     EffectiveScope, FULL_CONTROL, GrantRepository, PolicyControl, Principal, RoleRepository, Scope,
@@ -13,11 +14,8 @@ use scylla_auth::authz::{
 };
 use std::collections::BTreeSet;
 use std::sync::Arc;
-use tracing::instrument;
 
 /// The role aggregate's stage runners, one block per action in `commands.rs` and `queries.rs`.
-/// `my_permissions` stays outside the pipeline: a caller reads its own grants and no permission
-/// is asked.
 #[derive(Constructor)]
 pub struct RoleUseCases {
     pub(super) role_repo: Arc<dyn RoleRepository>,
@@ -26,18 +24,6 @@ pub struct RoleUseCases {
 }
 
 impl RoleUseCases {
-    /// Service and Anonymous are refused: an empty list would read as "no permissions".
-    #[instrument(skip(self, caller))]
-    pub async fn my_permissions(
-        &self,
-        caller: &CallerContext,
-    ) -> DomainResult<Vec<EffectiveScope>> {
-        let principal = Principal::from_caller(caller).ok_or_else(|| {
-            DomainError::Forbidden("this caller is not a principal that holds grants".to_string())
-        })?;
-        self.effective_scopes(&principal).await
-    }
-
     /// Grants as bound per scope: a System grant is not re-listed under every org and project.
     pub(super) async fn effective_scopes(
         &self,

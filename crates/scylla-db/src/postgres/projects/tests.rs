@@ -34,7 +34,10 @@ impl scylla_extension::Policy for DenyAfter {
         _: scylla_extension::StageKind,
         action: &dyn scylla_extension::Action,
     ) -> crate::domain::errors::DomainResult<()> {
-        let crate::domain::permission::Permission::CreateProject(org) = action.permission() else {
+        let Some(org) = action.access().permissions().iter().find_map(|p| match p {
+            crate::domain::permission::Permission::CreateProject(org) => Some(org),
+            _ => None,
+        }) else {
             return Ok(());
         };
         let mut seen = self.seen.lock().unwrap();

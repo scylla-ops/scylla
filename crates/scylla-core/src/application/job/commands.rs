@@ -1,4 +1,4 @@
-//! The job's writes. One block per command, in the order it runs: the struct, its permission,
+//! The job's writes. One block per command, in the order it runs: the struct, its access,
 //! its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::JobUseCases;
@@ -10,7 +10,8 @@ use crate::domain::permission::Permission;
 use crate::domain::pipeline::NodeId;
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 /// One `WriteJobStatus` check; the reads and the write go through the port, so an agent needs
@@ -22,8 +23,8 @@ pub struct RecordJobStatus {
 }
 
 impl Describe for RecordJobStatus {
-    fn permission(&self) -> Permission {
-        Permission::WriteJobStatus(self.job_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::WriteJobStatus(self.job_id.clone()))
     }
 }
 
@@ -80,8 +81,8 @@ pub struct DeleteJob {
 }
 
 impl Describe for DeleteJob {
-    fn permission(&self) -> Permission {
-        Permission::DeleteJob(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteJob(self.id.clone()))
     }
 }
 

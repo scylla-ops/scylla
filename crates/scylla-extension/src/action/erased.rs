@@ -2,8 +2,8 @@ use super::command::{Command, Describe, Query};
 use super::envelope::Envelope;
 use super::id::ActionId;
 use super::phase::{Authorized, Committed, Fetched, Prepared, Requested};
+use crate::authz::Access;
 use crate::domain::caller::CallerContext;
-use crate::domain::permission::Permission;
 use chrono::{DateTime, Utc};
 use std::any::Any;
 use std::ops::Deref;
@@ -16,7 +16,7 @@ pub trait Action: Send + Sync {
     fn id(&self) -> &ActionId;
     fn at(&self) -> DateTime<Utc>;
     fn caller(&self) -> &CallerContext;
-    fn permission(&self) -> &Permission;
+    fn access(&self) -> &Access;
     fn as_any(&self) -> &dyn Any;
 }
 
@@ -46,8 +46,8 @@ impl<C: Describe> Action for Envelope<C> {
         Envelope::caller(self)
     }
 
-    fn permission(&self) -> &Permission {
-        Envelope::permission(self)
+    fn access(&self) -> &Access {
+        Envelope::access(self)
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -79,8 +79,8 @@ macro_rules! phase {
                     self.env.caller()
                 }
 
-                fn permission(&self) -> &Permission {
-                    self.env.permission()
+                fn access(&self) -> &Access {
+                    self.env.access()
                 }
 
                 fn as_any(&self) -> &dyn Any {

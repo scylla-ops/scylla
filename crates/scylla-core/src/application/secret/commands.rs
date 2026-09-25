@@ -1,5 +1,5 @@
 //! The secret's writes. One block per command, in the order it runs: the struct, its
-//! permission, its payload types, what `Prepare` builds, what `Persist` writes.
+//! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::SecretUseCases;
 use crate::domain::errors::DomainResult;
@@ -8,7 +8,8 @@ use crate::domain::permission::Permission;
 use crate::domain::secret::{Secret, SecretName};
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 /// No `Debug`: `value` is the plaintext. `Prepare` encrypts it, so only the ciphertext is staged.
@@ -20,8 +21,8 @@ pub struct CreateSecret {
 }
 
 impl Describe for CreateSecret {
-    fn permission(&self) -> Permission {
-        Permission::CreateSecret(self.project_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreateSecret(self.project_id.clone()))
     }
 }
 
@@ -64,8 +65,8 @@ pub struct DeleteSecret {
 }
 
 impl Describe for DeleteSecret {
-    fn permission(&self) -> Permission {
-        Permission::DeleteSecret(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteSecret(self.id.clone()))
     }
 }
 

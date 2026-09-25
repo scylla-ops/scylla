@@ -1,4 +1,4 @@
-//! The app's reads. One block per query, in the order it runs: the struct, its permission, its
+//! The app's reads. One block per query, in the order it runs: the struct, its access, its
 //! output type, what `Fetch` reads.
 
 use super::AppUseCases;
@@ -7,7 +7,7 @@ use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct GetApp {
@@ -15,8 +15,8 @@ pub struct GetApp {
 }
 
 impl Describe for GetApp {
-    fn permission(&self) -> Permission {
-        Permission::ReadApp(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadApp(self.id.clone()))
     }
 }
 
@@ -38,8 +38,10 @@ pub struct ListApps {
 }
 
 impl Describe for ListApps {
-    fn permission(&self) -> Permission {
-        Permission::ListAppsByOrganization(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListAppsByOrganization(
+            self.organization_id.clone(),
+        ))
     }
 }
 
@@ -64,8 +66,8 @@ pub struct ListAppSecrets {
 }
 
 impl Describe for ListAppSecrets {
-    fn permission(&self) -> Permission {
-        Permission::ReadApp(self.app_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadApp(self.app_id.clone()))
     }
 }
 

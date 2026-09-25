@@ -4,8 +4,9 @@ Every write in Scylla is a command that moves through three typed stages,
 every read is a query that moves through two, and an extension attaches to
 each stage. This crate holds the pipeline. It depends
 on `scylla-domain` and nothing else: no access model, no database, no gRPC, no
-Cedar. A hook sees `CallerContext`, `Permission` and `DomainError`, never a
-repository or a wire type. An Enterprise build compiles it from a pinned tag.
+Cedar. A hook sees `CallerContext`, `Access` (with its `Permission` values)
+and `DomainError`, never a repository or a wire type. An Enterprise build
+compiles it from a pinned tag.
 
 Run `cargo test -p scylla-extension` for the in-crate checks. They drive the
 engine with a self-contained aggregate (`src/tests.rs`), so a change to the
@@ -17,13 +18,13 @@ pipeline is proven here before it reaches a use case.
 src/
   action/        the event
     id.rs          ActionId: one per send
-    command.rs     Describe: permission(); Command: Staged, Committed; Query: Output
+    command.rs     Describe: access(); Command: Staged, Committed; Query: Output
     value.rs       Draft<T> (not stored), Deleted<T> (tombstone)
-    envelope.rs    Envelope<C>: id, at, caller, permission, command; built once, shared by Arc
+    envelope.rs    Envelope<C>: id, at, caller, access, command; built once, shared by Arc
     phase.rs       Requested, Authorized, Prepared, Committed, Fetched; Prepared::commit
     erased.rs      Action: the erased view of any phase; Phase: gives the envelope
   stage.rs       StageKind, Stage, Authorize/Prepare/Persist<C>, Fetch<Q>, Run<S>
-  authz.rs       Granted (private constructor), Authorizer, AuthorizeStage
+  authz.rs       Access, Granted (private constructor), Authorizer, AuthorizeStage
   hooks/         the extension seam
     position.rs    Policy, Gate, Around, Wrap, Listener, Observer
     next.rs        Next: the rest of a typed chain; Proceed and Done: the erased one
@@ -43,8 +44,8 @@ use case (`commands.rs`, `queries.rs`, the ports in `mod.rs`), and
 
 One action is one event. It is born in `Requested<C>`, where `C` is the
 command or the query. `Requested<C>` holds an `Arc<Envelope<C>>`: the action
-id, the time, the caller, the permission and the complete command. Every later phase keeps
-the same envelope. All phases deref to it, so `caller()`, `permission()`,
+id, the time, the caller, the access rule and the complete command. Every later phase keeps
+the same envelope. All phases deref to it, so `caller()`, `access()`,
 `command()` and `id()` are available at each step. No phase has a public
 constructor. The only way to get a later phase is a transition method on the
 earlier phase, and each transition consumes its input.
@@ -59,18 +60,37 @@ earlier phase, and each transition consumes its input.
 
 `Granted` is a token with a private constructor and no data. Only
 `AuthorizeStage` makes one, and `Requested::authorized` consumes it, so an
-`Authorized<C>` is proof that the permission check ran.
+`Authorized<C>` is proof that the access check ran.
 
-A command or a query declares its permission through `Describe`, and its
+A command or a query declares its access rule through `Describe`, and its
 payload types through `Command` or `Query`. Nothing else: which path it takes
 follows from the trait.
+
+`Access` has four values. The authorize stage applies them as follows:
+
+| access                    | who passes                        | calls the `Authorizer`   |
+|---------------------------|-----------------------------------|--------------------------|
+| `Public`                  | every caller, `Anonymous` too     | no                       |
+| `Authenticated`           | every caller except `Anonymous`   | no                       |
+| `Requires(p)`             | a caller that has `p`             | one time, for `p`        |
+| `RequiresAll(vec![p, q])` | a caller that has `p` and `q`     | for each, in order       |
+
+`Authenticated` refuses `Anonymous` with `Forbidden`, the same error as the
+Cedar check. For `RequiresAll`, the first refusal stops the check, and the
+next permissions are not asked. Use `RequiresAll` when the action must refuse
+on two permissions, for example a trigger update, which needs
+`manageTriggers` and `runPipeline`. `Access::permissions()` gives the
+permissions as a slice: empty for `Public` and `Authenticated`. For each
+access, the hooks run in the same way: `Public` and `Authenticated` also go
+through `Authorize`, and a `Granted` is minted for them without the
+`Authorizer`.
 
 ```rust
 pub struct CreateProject { pub organization_id: OrganizationId, pub name: ProjectName, ... }
 
 impl Describe for CreateProject {
-    fn permission(&self) -> Permission {
-        Permission::CreateProject(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreateProject(self.organization_id.clone()))
     }
 }
 
@@ -82,8 +102,8 @@ impl Command for CreateProject {
 pub struct GetProject { pub id: ProjectId }
 
 impl Describe for GetProject {
-    fn permission(&self) -> Permission {
-        Permission::ReadProject(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadProject(self.id.clone()))
     }
 }
 
@@ -122,8 +142,9 @@ Four stages, each a type with an `In` and an `Out` phase. A command takes the
 first three, a query takes the first and the last:
 
 - `Authorize<C>`: `Requested<C>` to `Authorized<C>`. `AuthorizeStage` runs it
-  for every command and query; it asks the `Authorizer` (in the core, the
-  Cedar `PermissionService`) and mints the `Granted`.
+  for every command and query; it applies the `Access` of the action, asks the
+  `Authorizer` (in the core, the Cedar `PermissionService`) for each required
+  permission and mints the `Granted`.
 - `Prepare<C>`: `Authorized<C>` to `Prepared<C>`. The use case runs it. It
   builds the draft or loads the target. It reads, it does not write.
 - `Persist<C>`: `Prepared<C>` to `Committed<C>`. The use case runs it too,
@@ -144,10 +165,12 @@ the runner must satisfy, so a missing `Run` impl is a compile error at the
 call site. The runner is the use case struct: one object that implements
 the `Run` traits for its commands and queries. There is one `Actions` per
 server, built in `init_services` with the permission service and the hooks,
-and every action runs in one tracing span with its kind, id, caller,
-permission and resource; use cases carry no `#[instrument]` of their own.
+and every action runs in one tracing span with its kind, id, caller, access
+and resource; use cases carry no `#[instrument]` of their own. The `access`
+field is `public`, `authenticated` or the permission keys joined by `+`; the
+`resource` field is there only when a permission is required.
 
-The permission check is a stage and not a hook for two reasons. It runs with
+The access check is a stage and not a hook for two reasons. It runs with
 zero hooks registered, because `send` calls it in code; a hook is something a
 binary may or may not register. And it has an output, `Authorized<C>`, that a
 `Gate` cannot produce: the use case's `Run<Prepare<C>>` takes `Authorized<C>`,
@@ -158,7 +181,7 @@ so its signature is the proof that the check ran.
 A use case struct (`ProjectUseCases`) holds the ports and implements the `Run`
 traits. Each port is an `Arc<dyn Port>`, thus the struct, its `Run` impls and
 its handler have no type parameters. It has no method of its own, no `Actions`
-field, no permission code and no hook code. The adapter (a gRPC handler) holds
+field, no access code and no hook code. The adapter (a gRPC handler) holds
 `Arc<Actions>` and `Arc<ProjectUseCases>`, and each RPC is one call and its
 response:
 
@@ -195,7 +218,7 @@ A use case is one directory: `mod.rs` holds the struct with its ports,
 `repository.rs` the port, `commands.rs` the writes, `queries.rs` the reads,
 `tests.rs` the checks. Inside `commands.rs`, one block per command in the
 order it runs: the struct with public fields, `impl Describe` with the
-permission, `impl Command` with the two payload types, `impl Run<Prepare<C>>`
+access, `impl Command` with the two payload types, `impl Run<Prepare<C>>`
 (read through the port, build the domain value, `input.prepared(staged)`),
 `impl Run<Persist<C>>` (`input.commit(async |staged| self.repo.write(&staged).await).await`).
 Inside `queries.rs`, one block per query: the struct, `impl Describe`,
@@ -230,7 +253,7 @@ Policy -> Gate<S> -> Around [ Wrap<S> [ Run ] ] -> Listener<S> -> Observer
 Three of them are erased: `Policy`, `Around` and `Observer` are registered on
 a `StageKind` and fire for every command that has a stage of that kind, also
 for commands that do not exist yet. They receive `&dyn Action`: the action id,
-`at()`, the caller, the `Permission`, and `downcast_ref` to the typed phase.
+`at()`, the caller, the `Access`, and `downcast_ref` to the typed phase.
 Three of them are typed: `Gate<S>`, `Wrap<S>` and `Listener<S>` are registered
 on one stage of one command, for example `Persist<DeleteProject>`, and receive
 the exact phase type.
@@ -248,8 +271,10 @@ runs. Signature: `enforce(&self, stage: StageKind, action: &dyn Action) ->
 DomainResult<()>`.
 
 Use it for: quotas, plan limits, rate limits, maintenance mode, feature
-flags, kill switches. The decision reads `action.permission()`,
-`action.caller()`, and state the extension owns. A quota returns
+flags, kill switches. The decision reads `action.access().permissions()`,
+`action.caller()`, and state the extension owns. Do not match on
+`Access::Requires(..)`: that pattern does not see a permission inside
+`RequiresAll`. A quota returns
 `DomainError::quota_exceeded(..)`, which maps to `RESOURCE_EXHAUSTED`.
 
 Do not use it for: a rule that needs one command's fields (use a `Gate`), a
@@ -257,15 +282,15 @@ side effect (use an `Observer`), anything that writes.
 
 Which `StageKind`:
 
-- `Authorize`: runs before the permission check. Only for rules that must
+- `Authorize`: runs before the access check. Only for rules that must
   apply to unauthorized callers too, for example a rate limit or a
   maintenance mode. A quota here leaks quota state to callers who have no
   right to create.
-- `Prepare`: runs after the permission check and before the use case. The
+- `Prepare`: runs after the access check and before the use case. The
   default position for a policy.
 - `Persist`: runs after the use case and before the store. Use it when the
   rule needs the staged value, reached through `downcast_ref`.
-- `Fetch`: runs after the permission check and before the read. A rate limit
+- `Fetch`: runs after the access check and before the read. A rate limit
   on reads goes here, or on `Authorize` to cover reads and writes at once.
 
 A `Policy` must be idempotent and must not write.
@@ -326,7 +351,7 @@ retry (the input is moved into `next`; a retry must start from `send`).
 
 A `Wrap` may skip `next` only for a simulation, and then it must build the
 output itself through the phase API. It cannot build an `Authorized<C>`,
-because `Granted` has a private constructor, so it cannot skip the permission
+because `Granted` has a private constructor, so it cannot skip the access
 check. A simulation is not visible to `Listener` and `Observer`: they see a
 success.
 
@@ -361,7 +386,7 @@ outbox writer, anything that must see every attempt.
 On success, `action` is the output phase of the stage. On a `Policy` or
 `Gate` veto, `action` is the input phase. On a `Run`, `Around` or `Wrap`
 error, the input was consumed, so `action` is the envelope: id, time, caller
-and permission are there, and `downcast_ref` to a phase returns `None`. An
+and access are there, and `downcast_ref` to a phase returns `None`. An
 observer that counts must look at `outcome` first.
 
 Do not use it for: a decision, a per-command effect with typed data (use a
@@ -387,7 +412,7 @@ hook wants to be a `Listener`).
 | I want to                                        | position                      |
 |--------------------------------------------------|-------------------------------|
 | refuse a class of actions (quota, plan, flag)    | `Policy` on `Prepare`         |
-| refuse before the permission check (rate limit)  | `Policy` on `Authorize`       |
+| refuse before the access check (rate limit)      | `Policy` on `Authorize`       |
 | refuse one action on its fields                  | `Gate<Prepare<C>>`            |
 | refuse one action on its staged value            | `Gate<Persist<C>>`            |
 | time, trace, count failures, for every action    | `Around` on each kind         |
@@ -458,15 +483,19 @@ the row is still in the state the gate saw.
   has no account yet: the token is the credential, and no permission is asked.
   The invite mail is sent in the `commit` closure of `CreateInvitation`, after
   the write; a failed send is logged and does not fail the call, as before.
-- `ListGrantableRoles` asks for no permission: the catalog is static data.
+- `ListGrantableRoles` and `GetMyPermissions` are `Authenticated` queries: the
+  catalog is static data, and a caller reads its own grants. The gRPC
+  interceptor refuses a call without a token, so `Anonymous` does not get to
+  them from an RPC. `GetMyPermissions` refuses a service caller in its `Fetch`
+  runner: a service holds no grants, and an empty list would read as "no
+  permissions".
 - `CreateGrant` builds the grant in `Prepare` and checks there, in this order,
   the role, the organization admission and the escalation rule. The bootstrap
   admin grant goes through `Actions` as the bootstrap service.
 - `RoleUseCases` lives in `scylla-core` (`application/role/`), not in
   `scylla-auth`: the `Run` impls need the struct in the crate that names the
   commands. `scylla-auth` keeps `Role`, `RoleRepository` and
-  `validate_role_permissions`. `RoleUseCases::my_permissions` stays outside the
-  pipeline: a caller reads its own grants and no permission is asked.
+  `validate_role_permissions`.
 - `DeleteSecret` asks for its permission on the secret, not on the project.
   The access model finds the project of the secret in `Authorize`
   (`ResourceRef::Secret`, one join in `PgAuthzEntityProvider`). An unknown
@@ -501,11 +530,12 @@ the row is still in the state the gate saw.
   `manageSystemGrants` grant the caller gets `Forbidden`; with one, the call
   succeeds and changes nothing, as before. `CreateGrant`, `RevokeAllAccess`
   and `ListGrants` keep their permission on the scope.
-- `CreateTrigger` asks for `RunPipeline` a second time in its `Prepare` runner,
-  and `UpdateTrigger` asks for `RunTriggerPipeline`. This check refuses:
-  managing triggers must not give run rights. A `Policy` on `Prepare`
-  therefore runs before it. The runner app of the organization is provisioned
-  in `Persist`, next to the trigger write.
+- `CreateTrigger` is `RequiresAll` of `ManageTriggers` and `RunPipeline` on
+  the pipeline, and `UpdateTrigger` is `RequiresAll` of `ManageTrigger` and
+  `RunTriggerPipeline` on the trigger: managing triggers must not give run
+  rights. Both checks are in `Authorize`, so a `Policy` on `Prepare` runs
+  after them. The runner app of the organization is provisioned in `Persist`,
+  next to the trigger write.
 - `FireTriggerNow` fires in its `commit` closure as the trigger-runner App,
   through `run_with_inputs`, as a scheduled fire does. `TriggerFireUseCases::fire`
   (the scheduler and the webhook ingress) stays outside the pipeline: it runs

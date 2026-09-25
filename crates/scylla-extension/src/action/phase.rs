@@ -113,7 +113,7 @@ where
         f.debug_struct("Committed")
             .field("id", self.env.id())
             .field("caller", self.env.caller())
-            .field("permission", self.env.permission())
+            .field("access", self.env.access())
             .field("outcome", &self.outcome)
             .finish()
     }
@@ -127,7 +127,7 @@ where
         f.debug_struct("Fetched")
             .field("id", self.env.id())
             .field("caller", self.env.caller())
-            .field("permission", self.env.permission())
+            .field("access", self.env.access())
             .field("output", &self.output)
             .finish()
     }

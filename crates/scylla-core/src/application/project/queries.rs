@@ -1,4 +1,4 @@
-//! The project's reads. One block per query, in the order it runs: the struct, its permission
+//! The project's reads. One block per query, in the order it runs: the struct, its access
 //! and path, its output type, what `Fetch` reads.
 
 use super::ProjectUseCases;
@@ -11,7 +11,7 @@ use crate::domain::project::Project;
 use crate::domain::user::User;
 use async_trait::async_trait;
 use scylla_auth::authz::Visibility;
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct GetProject {
@@ -19,8 +19,8 @@ pub struct GetProject {
 }
 
 impl Describe for GetProject {
-    fn permission(&self) -> Permission {
-        Permission::ReadProject(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadProject(self.id.clone()))
     }
 }
 
@@ -42,8 +42,8 @@ pub struct ListProjects {
 }
 
 impl Describe for ListProjects {
-    fn permission(&self) -> Permission {
-        Permission::ListProjects
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListProjects)
     }
 }
 
@@ -71,8 +71,8 @@ pub struct ListOrganizationProjects {
 }
 
 impl Describe for ListOrganizationProjects {
-    fn permission(&self) -> Permission {
-        Permission::ReadOrganization(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadOrganization(self.organization_id.clone()))
     }
 }
 
@@ -122,8 +122,8 @@ pub struct ListProjectMembers {
 }
 
 impl Describe for ListProjectMembers {
-    fn permission(&self) -> Permission {
-        Permission::ListProjectMembers(self.project_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListProjectMembers(self.project_id.clone()))
     }
 }
 
@@ -154,8 +154,8 @@ pub struct ListUserProjects {
 }
 
 impl Describe for ListUserProjects {
-    fn permission(&self) -> Permission {
-        Permission::ListUserProjects(self.user_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListUserProjects(self.user_id.clone()))
     }
 }
 

@@ -2,7 +2,7 @@ pub mod commands;
 pub mod queries;
 
 pub use commands::{CreateGrant, RevokeAllAccess, RevokeGrant};
-pub use queries::ListGrants;
+pub use queries::{ListGrantableRoles, ListGrants};
 
 use crate::application::agent::dispatch_port::AgentDispatch;
 use derive_more::Constructor;

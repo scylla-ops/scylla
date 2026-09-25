@@ -1,5 +1,5 @@
 //! The invitation's reads. One block per query, in the order it runs: the struct, its
-//! permission, its output type, what `Fetch` reads.
+//! access, its output type, what `Fetch` reads.
 
 use super::InvitationUseCases;
 use crate::domain::errors::DomainResult;
@@ -7,7 +7,7 @@ use crate::domain::ids::OrganizationId;
 use crate::domain::invitation::Invitation;
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct ListInvitations {
@@ -15,8 +15,8 @@ pub struct ListInvitations {
 }
 
 impl Describe for ListInvitations {
-    fn permission(&self) -> Permission {
-        Permission::ManageInvitations(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageInvitations(self.organization_id.clone()))
     }
 }
 

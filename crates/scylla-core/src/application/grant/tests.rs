@@ -142,6 +142,27 @@ fn grantable_roles_filter_by_scope_kind() {
     assert_eq!(system[0].name, SYSTEM_ADMIN_ROLE);
 }
 
+#[tokio::test]
+async fn the_grantable_roles_ask_for_no_permission_and_refuse_anonymous() {
+    let lab = lab_with(vec![], vec![], Arc::new(DenyingPermissionService::new()));
+    let list = |scope_kind| ListGrantableRoles { scope_kind };
+
+    let roles = lab
+        .actions
+        .run(&lab.uc, &admin(), list(Some(ScopeKind::System)))
+        .await
+        .unwrap();
+    assert_eq!(roles.len(), 1);
+    assert_eq!(roles[0].name, SYSTEM_ADMIN_ROLE);
+
+    let err = lab
+        .actions
+        .run(&lab.uc, &CallerContext::Anonymous, list(None))
+        .await
+        .unwrap_err();
+    assert!(matches!(err, DomainError::Forbidden(_)));
+}
+
 #[test]
 fn grant_carries_the_role_it_confers() {
     let grant = Grant::new(

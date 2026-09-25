@@ -1,4 +1,4 @@
-//! The role's reads. One block per query, in the order it runs: the struct, its permission, its
+//! The role's reads. One block per query, in the order it runs: the struct, its access, its
 //! output type, what `Fetch` reads.
 
 use super::RoleUseCases;
@@ -6,14 +6,14 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::{PERMISSION_CATALOG, Permission};
 use async_trait::async_trait;
 use scylla_auth::authz::{EffectiveScope, Principal, Role};
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct ListRoles;
 
 impl Describe for ListRoles {
-    fn permission(&self) -> Permission {
-        Permission::ManageRoles
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageRoles)
     }
 }
 
@@ -35,8 +35,8 @@ pub struct GetRole {
 }
 
 impl Describe for GetRole {
-    fn permission(&self) -> Permission {
-        Permission::ManageRoles
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageRoles)
     }
 }
 
@@ -62,8 +62,8 @@ impl Run<Fetch<GetRole>> for RoleUseCases {
 pub struct ListAuthzVocabulary;
 
 impl Describe for ListAuthzVocabulary {
-    fn permission(&self) -> Permission {
-        Permission::ManageRoles
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageRoles)
     }
 }
 
@@ -82,15 +82,15 @@ impl Run<Fetch<ListAuthzVocabulary>> for RoleUseCases {
 }
 
 /// Another principal's permissions, the admin view; a caller reads its own through
-/// `RoleUseCases::my_permissions`.
+/// `GetMyPermissions`.
 #[derive(Debug)]
 pub struct GetEffectivePermissions {
     pub principal: Principal,
 }
 
 impl Describe for GetEffectivePermissions {
-    fn permission(&self) -> Permission {
-        Permission::ManageSystemGrants
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageSystemGrants)
     }
 }
 
@@ -105,6 +105,35 @@ impl Run<Fetch<GetEffectivePermissions>> for RoleUseCases {
         input: Authorized<GetEffectivePermissions>,
     ) -> DomainResult<Fetched<GetEffectivePermissions>> {
         let scopes = self.effective_scopes(&input.command().principal).await?;
+        Ok(input.fetched(scopes))
+    }
+}
+
+/// The caller's own permissions: no permission is asked. A service is refused here, not in
+/// `Authorize`: it holds no grants, and an empty list would read as "no permissions".
+#[derive(Debug)]
+pub struct GetMyPermissions;
+
+impl Describe for GetMyPermissions {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Query for GetMyPermissions {
+    type Output = Vec<EffectiveScope>;
+}
+
+#[async_trait]
+impl Run<Fetch<GetMyPermissions>> for RoleUseCases {
+    async fn run(
+        &self,
+        input: Authorized<GetMyPermissions>,
+    ) -> DomainResult<Fetched<GetMyPermissions>> {
+        let principal = Principal::from_caller(input.caller()).ok_or_else(|| {
+            DomainError::forbidden("this caller is not a principal that holds grants")
+        })?;
+        let scopes = self.effective_scopes(&principal).await?;
         Ok(input.fetched(scopes))
     }
 }

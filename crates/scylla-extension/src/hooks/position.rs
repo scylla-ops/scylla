@@ -29,7 +29,7 @@ pub trait Around: Send + Sync {
 
 /// Typed control around one stage of one command: a cache, a dry run. It calls `next.run(input)`
 /// exactly once, or not at all for a simulation, and then builds the output through the phase
-/// API itself. It cannot build an `Authorized<C>`, so it cannot skip the permission check.
+/// API itself. It cannot build an `Authorized<C>`, so it cannot skip the access check.
 #[async_trait]
 pub trait Wrap<S: Stage>: Send + Sync {
     async fn wrap(&self, input: S::In, next: Next<'_, S>) -> DomainResult<S::Out>;

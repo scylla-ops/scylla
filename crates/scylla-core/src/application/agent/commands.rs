@@ -1,4 +1,4 @@
-//! The agent's writes. One block per command, in the order it runs: the struct, its permission,
+//! The agent's writes. One block per command, in the order it runs: the struct, its access,
 //! its payload types, what `Prepare` builds, what `Persist` writes. `DeleteAgent` stages the id
 //! alone: the row is not read before the write, as before.
 
@@ -13,7 +13,8 @@ use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 const DEFAULT_SECRET_LABEL: &str = "default";
@@ -39,8 +40,8 @@ pub struct CreatedAgent {
 }
 
 impl Describe for CreateAgent {
-    fn permission(&self) -> Permission {
-        Permission::CreateAgent(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreateAgent(self.organization_id.clone()))
     }
 }
 
@@ -105,8 +106,8 @@ pub struct DeleteAgent {
 }
 
 impl Describe for DeleteAgent {
-    fn permission(&self) -> Permission {
-        Permission::DeleteApp(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteApp(self.id.clone()))
     }
 }
 

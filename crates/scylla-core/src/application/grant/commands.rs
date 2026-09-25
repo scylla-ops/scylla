@@ -1,4 +1,4 @@
-//! The grant's writes. One block per command, in the order it runs: the struct, its permission,
+//! The grant's writes. One block per command, in the order it runs: the struct, its access,
 //! its payload types, what `Prepare` checks and builds, what `Persist` writes. The policy reload
 //! sits next to the write that changes the grant set.
 
@@ -14,7 +14,8 @@ use scylla_auth::authz::{
     removal_orphans_scope, validate_role_in_db,
 };
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 use std::collections::BTreeSet;
 
@@ -26,8 +27,8 @@ pub struct CreateGrant {
 }
 
 impl Describe for CreateGrant {
-    fn permission(&self) -> Permission {
-        self.scope.manage_permission()
+    fn access(&self) -> Access {
+        Access::Requires(self.scope.manage_permission())
     }
 }
 
@@ -161,8 +162,8 @@ pub struct RevokeAllAccess {
 }
 
 impl Describe for RevokeAllAccess {
-    fn permission(&self) -> Permission {
-        self.scope.manage_permission()
+    fn access(&self) -> Access {
+        Access::Requires(self.scope.manage_permission())
     }
 }
 
@@ -217,8 +218,8 @@ pub struct RevokeGrant {
 }
 
 impl Describe for RevokeGrant {
-    fn permission(&self) -> Permission {
-        Permission::RevokeGrant(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::RevokeGrant(self.id.clone()))
     }
 }
 

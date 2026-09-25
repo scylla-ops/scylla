@@ -1,4 +1,4 @@
-//! The pipeline's reads. One block per query, in the order it runs: the struct, its permission,
+//! The pipeline's reads. One block per query, in the order it runs: the struct, its access,
 //! its output type, what `Fetch` reads.
 
 use super::PipelineUseCases;
@@ -8,7 +8,7 @@ use crate::domain::ids::{OrganizationId, PipelineId, ProjectId};
 use crate::domain::permission::Permission;
 use crate::domain::pipeline::Pipeline;
 use async_trait::async_trait;
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct GetPipeline {
@@ -16,8 +16,8 @@ pub struct GetPipeline {
 }
 
 impl Describe for GetPipeline {
-    fn permission(&self) -> Permission {
-        Permission::ReadPipeline(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadPipeline(self.id.clone()))
     }
 }
 
@@ -39,8 +39,8 @@ pub struct ListPipelines {
 }
 
 impl Describe for ListPipelines {
-    fn permission(&self) -> Permission {
-        Permission::ListPipelines
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListPipelines)
     }
 }
 
@@ -66,8 +66,8 @@ pub struct ListProjectPipelines {
 }
 
 impl Describe for ListProjectPipelines {
-    fn permission(&self) -> Permission {
-        Permission::ListPipelinesByProject(self.project_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListPipelinesByProject(self.project_id.clone()))
     }
 }
 
@@ -97,8 +97,10 @@ pub struct ListOrganizationPipelines {
 }
 
 impl Describe for ListOrganizationPipelines {
-    fn permission(&self) -> Permission {
-        Permission::ListPipelinesByOrganization(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListPipelinesByOrganization(
+            self.organization_id.clone(),
+        ))
     }
 }
 

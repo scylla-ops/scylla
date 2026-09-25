@@ -1,4 +1,4 @@
-//! The app's writes. One block per command, in the order it runs: the struct, its permission,
+//! The app's writes. One block per command, in the order it runs: the struct, its access,
 //! its payload types, what `Prepare` builds, what `Persist` writes. `DeleteApp` and
 //! `SetAppActive` stage the id alone: the row is not read before the write, as before.
 
@@ -10,7 +10,8 @@ use crate::domain::ids::{AppCredentialId, AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 const DEFAULT_SECRET_LABEL: &str = "default";
@@ -34,8 +35,8 @@ pub struct CreatedApp {
 }
 
 impl Describe for CreateApp {
-    fn permission(&self) -> Permission {
-        Permission::CreateApp(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreateApp(self.organization_id.clone()))
     }
 }
 
@@ -88,8 +89,8 @@ pub struct SetAppActive {
 }
 
 impl Describe for SetAppActive {
-    fn permission(&self) -> Permission {
-        Permission::DeleteApp(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteApp(self.id.clone()))
     }
 }
 
@@ -129,8 +130,8 @@ pub struct DeleteApp {
 }
 
 impl Describe for DeleteApp {
-    fn permission(&self) -> Permission {
-        Permission::DeleteApp(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteApp(self.id.clone()))
     }
 }
 
@@ -179,8 +180,8 @@ pub struct CreatedAppSecret {
 }
 
 impl Describe for CreateAppSecret {
-    fn permission(&self) -> Permission {
-        Permission::DeleteApp(self.app_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteApp(self.app_id.clone()))
     }
 }
 
@@ -226,8 +227,8 @@ pub struct RevokeAppSecret {
 }
 
 impl Describe for RevokeAppSecret {
-    fn permission(&self) -> Permission {
-        Permission::ManageAppSecret(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageAppSecret(self.id.clone()))
     }
 }
 
@@ -271,8 +272,8 @@ pub struct SetAppSecretEnabled {
 }
 
 impl Describe for SetAppSecretEnabled {
-    fn permission(&self) -> Permission {
-        Permission::ManageAppSecret(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageAppSecret(self.id.clone()))
     }
 }
 

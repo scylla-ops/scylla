@@ -1,10 +1,7 @@
 use crate::application::GrantUseCases;
-use crate::extract_auth_context;
 use crate::grpc::adapter::run;
-use crate::grpc::convert::scope_kind_from_proto;
 use crate::grpc::mappers::{grant_to_proto, grantable_role_to_proto};
 use derive_more::Constructor;
-use scylla_auth::authz::grantable_roles;
 use scylla_extension::Actions;
 use scylla_proto::authz::v1::{
     CreateGrantRequest, CreateGrantResponse, ListGrantableRolesRequest, ListGrantableRolesResponse,
@@ -62,18 +59,9 @@ impl GrantService for GrantHandler {
         &self,
         request: Request<ListGrantableRolesRequest>,
     ) -> Result<Response<ListGrantableRolesResponse>, Status> {
-        // No Cedar check: the catalog is static compile-time data.
-        let _caller = caller!(request);
-        let filter = request
-            .into_inner()
-            .scope_kind
-            .map(scope_kind_from_proto)
-            .transpose()?;
+        let roles = run(&self.actions, &*self.grants, request).await?;
         Ok(Response::new(ListGrantableRolesResponse {
-            roles: grantable_roles(filter)
-                .iter()
-                .map(grantable_role_to_proto)
-                .collect(),
+            roles: roles.iter().map(grantable_role_to_proto).collect(),
         }))
     }
 }

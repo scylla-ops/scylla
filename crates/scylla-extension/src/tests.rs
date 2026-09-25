@@ -6,7 +6,7 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::{
-    Action, ActionId, Actions, Around, Authorized, Authorizer, Command, Committed, Deleted,
+    Access, Action, ActionId, Actions, Around, Authorized, Authorizer, Command, Committed, Deleted,
     Describe, Done, Draft, Extension, Fetch, Fetched, Gate, Hooks, Kind, Listener, Next, Observer,
     Path, Persist, Policy, Prepare, Prepared, Proceed, Query, Run, StageKind, Wrap,
 };
@@ -41,9 +41,20 @@ struct ReadNote {
     id: ProjectId,
 }
 
+struct MoveNote {
+    id: ProjectId,
+    org: OrganizationId,
+}
+
+struct CountNotes {
+    org: OrganizationId,
+}
+
+struct WhoAmI;
+
 impl Describe for CreateNote {
-    fn permission(&self) -> Permission {
-        Permission::CreateProject(self.org.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreateProject(self.org.clone()))
     }
 }
 
@@ -53,8 +64,8 @@ impl Command for CreateNote {
 }
 
 impl Describe for RenameNote {
-    fn permission(&self) -> Permission {
-        Permission::UpdateProject(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateProject(self.id.clone()))
     }
 }
 
@@ -64,8 +75,8 @@ impl Command for RenameNote {
 }
 
 impl Describe for DeleteNote {
-    fn permission(&self) -> Permission {
-        Permission::DeleteProject(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteProject(self.id.clone()))
     }
 }
 
@@ -75,13 +86,47 @@ impl Command for DeleteNote {
 }
 
 impl Describe for ReadNote {
-    fn permission(&self) -> Permission {
-        Permission::ReadProject(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadProject(self.id.clone()))
     }
 }
 
 impl Query for ReadNote {
     type Output = Note;
+}
+
+impl Describe for MoveNote {
+    fn access(&self) -> Access {
+        Access::RequiresAll(vec![
+            Permission::UpdateProject(self.id.clone()),
+            Permission::CreateProject(self.org.clone()),
+        ])
+    }
+}
+
+impl Command for MoveNote {
+    type Staged = Draft<Note>;
+    type Committed = Note;
+}
+
+impl Describe for CountNotes {
+    fn access(&self) -> Access {
+        Access::Public
+    }
+}
+
+impl Query for CountNotes {
+    type Output = usize;
+}
+
+impl Describe for WhoAmI {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Query for WhoAmI {
+    type Output = CallerContext;
 }
 
 #[derive(Default)]
@@ -183,6 +228,32 @@ impl Run<Fetch<ReadNote>> for Notes {
 }
 
 #[async_trait]
+impl Run<Prepare<MoveNote>> for Notes {
+    async fn run(&self, input: Authorized<MoveNote>) -> DomainResult<Prepared<MoveNote>> {
+        let cmd = input.command();
+        let mut note = self.load(&cmd.id)?;
+        note.org = cmd.org.clone();
+        Ok(input.prepared(Draft::new(note)))
+    }
+}
+
+#[async_trait]
+impl Run<Fetch<CountNotes>> for Notes {
+    async fn run(&self, input: Authorized<CountNotes>) -> DomainResult<Fetched<CountNotes>> {
+        let count = self.count_in(&input.command().org);
+        Ok(input.fetched(count))
+    }
+}
+
+#[async_trait]
+impl Run<Fetch<WhoAmI>> for Notes {
+    async fn run(&self, input: Authorized<WhoAmI>) -> DomainResult<Fetched<WhoAmI>> {
+        let caller = input.caller().clone();
+        Ok(input.fetched(caller))
+    }
+}
+
+#[async_trait]
 impl Run<Persist<CreateNote>> for Notes {
     async fn run(&self, input: Prepared<CreateNote>) -> DomainResult<Committed<CreateNote>> {
         input
@@ -194,6 +265,15 @@ impl Run<Persist<CreateNote>> for Notes {
 #[async_trait]
 impl Run<Persist<RenameNote>> for Notes {
     async fn run(&self, input: Prepared<RenameNote>) -> DomainResult<Committed<RenameNote>> {
+        input
+            .commit(async |draft| self.update(draft.into_inner()))
+            .await
+    }
+}
+
+#[async_trait]
+impl Run<Persist<MoveNote>> for Notes {
+    async fn run(&self, input: Prepared<MoveNote>) -> DomainResult<Committed<MoveNote>> {
         input
             .commit(async |draft| self.update(draft.into_inner()))
             .await
@@ -215,11 +295,13 @@ impl Run<Persist<DeleteNote>> for Notes {
 struct Roster {
     admins: Vec<(CallerContext, OrganizationId)>,
     notes: Arc<Notes>,
+    asked: Arc<Mutex<Vec<Permission>>>,
 }
 
 #[async_trait]
 impl Authorizer for Roster {
     async fn authorize(&self, caller: &CallerContext, permission: Permission) -> DomainResult<()> {
+        self.asked.lock().unwrap().push(permission.clone());
         if matches!(caller, CallerContext::Service(_)) {
             return Ok(());
         }
@@ -313,7 +395,10 @@ impl Quota {
 #[async_trait]
 impl Policy for Quota {
     async fn enforce(&self, _: StageKind, action: &dyn Action) -> DomainResult<()> {
-        let Permission::CreateProject(org) = action.permission() else {
+        let Some(org) = action.access().permissions().iter().find_map(|p| match p {
+            Permission::CreateProject(org) => Some(org),
+            _ => None,
+        }) else {
             return Ok(());
         };
         let current = self.used_in(org);
@@ -333,9 +418,9 @@ impl Observer for Quota {
         if outcome.is_err() {
             return;
         }
-        match action.permission() {
-            Permission::CreateProject(org) => self.adjust(org, 1),
-            Permission::DeleteProject(_) => {
+        match action.access().permissions() {
+            [Permission::CreateProject(org)] => self.adjust(org, 1),
+            [Permission::DeleteProject(_)] => {
                 if let Some(done) = action.downcast_ref::<Committed<DeleteNote>>() {
                     self.adjust(&done.outcome().last_state().org, -1);
                 }
@@ -425,7 +510,7 @@ impl Wrap<Persist<RenameNote>> for Meet {
 
 #[derive(Default)]
 struct Witness {
-    seen: Mutex<Vec<(CallerContext, Permission)>>,
+    seen: Mutex<Vec<(CallerContext, Access)>>,
 }
 
 #[async_trait]
@@ -434,7 +519,7 @@ impl Listener<Persist<CreateNote>> for Witness {
         self.seen
             .lock()
             .unwrap()
-            .push((output.caller().clone(), output.permission().clone()));
+            .push((output.caller().clone(), output.access().clone()));
     }
 }
 
@@ -460,15 +545,31 @@ impl Wrap<Fetch<ReadNote>> for Cache {
     }
 }
 
+#[derive(Default)]
+struct Seen(Mutex<Vec<Access>>);
+
+#[async_trait]
+impl Policy for Seen {
+    async fn enforce(&self, _: StageKind, action: &dyn Action) -> DomainResult<()> {
+        self.0.lock().unwrap().push(action.access().clone());
+        Ok(())
+    }
+}
+
 struct Lab {
     actions: Actions,
     notes: Arc<Notes>,
+    asked: Arc<Mutex<Vec<Permission>>>,
     journal: Arc<Journal>,
     quota: Arc<Quota>,
     timing: Arc<Timing>,
 }
 
 impl Lab {
+    fn asked(&self) -> Vec<Permission> {
+        std::mem::take(&mut *self.asked.lock().unwrap())
+    }
+
     async fn run<A, K>(&self, caller: &CallerContext, action: A) -> DomainResult<A::Output>
     where
         A: Path<K, Notes>,
@@ -493,13 +594,16 @@ fn lab_with(limit: usize, extra: impl FnOnce(&mut Hooks)) -> Lab {
         .with(&journal)
         .with(&timing);
     extra(&mut hooks);
+    let asked = Arc::new(Mutex::new(Vec::new()));
     let roster = Roster {
         admins: vec![(alice(), acme())],
         notes: notes.clone(),
+        asked: asked.clone(),
     };
     Lab {
         actions: Actions::new(Arc::new(roster), Arc::new(hooks)),
         notes,
+        asked,
         journal,
         quota,
         timing,
@@ -516,6 +620,10 @@ fn bob() -> CallerContext {
 
 fn acme() -> OrganizationId {
     OrganizationId::new("acme")
+}
+
+fn globex() -> OrganizationId {
+    OrganizationId::new("globex")
 }
 
 fn create(title: &str) -> CreateNote {
@@ -599,7 +707,7 @@ async fn a_wrap_on_fetch_serves_the_second_read_from_its_cache() {
 }
 
 #[tokio::test]
-async fn the_committed_event_names_the_caller_and_the_permission() {
+async fn the_committed_event_names_the_caller_and_the_access() {
     let witness = Arc::new(Witness::default());
     let lab = lab_with(10, |hooks| {
         hooks.listen::<Persist<CreateNote>>(witness.clone());
@@ -610,7 +718,7 @@ async fn the_committed_event_names_the_caller_and_the_permission() {
     assert_eq!(lab.notes.count_in(&acme()), 1);
     assert_eq!(
         witness.seen.lock().unwrap().clone(),
-        vec![(alice(), Permission::CreateProject(acme()))]
+        vec![(alice(), Access::Requires(Permission::CreateProject(acme())))]
     );
 }
 
@@ -740,3 +848,102 @@ async fn a_run_can_move_to_another_task() {
     assert_eq!(lab.notes.find(&done.id).unwrap().title, "one");
 }
 
+#[tokio::test]
+async fn a_public_query_runs_without_the_authorizer() {
+    let lab = lab(10);
+    lab.run(&alice(), create("one")).await.unwrap();
+    lab.asked();
+
+    let count = lab
+        .run(&CallerContext::Anonymous, CountNotes { org: acme() })
+        .await
+        .unwrap();
+
+    assert_eq!(count, 1);
+    assert!(lab.asked().is_empty());
+}
+
+#[tokio::test]
+async fn an_authenticated_query_refuses_anonymous_only() {
+    let lab = lab(10);
+
+    let err = lab
+        .run(&CallerContext::Anonymous, WhoAmI)
+        .await
+        .unwrap_err();
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    let entries = lab.journal.entries();
+    assert_eq!(entries.len(), 1);
+    assert_eq!((entries[0].1, entries[0].2), (StageKind::Authorize, false));
+
+    assert_eq!(lab.run(&bob(), WhoAmI).await.unwrap(), bob());
+    let system = CallerContext::Service(ServiceIdentity::recorder());
+    assert_eq!(lab.run(&system, WhoAmI).await.unwrap(), system);
+    assert!(lab.asked().is_empty());
+}
+
+#[tokio::test]
+async fn every_permission_of_an_action_must_pass_and_the_first_refusal_stops() {
+    let lab = lab(10);
+    let note = lab.run(&alice(), create("one")).await.unwrap();
+    let update = Permission::UpdateProject(note.id.clone());
+    let move_to = |org| MoveNote {
+        id: note.id.clone(),
+        org,
+    };
+    lab.asked();
+
+    let err = lab.run(&bob(), move_to(acme())).await.unwrap_err();
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert_eq!(lab.asked(), vec![update.clone()]);
+
+    let err = lab.run(&alice(), move_to(globex())).await.unwrap_err();
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert_eq!(
+        lab.asked(),
+        vec![update.clone(), Permission::CreateProject(globex())]
+    );
+    assert_eq!(lab.notes.find(&note.id).unwrap().org, acme());
+
+    let moved = lab.run(&alice(), move_to(acme())).await.unwrap();
+    assert_eq!(moved.version, 1);
+    assert_eq!(lab.asked(), vec![update, Permission::CreateProject(acme())]);
+}
+
+#[tokio::test]
+async fn the_hooks_run_the_same_way_for_every_access() {
+    let seen = Arc::new(Seen::default());
+    let lab = lab_with(10, |hooks| {
+        hooks.policy(StageKind::Authorize, seen.clone());
+    });
+    let note = lab.run(&alice(), create("one")).await.unwrap();
+    let before = lab.journal.entries().len();
+    lab.timing.stages.lock().unwrap().clear();
+    seen.0.lock().unwrap().clear();
+
+    lab.run(&CallerContext::Anonymous, CountNotes { org: acme() })
+        .await
+        .unwrap();
+    lab.run(&bob(), WhoAmI).await.unwrap();
+    lab.run(&alice(), read(&note.id)).await.unwrap();
+
+    let entries = lab.journal.entries();
+    let read = [(StageKind::Authorize, true), (StageKind::Fetch, true)];
+    for action in entries[before..].iter().step_by(2) {
+        assert_eq!(lab.journal.trail(&action.0), read);
+    }
+    assert_eq!(entries.len() - before, 6);
+    let read = [StageKind::Authorize, StageKind::Fetch];
+    assert_eq!(
+        lab.timing.stages.lock().unwrap().clone(),
+        [read, read, read].concat()
+    );
+    assert_eq!(
+        seen.0.lock().unwrap().clone(),
+        [
+            Access::Public,
+            Access::Authenticated,
+            Access::Requires(Permission::ReadProject(note.id.clone()))
+        ]
+    );
+}

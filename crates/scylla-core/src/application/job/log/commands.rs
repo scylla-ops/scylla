@@ -1,5 +1,5 @@
 //! The job log's writes. One block per command, in the order it runs: the struct, its
-//! permission, its payload types, what `Prepare` builds, what `Persist` writes.
+//! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::JobLogUseCases;
 use crate::domain::errors::DomainResult;
@@ -7,7 +7,7 @@ use crate::domain::job::JobLog;
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 
 #[derive(Debug)]
@@ -16,8 +16,8 @@ pub struct AppendJobLog {
 }
 
 impl Describe for AppendJobLog {
-    fn permission(&self) -> Permission {
-        Permission::AppendJobLog(self.log.job_id().clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::AppendJobLog(self.log.job_id().clone()))
     }
 }
 

@@ -1,8 +1,8 @@
-use crate::domain::permission::Permission;
+use crate::authz::Access;
 
-/// What every action has: the permission the authorize stage checks.
+/// What every action has: the access rule the authorize stage applies.
 pub trait Describe: Send + Sync + 'static {
-    fn permission(&self) -> Permission;
+    fn access(&self) -> Access;
 }
 
 /// A write. The two payload types say whether the thing is in the store: `Draft<T>` is not,

@@ -1,5 +1,5 @@
 //! The organization's writes. One block per command, in the order it runs: the struct, its
-//! permission, its payload types, what `Prepare` builds, what `Persist` writes.
+//! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::OrganizationUseCases;
 use crate::domain::caller::CallerContext;
@@ -11,7 +11,8 @@ use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 #[derive(Debug)]
@@ -29,8 +30,8 @@ pub struct NewOrganization {
 }
 
 impl Describe for CreateOrganization {
-    fn permission(&self) -> Permission {
-        Permission::CreateOrganization
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreateOrganization)
     }
 }
 
@@ -102,8 +103,8 @@ pub struct UpdateOrganization {
 }
 
 impl Describe for UpdateOrganization {
-    fn permission(&self) -> Permission {
-        Permission::UpdateOrganization(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateOrganization(self.id.clone()))
     }
 }
 
@@ -152,8 +153,8 @@ pub struct SetOrganizationActive {
 }
 
 impl Describe for SetOrganizationActive {
-    fn permission(&self) -> Permission {
-        Permission::UpdateOrganization(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateOrganization(self.id.clone()))
     }
 }
 
@@ -197,8 +198,8 @@ pub struct DeleteOrganization {
 }
 
 impl Describe for DeleteOrganization {
-    fn permission(&self) -> Permission {
-        Permission::DeleteOrganization(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteOrganization(self.id.clone()))
     }
 }
 

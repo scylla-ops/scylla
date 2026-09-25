@@ -1,15 +1,18 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
-use crate::application::grant::{CreateGrant, ListGrants, RevokeAllAccess, RevokeGrant};
+use crate::application::grant::{
+    CreateGrant, ListGrantableRoles, ListGrants, RevokeAllAccess, RevokeGrant,
+};
 use crate::grpc::convert::{
-    Parse, principal_ref_from_proto, principal_ref_to_proto, required, scope_kind_to_proto,
-    scope_ref_from_proto, scope_ref_to_proto, valid, wrap,
+    Parse, principal_ref_from_proto, principal_ref_to_proto, required, scope_kind_from_proto,
+    scope_kind_to_proto, scope_ref_from_proto, scope_ref_to_proto, valid, wrap,
 };
 use scylla_auth::authz::{Grant, GrantableRole, RoleKind};
 use scylla_domain::domain::role::RoleName;
 use scylla_proto::authz::v1::{
     CreateGrantRequest, Grant as ProtoGrant, GrantableRole as ProtoGrantableRole,
-    ListGrantsRequest, RevokeAllAccessRequest, RevokeGrantRequest, RoleKind as ProtoRoleKind,
+    ListGrantableRolesRequest, ListGrantsRequest, RevokeAllAccessRequest, RevokeGrantRequest,
+    RoleKind as ProtoRoleKind,
 };
 use tonic::Status;
 
@@ -73,6 +76,16 @@ impl Parse for ListGrantsRequest {
                 .scope
                 .map(|scope| scope_ref_from_proto(Some(scope)))
                 .transpose()?,
+        })
+    }
+}
+
+impl Parse for ListGrantableRolesRequest {
+    type Into = ListGrantableRoles;
+
+    fn parse(self) -> Result<ListGrantableRoles, Status> {
+        Ok(ListGrantableRoles {
+            scope_kind: self.scope_kind.map(scope_kind_from_proto).transpose()?,
         })
     }
 }

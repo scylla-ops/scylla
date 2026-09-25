@@ -1,5 +1,5 @@
 //! The project's writes. One block per command, in the order it runs: the struct, its
-//! permission and path, its payload types, what `Prepare` builds, what `Persist` writes. The
+//! access and path, its payload types, what `Prepare` builds, what `Persist` writes. The
 //! policy reload sits next to the write that changes the grant set; a `Listener` on `Persist`
 //! would be its next home once a failed reload no longer needs to fail the call.
 
@@ -13,7 +13,8 @@ use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 #[derive(Debug)]
@@ -32,8 +33,8 @@ pub struct NewProject {
 }
 
 impl Describe for CreateProject {
-    fn permission(&self) -> Permission {
-        Permission::CreateProject(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreateProject(self.organization_id.clone()))
     }
 }
 
@@ -92,8 +93,8 @@ pub struct UpdateProject {
 }
 
 impl Describe for UpdateProject {
-    fn permission(&self) -> Permission {
-        Permission::UpdateProject(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateProject(self.id.clone()))
     }
 }
 
@@ -133,8 +134,8 @@ pub struct SetProjectActive {
 }
 
 impl Describe for SetProjectActive {
-    fn permission(&self) -> Permission {
-        Permission::UpdateProject(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateProject(self.id.clone()))
     }
 }
 
@@ -174,8 +175,8 @@ pub struct DeleteProject {
 }
 
 impl Describe for DeleteProject {
-    fn permission(&self) -> Permission {
-        Permission::DeleteProject(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteProject(self.id.clone()))
     }
 }
 

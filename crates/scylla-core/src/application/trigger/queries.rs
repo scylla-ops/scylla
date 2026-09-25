@@ -1,4 +1,4 @@
-//! The trigger's reads. One block per query, in the order it runs: the struct, its permission,
+//! The trigger's reads. One block per query, in the order it runs: the struct, its access,
 //! its output type, what `Fetch` reads.
 
 use super::TriggerUseCases;
@@ -7,7 +7,7 @@ use crate::domain::ids::{PipelineId, TriggerId};
 use crate::domain::permission::Permission;
 use crate::domain::trigger::Trigger;
 use async_trait::async_trait;
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct GetTrigger {
@@ -15,8 +15,8 @@ pub struct GetTrigger {
 }
 
 impl Describe for GetTrigger {
-    fn permission(&self) -> Permission {
-        Permission::ManageTrigger(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageTrigger(self.id.clone()))
     }
 }
 
@@ -38,8 +38,8 @@ pub struct ListPipelineTriggers {
 }
 
 impl Describe for ListPipelineTriggers {
-    fn permission(&self) -> Permission {
-        Permission::ManageTriggers(self.pipeline_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageTriggers(self.pipeline_id.clone()))
     }
 }
 

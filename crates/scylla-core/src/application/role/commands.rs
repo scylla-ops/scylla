@@ -1,4 +1,4 @@
-//! The role's writes. One block per command, in the order it runs: the struct, its permission,
+//! The role's writes. One block per command, in the order it runs: the struct, its access,
 //! its payload types, what `Prepare` checks and builds, what `Persist` writes. The policy reload
 //! sits next to the write that changes a role Cedar emits.
 
@@ -8,7 +8,8 @@ use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use scylla_auth::authz::{Role, ScopeKind, validate_role_permissions};
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 #[derive(Debug)]
@@ -20,8 +21,8 @@ pub struct CreateRole {
 }
 
 impl Describe for CreateRole {
-    fn permission(&self) -> Permission {
-        Permission::ManageRoles
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageRoles)
     }
 }
 
@@ -68,8 +69,8 @@ pub struct UpdateRole {
 }
 
 impl Describe for UpdateRole {
-    fn permission(&self) -> Permission {
-        Permission::ManageRoles
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageRoles)
     }
 }
 
@@ -115,8 +116,8 @@ pub struct DeleteRole {
 }
 
 impl Describe for DeleteRole {
-    fn permission(&self) -> Permission {
-        Permission::ManageRoles
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageRoles)
     }
 }
 

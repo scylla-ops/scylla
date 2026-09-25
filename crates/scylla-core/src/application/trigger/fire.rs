@@ -14,7 +14,9 @@ use crate::domain::trigger::Trigger;
 use crate::domain::trigger::{TriggerInputSource, TriggerSource};
 use async_trait::async_trait;
 use derive_more::Constructor;
-use scylla_extension::{Authorized, Command, Committed, Describe, Persist, Prepare, Prepared, Run};
+use scylla_extension::{
+    Access, Authorized, Command, Committed, Describe, Persist, Prepare, Prepared, Run,
+};
 use std::sync::Arc;
 use tracing::{instrument, warn};
 
@@ -130,8 +132,8 @@ pub struct FireTriggerNow {
 }
 
 impl Describe for FireTriggerNow {
-    fn permission(&self) -> Permission {
-        Permission::RunTriggerPipeline(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::RunTriggerPipeline(self.id.clone()))
     }
 }
 

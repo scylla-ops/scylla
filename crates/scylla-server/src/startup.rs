@@ -268,7 +268,6 @@ pub(crate) async fn init_services(
         app_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
-        permission_checker.clone(),
         secret_cipher.clone(),
         cron_schedule.clone(),
     ));

@@ -1,5 +1,5 @@
 //! The user's reads. One block per query, in the order it runs: the struct, its
-//! permission, its output type, what `Fetch` reads.
+//! access, its output type, what `Fetch` reads.
 
 use super::UserUseCases;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
@@ -8,7 +8,7 @@ use crate::domain::ids::UserId;
 use crate::domain::permission::Permission;
 use crate::domain::user::{User, Username};
 use async_trait::async_trait;
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct GetUser {
@@ -16,8 +16,8 @@ pub struct GetUser {
 }
 
 impl Describe for GetUser {
-    fn permission(&self) -> Permission {
-        Permission::ReadUser(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadUser(self.id.clone()))
     }
 }
 
@@ -40,8 +40,8 @@ pub struct GetUserByUsername {
 }
 
 impl Describe for GetUserByUsername {
-    fn permission(&self) -> Permission {
-        Permission::ListUsers
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListUsers)
     }
 }
 
@@ -69,8 +69,8 @@ pub struct ListUsers {
 }
 
 impl Describe for ListUsers {
-    fn permission(&self) -> Permission {
-        Permission::ListUsers
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListUsers)
     }
 }
 

@@ -1,16 +1,16 @@
 //! The one engine. A use case implements `Run<Prepare<C>>` and `Run<Persist<C>>` for its
 //! commands, `Run<Fetch<Q>>` for its queries, and an adapter calls `run` with it for both. The
-//! use case has no hook code, no permission code and no method of its own.
+//! use case has no hook code, no access code and no method of its own.
 
 use crate::action::Requested;
-use crate::authz::{AuthorizeStage, Authorizer};
+use crate::authz::{Access, AuthorizeStage, Authorizer};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::hooks::Hooks;
 use crate::path::{Kind, Path};
 use crate::stage::Authorize;
 use std::sync::Arc;
-use tracing::{Instrument, info_span};
+use tracing::{Instrument, field, info_span};
 
 pub struct Actions {
     authorize: AuthorizeStage,
@@ -45,8 +45,8 @@ impl Actions {
             kind = K::NAME,
             action = %requested.id(),
             caller = %requested.caller(),
-            permission = requested.permission().key(),
-            resource = %requested.permission().resource(),
+            access = %requested.access(),
+            resource = resources(requested.access()).map(field::display),
         );
         async {
             let authorized = self
@@ -58,4 +58,14 @@ impl Actions {
         .instrument(span)
         .await
     }
+}
+
+fn resources(access: &Access) -> Option<String> {
+    let mut resources: Vec<_> = access
+        .permissions()
+        .iter()
+        .map(|p| p.resource().to_string())
+        .collect();
+    resources.dedup();
+    (!resources.is_empty()).then(|| resources.join("+"))
 }

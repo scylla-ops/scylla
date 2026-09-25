@@ -1,5 +1,5 @@
 //! The trigger's writes. One block per command, in the order it runs: the struct, its
-//! permission, its payload types, what `Prepare` builds, what `Persist` writes.
+//! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::TriggerUseCases;
 use crate::domain::errors::DomainResult;
@@ -8,7 +8,8 @@ use crate::domain::permission::Permission;
 use crate::domain::trigger::{Trigger, TriggerInput, TriggerName, TriggerSource};
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 use uuid::Uuid;
 
@@ -29,9 +30,13 @@ pub struct NewTrigger {
     pub webhook_secret_enc: Option<Vec<u8>>,
 }
 
+// Managing triggers must not give run rights, so a create and an update also ask for them.
 impl Describe for CreateTrigger {
-    fn permission(&self) -> Permission {
-        Permission::ManageTriggers(self.pipeline_id.clone())
+    fn access(&self) -> Access {
+        Access::RequiresAll(vec![
+            Permission::ManageTriggers(self.pipeline_id.clone()),
+            Permission::RunPipeline(self.pipeline_id.clone()),
+        ])
     }
 }
 
@@ -42,16 +47,8 @@ impl Command for CreateTrigger {
 
 #[async_trait]
 impl Run<Prepare<CreateTrigger>> for TriggerUseCases {
-    // Anti-escalation: managing triggers must not launder run rights. It refuses, so it runs
-    // before anything is read.
     async fn run(&self, input: Authorized<CreateTrigger>) -> DomainResult<Prepared<CreateTrigger>> {
         let cmd = input.command();
-        self.permission_service
-            .check(
-                input.caller(),
-                Permission::RunPipeline(cmd.pipeline_id.clone()),
-            )
-            .await?;
         let pipeline = self.pipeline_repo.find_by_id(&cmd.pipeline_id).await?;
         let project = self.project_repo.find_by_id(pipeline.project_id()).await?;
 
@@ -111,8 +108,11 @@ pub struct UpdateTrigger {
 }
 
 impl Describe for UpdateTrigger {
-    fn permission(&self) -> Permission {
-        Permission::ManageTrigger(self.id.clone())
+    fn access(&self) -> Access {
+        Access::RequiresAll(vec![
+            Permission::ManageTrigger(self.id.clone()),
+            Permission::RunTriggerPipeline(self.id.clone()),
+        ])
     }
 }
 
@@ -123,15 +123,8 @@ impl Command for UpdateTrigger {
 
 #[async_trait]
 impl Run<Prepare<UpdateTrigger>> for TriggerUseCases {
-    // Anti-escalation, as for a create: it refuses, so it runs before anything is read.
     async fn run(&self, input: Authorized<UpdateTrigger>) -> DomainResult<Prepared<UpdateTrigger>> {
         let cmd = input.command();
-        self.permission_service
-            .check(
-                input.caller(),
-                Permission::RunTriggerPipeline(cmd.id.clone()),
-            )
-            .await?;
         let mut trigger = self.trigger_repo.find_by_id(&cmd.id).await?;
         trigger.update(cmd.name.clone(), cmd.source.clone(), cmd.inputs.clone())?;
         // Re-anchor from now so a changed expression takes effect at once.
@@ -156,8 +149,8 @@ pub struct SetTriggerEnabled {
 }
 
 impl Describe for SetTriggerEnabled {
-    fn permission(&self) -> Permission {
-        Permission::ManageTrigger(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageTrigger(self.id.clone()))
     }
 }
 
@@ -203,8 +196,8 @@ pub struct DeleteTrigger {
 }
 
 impl Describe for DeleteTrigger {
-    fn permission(&self) -> Permission {
-        Permission::ManageTrigger(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageTrigger(self.id.clone()))
     }
 }
 

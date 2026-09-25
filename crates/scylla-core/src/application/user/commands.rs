@@ -1,5 +1,5 @@
 //! The user's writes. One block per command, in the order it runs: the struct, its
-//! permission, its payload types, what `Prepare` builds, what `Persist` writes.
+//! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::UserUseCases;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -8,7 +8,8 @@ use crate::domain::permission::Permission;
 use crate::domain::user::{Email, Password, User, Username};
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 #[derive(Debug)]
@@ -19,8 +20,8 @@ pub struct CreateUser {
 }
 
 impl Describe for CreateUser {
-    fn permission(&self) -> Permission {
-        Permission::CreateUser
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreateUser)
     }
 }
 
@@ -58,8 +59,8 @@ pub struct UpdateUser {
 }
 
 impl Describe for UpdateUser {
-    fn permission(&self) -> Permission {
-        Permission::UpdateUser(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateUser(self.id.clone()))
     }
 }
 
@@ -98,8 +99,8 @@ pub struct DeleteUser {
 }
 
 impl Describe for DeleteUser {
-    fn permission(&self) -> Permission {
-        Permission::DeleteUser(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeleteUser(self.id.clone()))
     }
 }
 

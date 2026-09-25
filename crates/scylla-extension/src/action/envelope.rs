@@ -1,17 +1,17 @@
 use super::command::Describe;
 use super::id::ActionId;
+use crate::authz::Access;
 use crate::domain::caller::CallerContext;
 use crate::domain::clock;
-use crate::domain::permission::Permission;
 use chrono::{DateTime, Utc};
 
-/// Built once per `send` and shared by every phase. The permission is computed here, once, so a
+/// Built once per `send` and shared by every phase. The access rule is computed here, once, so a
 /// hook reads it without calling the command again.
 pub struct Envelope<C> {
     id: ActionId,
     at: DateTime<Utc>,
     caller: CallerContext,
-    permission: Permission,
+    access: Access,
     command: C,
 }
 
@@ -20,7 +20,7 @@ impl<C: Describe> Envelope<C> {
         Self {
             id: ActionId::generate(),
             at: clock::now(),
-            permission: command.permission(),
+            access: command.access(),
             caller,
             command,
         }
@@ -40,8 +40,8 @@ impl<C> Envelope<C> {
         &self.caller
     }
 
-    pub fn permission(&self) -> &Permission {
-        &self.permission
+    pub fn access(&self) -> &Access {
+        &self.access
     }
 
     pub fn command(&self) -> &C {

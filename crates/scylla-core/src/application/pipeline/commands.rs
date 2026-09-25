@@ -1,5 +1,5 @@
 //! The pipeline's writes. One block per command, in the order it runs: the struct, its
-//! permission, its payload types, what `Prepare` builds, what `Persist` writes.
+//! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::PipelineUseCases;
 use crate::application::JobDispatch;
@@ -11,7 +11,8 @@ use crate::domain::permission::Permission;
 use crate::domain::pipeline::{Pipeline, PipelineName, PipelineNode};
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
+    Run,
 };
 
 #[derive(Debug)]
@@ -22,8 +23,8 @@ pub struct CreatePipeline {
 }
 
 impl Describe for CreatePipeline {
-    fn permission(&self) -> Permission {
-        Permission::CreatePipeline(self.project_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::CreatePipeline(self.project_id.clone()))
     }
 }
 
@@ -66,8 +67,8 @@ pub struct UpdatePipeline {
 }
 
 impl Describe for UpdatePipeline {
-    fn permission(&self) -> Permission {
-        Permission::UpdatePipeline(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdatePipeline(self.id.clone()))
     }
 }
 
@@ -112,8 +113,8 @@ pub struct DeletePipeline {
 }
 
 impl Describe for DeletePipeline {
-    fn permission(&self) -> Permission {
-        Permission::DeletePipeline(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::DeletePipeline(self.id.clone()))
     }
 }
 
@@ -156,8 +157,8 @@ pub struct RunPipeline {
 }
 
 impl Describe for RunPipeline {
-    fn permission(&self) -> Permission {
-        Permission::RunPipeline(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::RunPipeline(self.id.clone()))
     }
 }
 

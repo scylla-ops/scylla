@@ -311,7 +311,9 @@ mod tests {
         use crate::domain::ids::UserId;
         use crate::postgres::PgGrantRepository;
         use scylla_auth::authz::{PolicyControl, Principal, Scope};
-        use scylla_core::application::role::{GetEffectivePermissions, RoleUseCases};
+        use scylla_core::application::role::{
+            GetEffectivePermissions, GetMyPermissions, RoleUseCases,
+        };
         use scylla_core::test_support::authz::{DenyingPermissionService, actions};
         use std::sync::Arc;
 
@@ -339,13 +341,17 @@ mod tests {
         let actions = actions(Arc::new(DenyingPermissionService::new()));
 
         let alice = CallerContext::User(UserId::new("alice"));
-        let scopes = uc.my_permissions(&alice).await.expect("own permissions");
+        let scopes = actions
+            .run(&uc, &alice, GetMyPermissions)
+            .await
+            .expect("own permissions");
         assert_eq!(scopes.len(), 1);
         assert!(matches!(&scopes[0].scope, Scope::Organization(o) if o.as_str() == "o1"));
         assert!(scopes[0].full_control, "organization-admin confers '*'");
 
         let bob = CallerContext::User(UserId::new("bob"));
-        assert!(uc.my_permissions(&bob).await.unwrap().is_empty());
+        let scopes = actions.run(&uc, &bob, GetMyPermissions).await.unwrap();
+        assert!(scopes.is_empty());
 
         assert!(
             actions
@@ -362,6 +368,7 @@ mod tests {
         );
 
         let service = CallerContext::Service(ServiceIdentity::recorder());
-        assert!(uc.my_permissions(&service).await.is_err());
+        let refused = actions.run(&uc, &service, GetMyPermissions).await;
+        assert!(refused.is_err());
     }
 }

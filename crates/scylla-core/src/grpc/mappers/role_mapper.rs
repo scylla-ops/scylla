@@ -1,8 +1,8 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
 use crate::application::role::{
-    CreateRole, DeleteRole, GetEffectivePermissions, GetRole, ListAuthzVocabulary, ListRoles,
-    UpdateRole,
+    CreateRole, DeleteRole, GetEffectivePermissions, GetMyPermissions, GetRole,
+    ListAuthzVocabulary, ListRoles, UpdateRole,
 };
 use crate::grpc::convert::{
     Parse, permission_from_key, permission_key, principal_ref_from_proto, required,
@@ -11,9 +11,9 @@ use crate::grpc::convert::{
 use scylla_auth::authz::{EffectiveScope, FULL_CONTROL, Role, resource_home_scope};
 use scylla_proto::authz::v1::{
     Access, AuthzAction, CreateRoleRequest, DeleteRoleRequest,
-    EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest, GetRoleRequest,
-    ListAuthzVocabularyRequest, ListRolesRequest, Permission, Role as ProtoRole, UpdateRoleRequest,
-    access, role,
+    EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest, GetMyPermissionsRequest,
+    GetRoleRequest, ListAuthzVocabularyRequest, ListRolesRequest, Permission, Role as ProtoRole,
+    UpdateRoleRequest, access, role,
 };
 use tonic::Status;
 
@@ -125,6 +125,7 @@ impl Parse for GetEffectivePermissionsRequest {
     }
 }
 
+parse!(GetMyPermissionsRequest => GetMyPermissions);
 parse!(ListAuthzVocabularyRequest => ListAuthzVocabulary);
 
 #[cfg(test)]

@@ -29,7 +29,7 @@ use crate::domain::role::RoleName;
 use crate::domain::trigger::Trigger;
 use derive_more::Constructor;
 use scylla_auth::authz::{
-    Grant, ORGANIZATION_TRIGGER_RUNNER_ROLE, PermissionService, PolicyControl, Principal, Scope,
+    Grant, ORGANIZATION_TRIGGER_RUNNER_ROLE, PolicyControl, Principal, Scope,
 };
 use std::sync::Arc;
 
@@ -38,8 +38,7 @@ pub(crate) const TRIGGER_RUNNER_APP_NAME: &str = "trigger-runner";
 const RUNNER_SECRET_LABEL: &str = "default";
 
 /// The trigger aggregate's stage runners, one block per action in `commands.rs` and
-/// `queries.rs`. It has no public method; `Actions::run` drives it. `permission_service`
-/// serves the `runPipeline` check that a create or an update asks in `Prepare`.
+/// `queries.rs`. It has no public method; `Actions::run` drives it.
 #[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct TriggerUseCases {
@@ -49,7 +48,6 @@ pub struct TriggerUseCases {
     pub(super) app_repo: Arc<dyn AppRepository>,
     pub(super) hash_service: Arc<dyn HashService>,
     pub(super) policy_control: Arc<dyn PolicyControl>,
-    pub(super) permission_service: Arc<dyn PermissionService>,
     /// Reversible: HMAC verification needs the plaintext back.
     pub(super) cipher: Arc<dyn SecretCipher>,
     pub(super) schedule: Arc<dyn CronSchedule>,

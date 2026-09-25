@@ -1,4 +1,4 @@
-//! The agent's reads. One block per query, in the order it runs: the struct, its permission, its
+//! The agent's reads. One block per query, in the order it runs: the struct, its access, its
 //! output type, what `Fetch` reads.
 
 use super::AgentUseCases;
@@ -10,7 +10,7 @@ use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 use std::collections::HashSet;
 
 pub struct AgentView {
@@ -27,8 +27,8 @@ pub struct ListAgents {
 }
 
 impl Describe for ListAgents {
-    fn permission(&self) -> Permission {
-        Permission::ListAgents(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListAgents(self.organization_id.clone()))
     }
 }
 
@@ -73,8 +73,8 @@ pub struct GetAgent {
 }
 
 impl Describe for GetAgent {
-    fn permission(&self) -> Permission {
-        Permission::ReadApp(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadApp(self.id.clone()))
     }
 }
 
@@ -110,8 +110,8 @@ pub struct GetAgentStats {
 }
 
 impl Describe for GetAgentStats {
-    fn permission(&self) -> Permission {
-        Permission::ReadAppStats(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadAppStats(self.id.clone()))
     }
 }
 

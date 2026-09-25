@@ -1,7 +1,8 @@
 //! The role's actions through the engine, on stub ports.
 
 use super::*;
-use crate::domain::caller::ServiceIdentity;
+use crate::domain::caller::{CallerContext, ServiceIdentity};
+use crate::domain::errors::DomainError;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
@@ -265,7 +266,11 @@ async fn my_permissions_asks_for_no_permission_and_refuses_a_non_principal() {
         )],
     );
 
-    let scopes = lab.uc.my_permissions(&alice()).await.unwrap();
+    let scopes = lab
+        .actions
+        .run(&lab.uc, &alice(), GetMyPermissions)
+        .await
+        .unwrap();
     assert_eq!(scopes.len(), 1);
     assert!(scopes[0].full_control);
 
@@ -282,12 +287,17 @@ async fn my_permissions_asks_for_no_permission_and_refuses_a_non_principal() {
         .unwrap_err();
     assert!(matches!(err, DomainError::Forbidden(_)));
 
-    assert!(
-        lab.uc
-            .my_permissions(&CallerContext::Service(ServiceIdentity::recorder()))
+    for caller in [
+        CallerContext::Service(ServiceIdentity::recorder()),
+        CallerContext::Anonymous,
+    ] {
+        let err = lab
+            .actions
+            .run(&lab.uc, &caller, GetMyPermissions)
             .await
-            .is_err()
-    );
+            .unwrap_err();
+        assert!(matches!(err, DomainError::Forbidden(_)), "{caller}");
+    }
 }
 
 #[tokio::test]

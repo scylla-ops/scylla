@@ -1,4 +1,4 @@
-//! The job's reads. One block per query, in the order it runs: the struct, its permission, its
+//! The job's reads. One block per query, in the order it runs: the struct, its access, its
 //! output type, what `Fetch` reads.
 
 use super::JobUseCases;
@@ -8,7 +8,7 @@ use crate::domain::ids::{JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::job::Job;
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct GetJob {
@@ -16,8 +16,8 @@ pub struct GetJob {
 }
 
 impl Describe for GetJob {
-    fn permission(&self) -> Permission {
-        Permission::ReadJob(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadJob(self.id.clone()))
     }
 }
 
@@ -39,8 +39,8 @@ pub struct ListJobs {
 }
 
 impl Describe for ListJobs {
-    fn permission(&self) -> Permission {
-        Permission::ListJobs
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListJobs)
     }
 }
 
@@ -66,8 +66,8 @@ pub struct ListPipelineJobs {
 }
 
 impl Describe for ListPipelineJobs {
-    fn permission(&self) -> Permission {
-        Permission::ListJobsByPipeline(self.pipeline_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListJobsByPipeline(self.pipeline_id.clone()))
     }
 }
 
@@ -97,8 +97,8 @@ pub struct ListProjectJobs {
 }
 
 impl Describe for ListProjectJobs {
-    fn permission(&self) -> Permission {
-        Permission::ListJobsByProject(self.project_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListJobsByProject(self.project_id.clone()))
     }
 }
 
@@ -128,8 +128,10 @@ pub struct ListOrganizationJobs {
 }
 
 impl Describe for ListOrganizationJobs {
-    fn permission(&self) -> Permission {
-        Permission::ListJobsByOrganization(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListJobsByOrganization(
+            self.organization_id.clone(),
+        ))
     }
 }
 

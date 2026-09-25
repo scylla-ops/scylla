@@ -1,5 +1,5 @@
 //! The organization's reads. One block per query, in the order it runs: the struct, its
-//! permission, its output type, what `Fetch` reads.
+//! access, its output type, what `Fetch` reads.
 
 use super::OrganizationUseCases;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
@@ -10,7 +10,7 @@ use crate::domain::organization::Organization;
 use crate::domain::permission::Permission;
 use crate::domain::user::User;
 use async_trait::async_trait;
-use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
+use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
 pub struct GetOrganization {
@@ -18,8 +18,8 @@ pub struct GetOrganization {
 }
 
 impl Describe for GetOrganization {
-    fn permission(&self) -> Permission {
-        Permission::ReadOrganization(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadOrganization(self.id.clone()))
     }
 }
 
@@ -44,8 +44,8 @@ pub struct ListOrganizations {
 }
 
 impl Describe for ListOrganizations {
-    fn permission(&self) -> Permission {
-        Permission::ListOrganizations
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListOrganizations)
     }
 }
 
@@ -74,8 +74,10 @@ pub struct ListOrganizationMembers {
 }
 
 impl Describe for ListOrganizationMembers {
-    fn permission(&self) -> Permission {
-        Permission::ListOrganizationMembers(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListOrganizationMembers(
+            self.organization_id.clone(),
+        ))
     }
 }
 
@@ -106,8 +108,8 @@ pub struct ListUserOrganizations {
 }
 
 impl Describe for ListUserOrganizations {
-    fn permission(&self) -> Permission {
-        Permission::ListUserOrganizations(self.user_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListUserOrganizations(self.user_id.clone()))
     }
 }
 

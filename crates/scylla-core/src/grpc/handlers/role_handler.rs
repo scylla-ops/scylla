@@ -1,9 +1,6 @@
 use crate::application::RoleUseCases;
-use crate::extract_auth_context;
 use crate::grpc::adapter::run;
-use crate::grpc::mappers::{
-    authz_action_to_proto, domain_error_to_status, effective_scope_to_proto, role_to_proto,
-};
+use crate::grpc::mappers::{authz_action_to_proto, effective_scope_to_proto, role_to_proto};
 use derive_more::Constructor;
 use scylla_extension::Actions;
 use scylla_proto::authz::v1::{
@@ -86,12 +83,7 @@ impl RoleService for RoleHandler {
         &self,
         request: Request<GetMyPermissionsRequest>,
     ) -> Result<Response<GetMyPermissionsResponse>, Status> {
-        let caller = caller!(request);
-        let scopes = self
-            .roles
-            .my_permissions(&caller)
-            .await
-            .map_err(domain_error_to_status)?;
+        let scopes = run(&self.actions, &*self.roles, request).await?;
         Ok(Response::new(GetMyPermissionsResponse {
             scopes: scopes.iter().map(effective_scope_to_proto).collect(),
         }))

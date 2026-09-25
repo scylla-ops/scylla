@@ -108,7 +108,7 @@ impl Policy for Veto {
     async fn enforce(&self, _: StageKind, action: &dyn Action) -> DomainResult<()> {
         Err(DomainError::quota_exceeded(format!(
             "vetoed {}",
-            action.permission().key()
+            action.access()
         )))
     }
 }

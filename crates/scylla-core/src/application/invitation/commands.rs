@@ -1,5 +1,5 @@
 //! The invitation's writes. One block per command, in the order it runs: the struct, its
-//! permission, its payload types, what `Prepare` builds, what `Persist` writes.
+//! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::InvitationUseCases;
 use crate::application::invitation::token::mint_invitation_token;
@@ -14,7 +14,7 @@ use crate::domain::user::Email;
 use async_trait::async_trait;
 use scylla_auth::authz::{Scope, validate_role_in_db};
 use scylla_extension::{
-    Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Access, Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 
 #[derive(Debug)]
@@ -32,8 +32,8 @@ pub struct NewInvitation {
 }
 
 impl Describe for CreateInvitation {
-    fn permission(&self) -> Permission {
-        Permission::ManageInvitations(self.organization_id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ManageInvitations(self.organization_id.clone()))
     }
 }
 
@@ -115,8 +115,8 @@ pub struct RevokeInvitation {
 }
 
 impl Describe for RevokeInvitation {
-    fn permission(&self) -> Permission {
-        Permission::RevokeInvitation(self.id.clone())
+    fn access(&self) -> Access {
+        Access::Requires(Permission::RevokeInvitation(self.id.clone()))
     }
 }
 

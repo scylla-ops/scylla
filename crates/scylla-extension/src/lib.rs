@@ -18,7 +18,7 @@ pub use action::{
     Phase, Prepared, Query, Requested,
 };
 pub use actions::Actions;
-pub use authz::{AuthorizeStage, Authorizer, Granted};
+pub use authz::{Access, AuthorizeStage, Authorizer, Granted};
 pub use hooks::{
     Around, Done, Extension, Gate, Hooks, Listener, Next, Observer, Policy, Proceed, Wrap,
 };

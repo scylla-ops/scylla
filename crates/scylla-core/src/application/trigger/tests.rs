@@ -12,6 +12,7 @@ use crate::test_support::projects::ProjectBuilder;
 use crate::test_support::stubs::{CountingPolicy, OnePipeline, OneProject, StubHash, alice};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_auth::authz::PermissionService;
 use scylla_extension::{Actions, Deleted};
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -227,7 +228,7 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let apps = Arc::new(StubApps::default());
     let policy = Arc::new(CountingPolicy::default());
     Lab {
-        actions: actions(permissions.clone()),
+        actions: actions(permissions),
         uc: TriggerUseCases::new(
             triggers.clone(),
             Arc::new(OnePipeline(pipeline)),
@@ -235,7 +236,6 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
             apps.clone(),
             Arc::new(StubHash::secrets()),
             policy.clone(),
-            permissions,
             Arc::new(StubCipher),
             Arc::new(StubSchedule),
         ),
