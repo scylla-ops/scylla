@@ -181,6 +181,11 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             .as_ref()
             .map(|p| euid("Scylla::Pipeline", p.as_str()))
             .transpose()?;
+        let app_uid = ancestors
+            .app
+            .as_ref()
+            .map(|a| euid("Scylla::App", a.as_str()))
+            .transpose()?;
 
         let mut entities = Vec::new();
         entities.push(Entity::new_no_attrs(system_uid.clone(), HashSet::new()));
@@ -202,13 +207,20 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
                 parent_set(project_uid.as_ref()),
             ));
         }
+        if let Some(a) = &app_uid {
+            entities.push(Entity::new_no_attrs(
+                a.clone(),
+                parent_set(org_uid.as_ref()),
+            ));
+        }
 
         let leaf_parent = match resource {
             ResourceRef::Job(_) => pipeline_uid.as_ref(),
-            // An unknown secret, trigger or invitation sits under System: only a System grant reaches it, and the use case answers NotFound.
+            // An unknown secret, trigger, invitation or app secret sits under System: only a System grant reaches it, and the use case answers NotFound.
             ResourceRef::Secret(_) => project_uid.as_ref().or(Some(&system_uid)),
             ResourceRef::Trigger(_) => pipeline_uid.as_ref().or(Some(&system_uid)),
             ResourceRef::Invitation(_) => org_uid.as_ref().or(Some(&system_uid)),
+            ResourceRef::AppSecret(_) => app_uid.as_ref().or(Some(&system_uid)),
             ResourceRef::Pipeline(_) => project_uid.as_ref(),
             ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
             // A user's parent is System too: without it a System grant stops reaching user-targeted actions.
@@ -394,7 +406,8 @@ mod tests {
     use crate::authz::role::FULL_CONTROL;
     use crate::domain::caller::ServiceIdentity;
     use crate::domain::ids::{
-        AppId, InvitationId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
+        AppCredentialId, AppId, InvitationId, OrganizationId, PipelineId, ProjectId, SecretId,
+        TriggerId, UserId,
     };
     use crate::domain::role::RoleName;
 
@@ -615,6 +628,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![],
         )
@@ -634,6 +648,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![Grant::new(
                 Principal::User(UserId::new("u1")),
@@ -664,6 +679,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![],
         )
@@ -684,6 +700,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p2")),
                 pipeline: None,
+                app: None,
             },
             vec![],
         )
@@ -708,6 +725,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -727,6 +745,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![Grant::new(
                 Principal::User(UserId::new("u1")),
@@ -748,6 +767,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p2")),
                 pipeline: None,
+                app: None,
             },
             vec![Grant::new(
                 Principal::User(UserId::new("u1")),
@@ -772,6 +792,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![Grant::new(
                 Principal::User(UserId::new("u-admin")),
@@ -801,6 +822,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -832,6 +854,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -863,6 +886,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -894,6 +918,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -919,6 +944,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o2")),
                 project: Some(ProjectId::new("p2")),
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -944,6 +970,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: None,
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -978,6 +1005,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: None,
                 pipeline: None,
+                app: None,
             },
             vec![],
         )
@@ -1009,6 +1037,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: None,
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -1100,6 +1129,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -1128,6 +1158,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![grant],
         )
@@ -1208,6 +1239,7 @@ mod tests {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
+                app: None,
             },
             vec![],
         )
@@ -1225,6 +1257,7 @@ mod tests {
             organization: Some(OrganizationId::new("o1")),
             project: Some(ProjectId::new(project)),
             pipeline: None,
+            app: None,
         }
     }
 
@@ -1285,6 +1318,7 @@ mod tests {
             organization: Some(OrganizationId::new("o1")),
             project: Some(ProjectId::new(project)),
             pipeline: Some(PipelineId::new(format!("{project}-pl"))),
+            app: None,
         }
     }
 
@@ -1367,6 +1401,7 @@ mod tests {
             organization: Some(OrganizationId::new(organization)),
             project: None,
             pipeline: None,
+            app: None,
         }
     }
 
@@ -1426,6 +1461,68 @@ mod tests {
         assert!(
             system
                 .check(&CallerContext::User(UserId::new("u-admin")), revoke())
+                .await
+                .is_ok()
+        );
+    }
+
+    fn app_secret_in(organization: &str) -> ResourceAncestors {
+        ResourceAncestors {
+            organization: Some(OrganizationId::new(organization)),
+            project: None,
+            pipeline: None,
+            app: Some(AppId::new(format!("{organization}-app"))),
+        }
+    }
+
+    #[tokio::test]
+    async fn an_app_secret_action_is_reached_through_the_secret_app_organization() {
+        let caller = CallerContext::User(UserId::new("u1"));
+        let manage = || Permission::ManageAppSecret(AppCredentialId::new("s1"));
+
+        let own = service(app_secret_in("o1"), org_grant(ORGANIZATION_ADMIN_ROLE)).await;
+        assert!(own.check(&caller, manage()).await.is_ok());
+
+        let other = service(app_secret_in("o2"), org_grant(ORGANIZATION_ADMIN_ROLE)).await;
+        assert!(
+            other.check(&caller, manage()).await.is_err(),
+            "a grant on o1 confers nothing on a secret of an app of o2"
+        );
+
+        let viewer = service(app_secret_in("o1"), org_grant(ORGANIZATION_VIEWER_ROLE)).await;
+        assert!(
+            viewer.check(&caller, manage()).await.is_err(),
+            "an organization viewer does not manage app secrets"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_unknown_app_secret_is_reached_only_by_a_system_grant() {
+        let manage = || Permission::ManageAppSecret(AppCredentialId::new("missing"));
+
+        let org = service(
+            ResourceAncestors::default(),
+            org_grant(ORGANIZATION_ADMIN_ROLE),
+        )
+        .await;
+        assert!(
+            org.check(&CallerContext::User(UserId::new("u1")), manage())
+                .await
+                .is_err()
+        );
+
+        let system = service(
+            ResourceAncestors::default(),
+            vec![Grant::new(
+                Principal::User(UserId::new("u-admin")),
+                role(SYSTEM_ADMIN_ROLE),
+                Scope::System,
+            )],
+        )
+        .await;
+        assert!(
+            system
+                .check(&CallerContext::User(UserId::new("u-admin")), manage())
                 .await
                 .is_ok()
         );

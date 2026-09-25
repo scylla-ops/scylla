@@ -3,7 +3,8 @@ mod resource_ref;
 pub use resource_ref::*;
 
 use crate::domain::ids::{
-    AppId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId, SecretId, TriggerId, UserId,
+    AppCredentialId, AppId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId, SecretId,
+    TriggerId, UserId,
 };
 use std::sync::LazyLock;
 
@@ -74,6 +75,8 @@ pub enum Permission {
     ReadApp(AppId),
     ReadAppStats(AppId),
     DeleteApp(AppId),
+    /// `deleteApp` on the secret's app. Shares its key, so it is not in the catalog.
+    ManageAppSecret(AppCredentialId),
     ListAppsByOrganization(OrganizationId),
 
     CreateAgent(OrganizationId),
@@ -144,7 +147,7 @@ impl Permission {
             Self::CreateApp(_) => "createApp",
             Self::ReadApp(_) => "readApp",
             Self::ReadAppStats(_) => "readAppStats",
-            Self::DeleteApp(_) => "deleteApp",
+            Self::DeleteApp(_) | Self::ManageAppSecret(_) => "deleteApp",
             Self::ListAppsByOrganization(_) => "listAppsByOrganization",
 
             Self::CreateAgent(_) => "createAgent",
@@ -231,6 +234,8 @@ impl Permission {
             Self::ReadApp(id) | Self::ReadAppStats(id) | Self::DeleteApp(id) => {
                 ResourceRef::App(id.clone())
             }
+
+            Self::ManageAppSecret(id) => ResourceRef::AppSecret(id.clone()),
         }
     }
 
@@ -251,6 +256,7 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "secret",
     "trigger",
     "app",
+    "app_secret",
 ];
 
 fn catalog_variants() -> Vec<Permission> {
@@ -347,7 +353,7 @@ mod catalog_tests {
     use super::{
         PERMISSION_CATALOG, Permission, RESOURCE_TYPES, catalog_variants, is_known_permission,
     };
-    use crate::domain::ids::{InvitationId, TriggerId};
+    use crate::domain::ids::{AppCredentialId, InvitationId, TriggerId};
     use std::collections::HashSet;
 
     #[test]
@@ -381,6 +387,13 @@ mod catalog_tests {
     fn invitation_permissions_reuse_catalog_keys() {
         assert!(is_known_permission(
             Permission::RevokeInvitation(InvitationId::new("_")).key()
+        ));
+    }
+
+    #[test]
+    fn app_secret_permissions_reuse_catalog_keys() {
+        assert!(is_known_permission(
+            Permission::ManageAppSecret(AppCredentialId::new("_")).key()
         ));
     }
 }

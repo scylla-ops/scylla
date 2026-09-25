@@ -48,7 +48,7 @@ impl Role {
 
 pub fn resource_home_scope(resource_type: &str) -> ScopeKind {
     match resource_type {
-        "organization" | "invitation" | "app" => ScopeKind::Organization,
+        "organization" | "invitation" | "app" | "app_secret" => ScopeKind::Organization,
         "project" | "pipeline" | "job" | "secret" | "trigger" => ScopeKind::Project,
         _ => ScopeKind::System,
     }

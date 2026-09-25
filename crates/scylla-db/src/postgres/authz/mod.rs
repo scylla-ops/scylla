@@ -67,6 +67,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                         organization: Some(OrganizationId::new(r.organization_id)),
                         project: Some(ProjectId::new(r.project_id)),
                         pipeline: None,
+                        app: None,
                     }),
                     None => Ok(ResourceAncestors::default()),
                 }
@@ -89,6 +90,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                         organization: Some(OrganizationId::new(r.organization_id)),
                         project: Some(ProjectId::new(r.project_id)),
                         pipeline: Some(PipelineId::new(r.pipeline_id)),
+                        app: None,
                     }),
                     None => Ok(ResourceAncestors::default()),
                 }
@@ -108,6 +110,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                         organization: Some(OrganizationId::new(r.organization_id)),
                         project: Some(ProjectId::new(r.project_id)),
                         pipeline: None,
+                        app: None,
                     }),
                     None => Ok(ResourceAncestors::default()),
                 }
@@ -130,6 +133,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                         organization: Some(OrganizationId::new(r.organization_id)),
                         project: Some(ProjectId::new(r.project_id)),
                         pipeline: Some(PipelineId::new(r.pipeline_id)),
+                        app: None,
                     }),
                     None => Ok(ResourceAncestors::default()),
                 }
@@ -146,6 +150,25 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                     organization: row.map(|r| OrganizationId::new(r.organization_id)),
                     ..Default::default()
                 })
+            }
+            ResourceRef::AppSecret(id) => {
+                let row = sqlx::query!(
+                    "SELECT s.app_id AS \"app_id!\", a.organization_id AS \"organization_id!\" \
+                     FROM app_secrets s JOIN apps a ON a.id = s.app_id \
+                     WHERE s.id = $1",
+                    id.as_str(),
+                )
+                .fetch_optional(&self.pool)
+                .await
+                .to_domain()?;
+                match row {
+                    Some(r) => Ok(ResourceAncestors {
+                        organization: Some(OrganizationId::new(r.organization_id)),
+                        app: Some(AppId::new(r.app_id)),
+                        ..Default::default()
+                    }),
+                    None => Ok(ResourceAncestors::default()),
+                }
             }
             _ => Ok(ResourceAncestors::default()),
         }

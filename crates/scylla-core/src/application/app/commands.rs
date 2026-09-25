@@ -6,7 +6,7 @@ use super::AppUseCases;
 use super::mint_app_secret;
 use crate::domain::app::{App, AppCredential, AppName, AppSecret, AppSecretLabel};
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::{AppId, OrganizationId};
+use crate::domain::ids::{AppCredentialId, AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use scylla_extension::{
@@ -215,6 +215,99 @@ impl Run<Persist<CreateAppSecret>> for AppUseCases {
                 let NewAppSecret { credential, secret } = draft.into_inner();
                 self.credential_repo.create(&credential).await?;
                 Ok(CreatedAppSecret { credential, secret })
+            })
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct RevokeAppSecret {
+    pub id: AppCredentialId,
+}
+
+impl Describe for RevokeAppSecret {
+    fn permission(&self) -> Permission {
+        Permission::ManageAppSecret(self.id.clone())
+    }
+}
+
+impl Command for RevokeAppSecret {
+    type Staged = AppCredential;
+    type Committed = Deleted<AppCredential>;
+}
+
+#[async_trait]
+impl Run<Prepare<RevokeAppSecret>> for AppUseCases {
+    async fn run(
+        &self,
+        input: Authorized<RevokeAppSecret>,
+    ) -> DomainResult<Prepared<RevokeAppSecret>> {
+        let credential = self.credential_repo.find_by_id(&input.command().id).await?;
+        Ok(input.prepared(credential))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<RevokeAppSecret>> for AppUseCases {
+    async fn run(
+        &self,
+        input: Prepared<RevokeAppSecret>,
+    ) -> DomainResult<Committed<RevokeAppSecret>> {
+        input
+            .commit(async |credential| {
+                self.credential_repo.delete(credential.id()).await?;
+                // The stream was authenticated once at open; a reconnect with another enabled secret re-registers.
+                self.registry.disconnect(credential.app_id());
+                Ok(Deleted::new(credential))
+            })
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct SetAppSecretEnabled {
+    pub id: AppCredentialId,
+    pub enabled: bool,
+}
+
+impl Describe for SetAppSecretEnabled {
+    fn permission(&self) -> Permission {
+        Permission::ManageAppSecret(self.id.clone())
+    }
+}
+
+impl Command for SetAppSecretEnabled {
+    type Staged = AppCredential;
+    type Committed = AppCredential;
+}
+
+#[async_trait]
+impl Run<Prepare<SetAppSecretEnabled>> for AppUseCases {
+    async fn run(
+        &self,
+        input: Authorized<SetAppSecretEnabled>,
+    ) -> DomainResult<Prepared<SetAppSecretEnabled>> {
+        let credential = self.credential_repo.find_by_id(&input.command().id).await?;
+        Ok(input.prepared(credential))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<SetAppSecretEnabled>> for AppUseCases {
+    async fn run(
+        &self,
+        input: Prepared<SetAppSecretEnabled>,
+    ) -> DomainResult<Committed<SetAppSecretEnabled>> {
+        let enabled = input.command().enabled;
+        input
+            .commit(async |credential| {
+                self.credential_repo
+                    .set_enabled(credential.id(), enabled)
+                    .await?;
+                if !enabled {
+                    self.registry.disconnect(credential.app_id());
+                }
+                self.credential_repo.find_by_id(credential.id()).await
             })
             .await
     }

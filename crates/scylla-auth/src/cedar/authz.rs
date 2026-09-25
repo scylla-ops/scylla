@@ -26,6 +26,7 @@ pub(crate) fn resource_uid(resource: &ResourceRef) -> DomainResult<EntityUid> {
         ResourceRef::Secret(id) => euid("Scylla::Secret", id.as_str()),
         ResourceRef::Trigger(id) => euid("Scylla::Trigger", id.as_str()),
         ResourceRef::App(id) => euid("Scylla::App", id.as_str()),
+        ResourceRef::AppSecret(id) => euid("Scylla::AppSecret", id.as_str()),
     }
 }
 
@@ -50,5 +51,6 @@ pub(crate) fn resource_parts(resource: &ResourceRef) -> (&'static str, Option<St
         ResourceRef::Secret(id) => ("secret", Some(id.as_str().to_string())),
         ResourceRef::Trigger(id) => ("trigger", Some(id.as_str().to_string())),
         ResourceRef::App(id) => ("app", Some(id.as_str().to_string())),
+        ResourceRef::AppSecret(id) => ("app_secret", Some(id.as_str().to_string())),
     }
 }

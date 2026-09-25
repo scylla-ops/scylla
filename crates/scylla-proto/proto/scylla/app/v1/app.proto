@@ -7,8 +7,6 @@ import "scylla/common/v1/common.proto";
 
 // Management of the Apps owned by an organization. A new App holds no grant:
 // bind a role to it with GrantService.CreateGrant before it can act.
-// RevokeAppSecret and SetAppSecretEnabled look the secret up before the
-// permission check: an unknown app_secret_id fails with NOT_FOUND.
 service AppService {
   // Requires `createApp` on the organization. Creates the App with one
   // enabled secret labelled "default" and returns its plaintext once.
@@ -34,12 +32,15 @@ service AppService {
   // Requires `readApp` on the App. Metadata only, never a plaintext. Once the
   // check passes, an unknown app_id yields an empty list.
   rpc ListAppSecrets(ListAppSecretsRequest) returns (ListAppSecretsResponse);
-  // Requires `deleteApp` on the owning App. Deletes the secret and its tokens
-  // and closes the App's open AgentService.Open stream. Revokes the last
-  // secret too; the App then cannot authenticate until CreateAppSecret adds
-  // one.
+  // Requires `deleteApp` on the secret; a grant on the organization of its
+  // App reaches it. An unknown `app_secret_id` has no App: it fails with
+  // PERMISSION_DENIED, and with NOT_FOUND only for a System grant. Deletes the
+  // secret and its tokens and closes the App's open AgentService.Open stream.
+  // Revokes the last secret too; the App then cannot authenticate until
+  // CreateAppSecret adds one.
   rpc RevokeAppSecret(RevokeAppSecretRequest) returns (RevokeAppSecretResponse);
-  // Requires `deleteApp` on the owning App. A disabled secret is kept, but
+  // Requires `deleteApp` on the secret, as RevokeAppSecret, with the same
+  // errors for an unknown `app_secret_id`. A disabled secret is kept, but
   // AppAuthService.IssueToken rejects its plaintext and its tokens fail on
   // their next request. The server also closes the App's open
   // AgentService.Open stream. Enabling it restores the plaintext and its

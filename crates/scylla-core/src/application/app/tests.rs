@@ -2,14 +2,15 @@
 
 use super::*;
 use crate::domain::agent::Agent;
-use crate::domain::app::{App, AppName, AppSecretLabel};
-use crate::domain::errors::DomainError;
-use crate::domain::ids::{AppId, OrganizationId};
+use crate::domain::app::{App, AppCredential, AppName, AppSecretLabel};
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::{AppCredentialId, AppId, OrganizationId};
+use crate::domain::permission::Permission;
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::stubs::{CountingPolicy, StubHash, StubRegistry, alice};
 use async_trait::async_trait;
-use scylla_auth::authz::Grant;
-use scylla_extension::Actions;
+use scylla_auth::authz::{Grant, PermissionService};
+use scylla_extension::{Actions, Deleted};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -171,6 +172,29 @@ impl Lab {
             )
             .await
     }
+
+    async fn revoke_secret(&self, id: &AppCredentialId) -> DomainResult<Deleted<AppCredential>> {
+        self.actions
+            .run(&self.uc, &alice(), RevokeAppSecret { id: id.clone() })
+            .await
+    }
+
+    async fn set_secret_enabled(
+        &self,
+        id: &AppCredentialId,
+        enabled: bool,
+    ) -> DomainResult<AppCredential> {
+        self.actions
+            .run(
+                &self.uc,
+                &alice(),
+                SetAppSecretEnabled {
+                    id: id.clone(),
+                    enabled,
+                },
+            )
+            .await
+    }
 }
 
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
@@ -180,12 +204,11 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let registry = Arc::new(StubRegistry::default());
     let policy = Arc::new(CountingPolicy::default());
     Lab {
-        actions: actions(permissions.clone()),
+        actions: actions(permissions),
         uc: AppUseCases::new(
             apps.clone(),
             credentials.clone(),
             hash.clone(),
-            permissions,
             registry.clone(),
             policy.clone(),
         ),
@@ -377,21 +400,23 @@ async fn a_secret_for_a_missing_app_is_not_found_and_never_hashed() {
 }
 
 #[tokio::test]
-async fn a_revoke_checks_the_permission_on_the_loaded_secret_app_and_disconnects_it() {
+async fn a_revoke_checks_the_permission_on_the_secret_then_disconnects_its_app() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let created = lab.create().await.unwrap();
     let id = created.app.id().clone();
     let secret = lab.create_secret(&id).await.unwrap();
+    let secret_id = secret.credential.id().clone();
 
-    lab.uc
-        .revoke_secret(&alice(), secret.credential.id().clone())
-        .await
-        .unwrap();
+    let revoked = lab.revoke_secret(&secret_id).await.unwrap();
 
+    assert_eq!(revoked.last_state().id(), &secret_id);
     assert!(lab.credentials.rows.lock().unwrap().is_empty());
-    assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
-    assert_eq!(permissions.permissions()[2], Permission::DeleteApp(id));
+    assert_eq!(lab.registry.disconnected(), vec![id]);
+    assert_eq!(
+        permissions.permissions()[2],
+        Permission::ManageAppSecret(secret_id)
+    );
 }
 
 #[tokio::test]
@@ -401,14 +426,67 @@ async fn disabling_a_secret_disconnects_its_app_and_returns_the_fresh_row() {
     let created = lab.create().await.unwrap();
     let id = created.app.id().clone();
     let secret = lab.create_secret(&id).await.unwrap();
+    let secret_id = secret.credential.id().clone();
+
+    let credential = lab.set_secret_enabled(&secret_id, false).await.unwrap();
+
+    assert!(!credential.is_enabled());
+    assert_eq!(lab.registry.disconnected(), vec![id]);
+    assert_eq!(
+        permissions.permissions()[2],
+        Permission::ManageAppSecret(secret_id)
+    );
+}
+
+#[tokio::test]
+async fn enabling_a_secret_keeps_the_stream() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let created = lab.create().await.unwrap();
+    let secret = lab.create_secret(created.app.id()).await.unwrap();
 
     let credential = lab
-        .uc
-        .set_secret_enabled(&alice(), secret.credential.id().clone(), false)
+        .set_secret_enabled(secret.credential.id(), true)
         .await
         .unwrap();
 
-    assert!(!credential.is_enabled());
-    assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
-    assert_eq!(permissions.permissions()[2], Permission::DeleteApp(id));
+    assert!(credential.is_enabled());
+    assert!(lab.registry.disconnected().is_empty());
+}
+
+#[tokio::test]
+async fn a_denied_secret_action_never_reads_or_writes() {
+    let lab = lab(Arc::new(DenyingPermissionService::new()));
+    let credential = AppCredential::create(
+        AppId::new("app-1"),
+        AppSecretLabel::new("ci").unwrap(),
+        lab.hash.hash_secret(&mint_app_secret()).await.unwrap(),
+    );
+    lab.credentials.create(&credential).await.unwrap();
+
+    let revoke = lab.revoke_secret(credential.id()).await.unwrap_err();
+    let disable = lab
+        .set_secret_enabled(credential.id(), false)
+        .await
+        .unwrap_err();
+
+    assert!(matches!(revoke, DomainError::Forbidden(_)));
+    assert!(matches!(disable, DomainError::Forbidden(_)));
+    assert!(lab.registry.disconnected().is_empty());
+    assert!(
+        lab.credentials.rows.lock().unwrap()[credential.id()].is_enabled(),
+        "a denied action leaves the secret as it was"
+    );
+}
+
+#[tokio::test]
+async fn an_allowed_action_on_an_unknown_secret_is_not_found() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let missing = AppCredentialId::new("missing");
+
+    let revoke = lab.revoke_secret(&missing).await.unwrap_err();
+    let disable = lab.set_secret_enabled(&missing, false).await.unwrap_err();
+
+    assert!(matches!(revoke, DomainError::NotFound { .. }));
+    assert!(matches!(disable, DomainError::NotFound { .. }));
+    assert!(lab.registry.disconnected().is_empty());
 }

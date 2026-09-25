@@ -62,6 +62,18 @@ A check on an unknown invitation finds no organization. As for an unknown
 secret or trigger, only a System grant reaches it. A caller without a System
 grant gets "forbidden", and a caller with a System grant gets "not found".
 
+## App secrets
+
+An app secret is not a scope. A check on one app secret, for example to revoke
+it or to disable it, finds the app that holds the secret, and then the
+organization that holds the app. Then it applies the rule above to that
+organization, with the permission `deleteApp`. Thus the roles that give this
+permission on the organization also give it on the secrets of its apps.
+
+A check on an unknown app secret finds no app. As for an unknown invitation,
+only a System grant reaches it. A caller without a System grant gets
+"forbidden", and a caller with a System grant gets "not found".
+
 ## Being somewhere
 
 Being in an organization, or on a project, means **holding a role on it**. It is

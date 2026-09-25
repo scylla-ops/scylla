@@ -1,14 +1,7 @@
-//! The adapter: every RPC but `revoke_app_secret` and `set_app_secret_enabled` is one `run` and
-//! its response. Those two call the use case directly: their permission is on the loaded
-//! secret's app, which `Describe` cannot see.
-
 use crate::application::AppUseCases;
-use crate::extract_auth_context;
 use crate::grpc::adapter::run;
-use crate::grpc::convert::id;
-use crate::grpc::mappers::{app_credential_to_proto, app_to_proto, domain_error_to_status};
+use crate::grpc::mappers::{app_credential_to_proto, app_to_proto};
 use derive_more::Constructor;
-use scylla_domain::domain::ids::AppCredentialId;
 use scylla_extension::Actions;
 use scylla_proto::app::v1::{
     CreateAppRequest, CreateAppResponse, CreateAppSecretRequest, CreateAppSecretResponse,
@@ -102,12 +95,7 @@ impl AppService for AppHandler {
         &self,
         request: Request<RevokeAppSecretRequest>,
     ) -> Result<Response<RevokeAppSecretResponse>, Status> {
-        let caller = caller!(request);
-        let secret_id: AppCredentialId = id(request.into_inner().app_secret_id, "app_secret_id")?;
-        self.apps
-            .revoke_secret(&caller, secret_id)
-            .await
-            .map_err(domain_error_to_status)?;
+        run(&self.actions, &*self.apps, request).await?;
         Ok(Response::new(RevokeAppSecretResponse {}))
     }
 
@@ -115,14 +103,7 @@ impl AppService for AppHandler {
         &self,
         request: Request<SetAppSecretEnabledRequest>,
     ) -> Result<Response<SetAppSecretEnabledResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let secret_id: AppCredentialId = id(req.app_secret_id, "app_secret_id")?;
-        let credential = self
-            .apps
-            .set_secret_enabled(&caller, secret_id, req.enabled)
-            .await
-            .map_err(domain_error_to_status)?;
+        let credential = run(&self.actions, &*self.apps, request).await?;
         Ok(Response::new(SetAppSecretEnabledResponse {
             app_secret: Some(app_credential_to_proto(&credential)),
         }))

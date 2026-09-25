@@ -452,11 +452,8 @@ the row is still in the state the gate saw.
   (`AgentHandler`) stay outside the pipeline. They run as the scheduler or as
   the agent's own token, not for a caller that asks for a permission;
   `dispatch_job` asks for `ExecuteJob` only to choose an agent, never to refuse.
-- `AppUseCases::revoke_secret` and `set_secret_enabled` stay outside the
-  pipeline. Their permission is `DeleteApp` on the secret's app, and only the
-  loaded credential knows that app. `DeleteApp` and `SetAppActive` stage the id
-  alone: the row is not read before the write, so a missing app behaves as
-  before.
+- `DeleteApp` and `SetAppActive` stage the id alone: the row is not read
+  before the write, so a missing app behaves as before.
 - `InvitationAcceptUseCases::accept` stays outside the pipeline. The invitee
   has no account yet: the token is the credential, and no permission is asked.
   The invite mail is sent in the `commit` closure of `CreateInvitation`, after
@@ -492,6 +489,11 @@ the row is still in the state the gate saw.
   It has the key `manageInvitations`, so the same roles give it, and it is not
   in the permission catalog. `CreateInvitation` and `ListInvitations` keep
   `ManageInvitations` on the organization.
+- `RevokeAppSecret` and `SetAppSecretEnabled` use the same method: they ask for
+  `ManageAppSecret` on the secret (`ResourceRef::AppSecret`, one join to the
+  app and its organization). It has the key `deleteApp`, so the same roles give
+  it, and it is not in the permission catalog. `CreateAppSecret` and
+  `ListAppSecrets` keep their permission on the app.
 - `CreateTrigger` asks for `RunPipeline` a second time in its `Prepare` runner,
   and `UpdateTrigger` asks for `RunTriggerPipeline`. This check refuses:
   managing triggers must not give run rights. A `Policy` on `Prepare`

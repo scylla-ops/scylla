@@ -1,13 +1,15 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
 use crate::application::app::{
-    CreateApp, CreateAppSecret, DeleteApp, GetApp, ListAppSecrets, ListApps, SetAppActive,
+    CreateApp, CreateAppSecret, DeleteApp, GetApp, ListAppSecrets, ListApps, RevokeAppSecret,
+    SetAppActive, SetAppSecretEnabled,
 };
 use crate::grpc::convert::{Parse, id, ts, valid, wrap};
 use scylla_domain::domain::app::{App, AppCredential, AppName, AppSecretLabel};
 use scylla_proto::app::v1::{
     App as ProtoApp, AppSecret as ProtoAppSecret, CreateAppRequest, CreateAppSecretRequest,
-    DeleteAppRequest, GetAppRequest, ListAppSecretsRequest, ListAppsRequest, SetAppActiveRequest,
+    DeleteAppRequest, GetAppRequest, ListAppSecretsRequest, ListAppsRequest,
+    RevokeAppSecretRequest, SetAppActiveRequest, SetAppSecretEnabledRequest,
 };
 use tonic::Status;
 
@@ -65,6 +67,12 @@ impl Parse for CreateAppSecretRequest {
 }
 
 parse!(ListAppSecretsRequest => ListAppSecrets { app_id: id(app_id) });
+parse!(RevokeAppSecretRequest => RevokeAppSecret { id: id(app_secret_id) });
+
+parse!(SetAppSecretEnabledRequest => SetAppSecretEnabled {
+    id: id(app_secret_id),
+    enabled: copy,
+});
 
 #[cfg(test)]
 mod tests {
