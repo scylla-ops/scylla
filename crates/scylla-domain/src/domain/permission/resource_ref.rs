@@ -1,6 +1,6 @@
 use crate::domain::ids::{
-    AppCredentialId, AppId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId, SecretId,
-    TriggerId, UserId,
+    AppCredentialId, AppId, GrantId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId,
+    SecretId, TriggerId, UserId,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +16,7 @@ pub enum ResourceRef {
     Trigger(TriggerId),
     App(AppId),
     AppSecret(AppCredentialId),
+    Grant(GrantId),
 }
 
 impl ResourceRef {
@@ -33,6 +34,7 @@ impl ResourceRef {
             Self::Trigger(_) => "trigger",
             Self::App(_) => "app",
             Self::AppSecret(_) => "app_secret",
+            Self::Grant(_) => "grant",
         }
     }
 }
@@ -51,6 +53,7 @@ impl std::fmt::Display for ResourceRef {
             Self::Trigger(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::App(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::AppSecret(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Grant(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
         }
     }
 }

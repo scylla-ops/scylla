@@ -2,18 +2,19 @@
 //! its payload types, what `Prepare` checks and builds, what `Persist` writes. The policy reload
 //! sits next to the write that changes the grant set.
 
-use super::{GrantUseCases, manage_permission};
+use super::GrantUseCases;
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::GrantId;
 use crate::domain::permission::{Permission, ResourceRef};
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{
-    FULL_CONTROL, Grant, Principal, Scope, permissions_by_role, removal_orphans_scope,
-    validate_role_in_db,
+    FULL_CONTROL, Grant, Principal, Scope, is_owner_role, permissions_by_role,
+    removal_orphans_scope, validate_role_in_db,
 };
 use scylla_extension::{
-    Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 use std::collections::BTreeSet;
 
@@ -26,7 +27,7 @@ pub struct CreateGrant {
 
 impl Describe for CreateGrant {
     fn permission(&self) -> Permission {
-        manage_permission(&self.scope)
+        self.scope.manage_permission()
     }
 }
 
@@ -161,7 +162,7 @@ pub struct RevokeAllAccess {
 
 impl Describe for RevokeAllAccess {
     fn permission(&self) -> Permission {
-        manage_permission(&self.scope)
+        self.scope.manage_permission()
     }
 }
 
@@ -205,6 +206,68 @@ impl Run<Persist<RevokeAllAccess>> for GrantUseCases {
                     self.agent_registry.disconnect(app_id);
                 }
                 Ok(removed)
+            })
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct RevokeGrant {
+    pub id: GrantId,
+}
+
+impl Describe for RevokeGrant {
+    fn permission(&self) -> Permission {
+        Permission::RevokeGrant(self.id.clone())
+    }
+}
+
+/// An unknown id stages `None` and commits nothing: the call succeeds without change.
+impl Command for RevokeGrant {
+    type Staged = Option<Grant>;
+    type Committed = Option<Deleted<Grant>>;
+}
+
+#[async_trait]
+impl Run<Prepare<RevokeGrant>> for GrantUseCases {
+    async fn run(&self, input: Authorized<RevokeGrant>) -> DomainResult<Prepared<RevokeGrant>> {
+        let grants = self.grant_repo.list_all().await?;
+        let id = input.command().id.as_str();
+        let grant = grants.iter().find(|g| g.id == id).cloned();
+
+        // Only a User owner grant is guarded; an App never counts as the retained owner.
+        if let Some(g) = &grant
+            && is_owner_role(&g.role)
+            && matches!(g.principal, Principal::User(_))
+            && !grants.iter().any(|o| {
+                o.id != g.id
+                    && o.role == g.role
+                    && o.scope == g.scope
+                    && matches!(o.principal, Principal::User(_))
+            })
+        {
+            return Err(DomainError::business_rule(
+                "cannot revoke the last owner of this scope",
+            ));
+        }
+        Ok(input.prepared(grant))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<RevokeGrant>> for GrantUseCases {
+    async fn run(&self, input: Prepared<RevokeGrant>) -> DomainResult<Committed<RevokeGrant>> {
+        input
+            .commit(async |grant| {
+                let Some(grant) = grant else {
+                    return Ok(None);
+                };
+                self.grant_repo.delete(&grant.id).await?;
+                self.policy_control.reload().await?;
+                if let Principal::App(app_id) = &grant.principal {
+                    self.agent_registry.disconnect(app_id);
+                }
+                Ok(Some(Deleted::new(grant)))
             })
             .await
     }

@@ -1,6 +1,6 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
-use crate::application::grant::{CreateGrant, ListGrants, RevokeAllAccess};
+use crate::application::grant::{CreateGrant, ListGrants, RevokeAllAccess, RevokeGrant};
 use crate::grpc::convert::{
     Parse, principal_ref_from_proto, principal_ref_to_proto, required, scope_kind_to_proto,
     scope_ref_from_proto, scope_ref_to_proto, valid, wrap,
@@ -9,7 +9,7 @@ use scylla_auth::authz::{Grant, GrantableRole, RoleKind};
 use scylla_domain::domain::role::RoleName;
 use scylla_proto::authz::v1::{
     CreateGrantRequest, Grant as ProtoGrant, GrantableRole as ProtoGrantableRole,
-    ListGrantsRequest, RevokeAllAccessRequest, RoleKind as ProtoRoleKind,
+    ListGrantsRequest, RevokeAllAccessRequest, RevokeGrantRequest, RoleKind as ProtoRoleKind,
 };
 use tonic::Status;
 
@@ -61,6 +61,8 @@ impl Parse for RevokeAllAccessRequest {
         })
     }
 }
+
+parse!(RevokeGrantRequest => RevokeGrant { id: id(grant_id) });
 
 impl Parse for ListGrantsRequest {
     type Into = ListGrants;

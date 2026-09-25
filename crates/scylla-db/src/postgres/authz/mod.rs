@@ -170,6 +170,30 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                     None => Ok(ResourceAncestors::default()),
                 }
             }
+            ResourceRef::Grant(id) => {
+                let row = sqlx::query!(
+                    "SELECT g.scope_kind, g.scope_id, pr.organization_id AS \"project_organization_id?\" \
+                     FROM grants g \
+                     LEFT JOIN projects pr ON g.scope_kind = 'project' AND pr.id = g.scope_id \
+                     WHERE g.id = $1",
+                    id.as_str(),
+                )
+                .fetch_optional(&self.pool)
+                .await
+                .to_domain()?;
+                Ok(match row {
+                    Some(r) if r.scope_kind == "project" => ResourceAncestors {
+                        organization: r.project_organization_id.map(OrganizationId::new),
+                        project: Some(ProjectId::new(r.scope_id)),
+                        ..Default::default()
+                    },
+                    Some(r) if r.scope_kind == "organization" => ResourceAncestors {
+                        organization: Some(OrganizationId::new(r.scope_id)),
+                        ..Default::default()
+                    },
+                    _ => ResourceAncestors::default(),
+                })
+            }
             _ => Ok(ResourceAncestors::default()),
         }
     }

@@ -3,8 +3,8 @@ mod resource_ref;
 pub use resource_ref::*;
 
 use crate::domain::ids::{
-    AppCredentialId, AppId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId, SecretId,
-    TriggerId, UserId,
+    AppCredentialId, AppId, GrantId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId,
+    SecretId, TriggerId, UserId,
 };
 use std::sync::LazyLock;
 
@@ -85,6 +85,9 @@ pub enum Permission {
     ManageSystemGrants,
     ManageOrgGrants(OrganizationId),
     ManageProjectGrants(ProjectId),
+    /// The manage-grants permission of the grant's scope kind, which the access model resolves.
+    /// The key is the System one, the key of an unknown grant, so it is not in the catalog.
+    RevokeGrant(GrantId),
     ManageRoles,
 }
 
@@ -154,7 +157,7 @@ impl Permission {
             Self::ListAgents(_) => "listAgents",
 
             // One action per scope so the Cedar schema pins `appliesTo`; a shared action would let one permit cover all three.
-            Self::ManageSystemGrants => "manageSystemGrants",
+            Self::ManageSystemGrants | Self::RevokeGrant(_) => "manageSystemGrants",
             Self::ManageOrgGrants(_) => "manageOrgGrants",
             Self::ManageProjectGrants(_) => "manageProjectGrants",
             Self::ManageRoles => "manageRoles",
@@ -236,6 +239,8 @@ impl Permission {
             }
 
             Self::ManageAppSecret(id) => ResourceRef::AppSecret(id.clone()),
+
+            Self::RevokeGrant(id) => ResourceRef::Grant(id.clone()),
         }
     }
 
@@ -257,6 +262,7 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "trigger",
     "app",
     "app_secret",
+    "grant",
 ];
 
 fn catalog_variants() -> Vec<Permission> {
@@ -353,7 +359,7 @@ mod catalog_tests {
     use super::{
         PERMISSION_CATALOG, Permission, RESOURCE_TYPES, catalog_variants, is_known_permission,
     };
-    use crate::domain::ids::{AppCredentialId, InvitationId, TriggerId};
+    use crate::domain::ids::{AppCredentialId, GrantId, InvitationId, TriggerId};
     use std::collections::HashSet;
 
     #[test]
@@ -394,6 +400,13 @@ mod catalog_tests {
     fn app_secret_permissions_reuse_catalog_keys() {
         assert!(is_known_permission(
             Permission::ManageAppSecret(AppCredentialId::new("_")).key()
+        ));
+    }
+
+    #[test]
+    fn grant_permissions_reuse_catalog_keys() {
+        assert!(is_known_permission(
+            Permission::RevokeGrant(GrantId::new("_")).key()
         ));
     }
 }

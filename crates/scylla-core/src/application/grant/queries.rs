@@ -1,7 +1,7 @@
 //! The grant's reads. One block per query, in the order it runs: the struct, its permission, its
 //! output type, what `Fetch` reads.
 
-use super::{GrantUseCases, manage_permission};
+use super::GrantUseCases;
 use crate::domain::errors::DomainResult;
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
@@ -18,7 +18,7 @@ impl Describe for ListGrants {
     fn permission(&self) -> Permission {
         self.scope
             .as_ref()
-            .map_or(Permission::ManageSystemGrants, manage_permission)
+            .map_or(Permission::ManageSystemGrants, Scope::manage_permission)
     }
 }
 

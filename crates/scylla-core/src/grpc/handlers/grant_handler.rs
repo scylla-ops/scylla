@@ -1,8 +1,8 @@
 use crate::application::GrantUseCases;
 use crate::extract_auth_context;
 use crate::grpc::adapter::run;
-use crate::grpc::convert::{required, scope_kind_from_proto};
-use crate::grpc::mappers::{domain_error_to_status, grant_to_proto, grantable_role_to_proto};
+use crate::grpc::convert::scope_kind_from_proto;
+use crate::grpc::mappers::{grant_to_proto, grantable_role_to_proto};
 use derive_more::Constructor;
 use scylla_auth::authz::grantable_roles;
 use scylla_extension::Actions;
@@ -36,12 +36,7 @@ impl GrantService for GrantHandler {
         &self,
         request: Request<RevokeGrantRequest>,
     ) -> Result<Response<RevokeGrantResponse>, Status> {
-        let caller = caller!(request);
-        let grant_id = required(request.into_inner().grant_id, "grant_id")?;
-        self.grants
-            .revoke(&caller, &grant_id)
-            .await
-            .map_err(domain_error_to_status)?;
+        run(&self.actions, &*self.grants, request).await?;
         Ok(Response::new(RevokeGrantResponse {}))
     }
 

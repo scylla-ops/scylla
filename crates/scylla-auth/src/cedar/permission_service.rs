@@ -1,7 +1,7 @@
-use super::authz::{euid, parent_set, principal_parts, resource_parts, resource_uid};
+use super::authz::{action_key, euid, parent_set, principal_parts, resource_parts, resource_uid};
 use crate::audit::{AuditDecision, AuditEntry, AuditLog};
 use crate::authz::PermissionService;
-use crate::authz::entity_provider::AuthzEntityProvider;
+use crate::authz::entity_provider::{AuthzEntityProvider, ResourceAncestors};
 use crate::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::authz::policy::PolicyControl;
 use crate::authz::role::{Role, RoleRepository, permissions_by_role};
@@ -157,13 +157,11 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         }
     }
 
-    async fn resource_entities(
-        &self,
+    fn resource_entities(
         resource: &ResourceRef,
+        ancestors: &ResourceAncestors,
     ) -> DomainResult<(EntityUid, Vec<Entity>)> {
         let uid = resource_uid(resource)?;
-        let ancestors = self.entity_provider.resource_ancestors(resource).await?;
-
         let system_uid = euid("Scylla::System", "root")?;
 
         let org_uid = ancestors
@@ -221,6 +219,11 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             ResourceRef::Trigger(_) => pipeline_uid.as_ref().or(Some(&system_uid)),
             ResourceRef::Invitation(_) => org_uid.as_ref().or(Some(&system_uid)),
             ResourceRef::AppSecret(_) => app_uid.as_ref().or(Some(&system_uid)),
+            // A grant sits under its scope, and a System or unknown grant under System.
+            ResourceRef::Grant(_) => project_uid
+                .as_ref()
+                .or(org_uid.as_ref())
+                .or(Some(&system_uid)),
             ResourceRef::Pipeline(_) => project_uid.as_ref(),
             ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
             // A user's parent is System too: without it a System grant stops reaching user-targeted actions.
@@ -237,7 +240,7 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
     fn record_decision(
         &self,
         caller: &CallerContext,
-        perm: &Permission,
+        action: &'static str,
         resource: &ResourceRef,
         decision: AuditDecision,
         reason: Option<String>,
@@ -249,12 +252,12 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         match decision {
             AuditDecision::Allow => info!(
                 target: "audit",
-                who = %caller, action = perm.key(), resource = %resource,
+                who = %caller, action, resource = %resource,
                 decision = "allow", policies = ?policies, "action authorized"
             ),
             AuditDecision::Deny => warn!(
                 target: "audit",
-                who = %caller, action = perm.key(), resource = %resource,
+                who = %caller, action, resource = %resource,
                 decision = "deny", policies = ?policies, "action denied"
             ),
         }
@@ -263,7 +266,7 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             occurred_at: Utc::now(),
             principal_kind,
             principal_id,
-            action: perm.key(),
+            action,
             resource_kind,
             resource_id,
             decision,
@@ -284,7 +287,7 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
             if !self.entity_provider.app_is_active(app_id).await? {
                 self.record_decision(
                     caller,
-                    &perm,
+                    perm.key(),
                     &resource,
                     AuditDecision::Deny,
                     Some("app principal is disabled or no longer exists".to_string()),
@@ -295,8 +298,10 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
         }
 
         let (principal_uid, principal_entities) = Self::principal_entities(caller)?;
-        let (resource_uid, resource_entities) = self.resource_entities(&resource).await?;
-        let action_uid = euid("Scylla::Action", perm.key())?;
+        let ancestors = self.entity_provider.resource_ancestors(&resource).await?;
+        let (resource_uid, resource_entities) = Self::resource_entities(&resource, &ancestors)?;
+        let action = action_key(&perm, &ancestors);
+        let action_uid = euid("Scylla::Action", action)?;
 
         // A user reading itself yields the same UID twice.
         let mut by_uid: HashMap<String, Entity> = HashMap::new();
@@ -346,7 +351,7 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
             }
         };
 
-        self.record_decision(caller, &perm, &resource, audit_decision, reason, policies);
+        self.record_decision(caller, action, &resource, audit_decision, reason, policies);
         result
     }
 }
@@ -406,8 +411,8 @@ mod tests {
     use crate::authz::role::FULL_CONTROL;
     use crate::domain::caller::ServiceIdentity;
     use crate::domain::ids::{
-        AppCredentialId, AppId, InvitationId, OrganizationId, PipelineId, ProjectId, SecretId,
-        TriggerId, UserId,
+        AppCredentialId, AppId, GrantId, InvitationId, OrganizationId, PipelineId, ProjectId,
+        SecretId, TriggerId, UserId,
     };
     use crate::domain::role::RoleName;
 
@@ -550,12 +555,20 @@ mod tests {
         ancestors: ResourceAncestors,
         grants: Vec<Grant>,
     ) -> CedarPermissionService<StubProvider> {
+        service_with_roles(ancestors, builtin_roles(), grants).await
+    }
+
+    async fn service_with_roles(
+        ancestors: ResourceAncestors,
+        roles: Vec<Role>,
+        grants: Vec<Grant>,
+    ) -> CedarPermissionService<StubProvider> {
         CedarPermissionService::new(
             Arc::new(StubProvider {
                 ancestors,
                 app_active: true,
             }),
-            Arc::new(StubRoles(builtin_roles())),
+            Arc::new(StubRoles(roles)),
             Arc::new(StubGrants(grants)),
             Arc::new(crate::audit::NoopAuditLog),
         )
@@ -1525,6 +1538,106 @@ mod tests {
                 .check(&CallerContext::User(UserId::new("u-admin")), manage())
                 .await
                 .is_ok()
+        );
+    }
+
+    fn grant_manager_roles() -> Vec<Role> {
+        let manager = |id: &str, scope: ScopeKind, key: &str| Role {
+            id: id.to_string(),
+            key: None,
+            name: id.to_string(),
+            description: String::new(),
+            scope,
+            owner_org: None,
+            builtin: false,
+            permissions: vec![key.to_string()],
+        };
+        let mut roles = builtin_roles();
+        roles.extend([
+            manager("system-grants", ScopeKind::System, "manageSystemGrants"),
+            manager("org-grants", ScopeKind::Organization, "manageOrgGrants"),
+            manager("project-grants", ScopeKind::Project, "manageProjectGrants"),
+        ]);
+        roles
+    }
+
+    fn grant_in(organization: Option<&str>, project: Option<&str>) -> ResourceAncestors {
+        ResourceAncestors {
+            organization: organization.map(OrganizationId::new),
+            project: project.map(ProjectId::new),
+            ..Default::default()
+        }
+    }
+
+    async fn may_revoke(ancestors: ResourceAncestors, role_name: &str, scope: Scope) -> bool {
+        let svc = service_with_roles(
+            ancestors,
+            grant_manager_roles(),
+            vec![Grant::new(
+                Principal::User(UserId::new("u1")),
+                role(role_name),
+                scope,
+            )],
+        )
+        .await;
+        svc.check(
+            &CallerContext::User(UserId::new("u1")),
+            Permission::RevokeGrant(GrantId::new("g1")),
+        )
+        .await
+        .is_ok()
+    }
+
+    #[tokio::test]
+    async fn a_grant_revoke_takes_the_manage_grants_action_of_the_grant_scope() {
+        let o1 = || Scope::Organization(OrganizationId::new("o1"));
+        let p1 = || Scope::Project(ProjectId::new("p1"));
+        let org_grant = || grant_in(Some("o1"), None);
+        let project_grant = || grant_in(Some("o1"), Some("p1"));
+
+        assert!(may_revoke(org_grant(), "org-grants", o1()).await);
+        assert!(
+            !may_revoke(project_grant(), "org-grants", o1()).await,
+            "manageOrgGrants does not reach a project grant"
+        );
+        assert!(!may_revoke(grant_in(Some("o2"), None), "org-grants", o1()).await);
+        assert!(!may_revoke(ResourceAncestors::default(), "org-grants", o1()).await);
+
+        assert!(may_revoke(project_grant(), "project-grants", p1()).await);
+        assert!(may_revoke(project_grant(), "project-grants", o1()).await);
+        assert!(
+            !may_revoke(org_grant(), "project-grants", o1()).await,
+            "manageProjectGrants does not reach an organization grant"
+        );
+
+        assert!(may_revoke(project_grant(), ORGANIZATION_ADMIN_ROLE, o1()).await);
+        assert!(
+            !may_revoke(
+                project_grant(),
+                PROJECT_ADMIN_ROLE,
+                Scope::Project(ProjectId::new("p2"))
+            )
+            .await
+        );
+    }
+
+    #[tokio::test]
+    async fn a_system_or_unknown_grant_is_reached_only_by_a_system_grant_manager() {
+        let system = ResourceAncestors::default;
+
+        assert!(may_revoke(system(), "system-grants", Scope::System).await);
+        assert!(may_revoke(system(), SYSTEM_ADMIN_ROLE, Scope::System).await);
+        assert!(
+            !may_revoke(
+                system(),
+                ORGANIZATION_ADMIN_ROLE,
+                Scope::Organization(OrganizationId::new("o1"))
+            )
+            .await
+        );
+        assert!(
+            !may_revoke(grant_in(Some("o1"), None), "system-grants", Scope::System).await,
+            "manageSystemGrants does not reach an organization grant"
         );
     }
 }

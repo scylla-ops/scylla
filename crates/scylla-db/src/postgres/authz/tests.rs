@@ -1,16 +1,21 @@
 use super::PgAuthzEntityProvider;
 use crate::domain::app::{App, AppCredential, AppName, AppSecretHash, AppSecretLabel};
-use crate::domain::ids::{AppCredentialId, InvitationId, SecretId, TriggerId};
+use crate::domain::ids::{AppCredentialId, GrantId, InvitationId, SecretId, TriggerId};
 use crate::domain::invitation::Invitation;
 use crate::domain::permission::ResourceRef;
+use crate::domain::role::RoleName;
 use crate::domain::secret::{Secret, SecretName};
 use crate::domain::trigger::{CronSpec, Trigger, TriggerName, TriggerSource};
 use crate::domain::user::Email;
 use crate::postgres::{
-    PgAppRepository, PgInvitationRepository, PgSecretRepository, PgTriggerRepository,
+    PgAppRepository, PgGrantRepository, PgInvitationRepository, PgSecretRepository,
+    PgTriggerRepository,
 };
 use crate::test_support::prelude::*;
-use scylla_auth::authz::AuthzEntityProvider;
+use scylla_auth::authz::{
+    AuthzEntityProvider, Grant, GrantRepository, ORGANIZATION_VIEWER_ROLE, PROJECT_VIEWER_ROLE,
+    Principal, ResourceAncestors, SYSTEM_ADMIN_ROLE, Scope,
+};
 use scylla_core::application::TriggerRepository;
 use scylla_core::application::app::AppRepository;
 use scylla_core::application::invitation::InvitationRepository;
@@ -174,4 +179,71 @@ async fn an_unknown_app_secret_has_no_ancestors(pool: PgPool) {
 
     assert!(ancestors.organization.is_none());
     assert!(ancestors.app.is_none());
+}
+
+async fn grant_ancestors(pool: &PgPool, role: &str, scope: Scope) -> ResourceAncestors {
+    let user = seed_user(pool, "grantee").await;
+    let grant = Grant::new(
+        Principal::User(user.id().clone()),
+        RoleName::new(role).unwrap(),
+        scope,
+    );
+    PgGrantRepository::new(pool.clone())
+        .create(&grant)
+        .await
+        .unwrap();
+    PgAuthzEntityProvider::new(pool.clone())
+        .resource_ancestors(&ResourceRef::Grant(GrantId::new(grant.id)))
+        .await
+        .unwrap()
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_project_grant_resolves_to_its_project_and_organization(pool: PgPool) {
+    let (org, project, _) = seed_org_project_pipeline(&pool, "grant").await;
+
+    let ancestors = grant_ancestors(
+        &pool,
+        PROJECT_VIEWER_ROLE,
+        Scope::Project(project.id().clone()),
+    )
+    .await;
+
+    assert_eq!(ancestors.organization.as_ref(), Some(org.id()));
+    assert_eq!(ancestors.project.as_ref(), Some(project.id()));
+    assert!(ancestors.pipeline.is_none());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_organization_grant_resolves_to_its_organization(pool: PgPool) {
+    let org = seed_org(&pool, "grant").await;
+
+    let ancestors = grant_ancestors(
+        &pool,
+        ORGANIZATION_VIEWER_ROLE,
+        Scope::Organization(org.id().clone()),
+    )
+    .await;
+
+    assert_eq!(ancestors.organization.as_ref(), Some(org.id()));
+    assert!(ancestors.project.is_none());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_system_grant_has_no_ancestors(pool: PgPool) {
+    let ancestors = grant_ancestors(&pool, SYSTEM_ADMIN_ROLE, Scope::System).await;
+
+    assert!(ancestors.organization.is_none());
+    assert!(ancestors.project.is_none());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_unknown_grant_has_no_ancestors(pool: PgPool) {
+    let ancestors = PgAuthzEntityProvider::new(pool)
+        .resource_ancestors(&ResourceRef::Grant(GrantId::new("missing")))
+        .await
+        .unwrap();
+
+    assert!(ancestors.organization.is_none());
+    assert!(ancestors.project.is_none());
 }

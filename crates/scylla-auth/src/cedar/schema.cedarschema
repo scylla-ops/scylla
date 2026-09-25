@@ -2,7 +2,7 @@
 //
 // Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization,
 // Job ∈ Pipeline, Trigger ∈ Pipeline, Secret ∈ Project,
-// Invitation ∈ Organization and AppSecret ∈ App. Principals carry no attributes: what someone may
+// Invitation ∈ Organization, AppSecret ∈ App and Grant ∈ its scope. Principals carry no attributes: what someone may
 // do comes entirely from the grants linked into the policy set. Actions are
 // fine-grained (one per use-case operation) so `appliesTo` pins the resource
 // type and policies stay readable.
@@ -29,6 +29,9 @@ namespace Scylla {
     entity Trigger in [Pipeline, System];
     entity Invitation in [Organization, System];
     entity AppSecret in [App, System];
+    // A grant sits under the scope it is bound at; a System grant and an
+    // unknown grant sit under System.
+    entity Grant in [Project, Organization, System];
 
     // Users are also `in [System]` so a System-scoped grant (system-admin)
     // reaches User-targeted actions (read/update/delete user) — without it,
@@ -53,12 +56,14 @@ namespace Scylla {
     // Cedar `resource in ?resource` on the role template confines each admin to
     // its own subtree, so an org admin cannot touch another org's grants
     // (anti-escalation). The UI presents the three as one "manage grants".
+    // A revoke is checked on the grant, with the action of the grant's scope
+    // kind, so the same grants reach it.
     action "manageSystemGrants"
-        appliesTo { principal: [User, Service], resource: [System] };
+        appliesTo { principal: [User, Service], resource: [System, Grant] };
     action "manageOrgGrants"
-        appliesTo { principal: [User, Service], resource: [Organization] };
+        appliesTo { principal: [User, Service], resource: [Organization, Grant] };
     action "manageProjectGrants"
-        appliesTo { principal: [User, Service], resource: [Project] };
+        appliesTo { principal: [User, Service], resource: [Project, Grant] };
 
     // ── User-targeted ──────────────────────────────────────────────────
     action "readUser", "updateUser", "deleteUser",

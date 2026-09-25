@@ -458,10 +458,7 @@ the row is still in the state the gate saw.
   has no account yet: the token is the credential, and no permission is asked.
   The invite mail is sent in the `commit` closure of `CreateInvitation`, after
   the write; a failed send is logged and does not fail the call, as before.
-- `GrantUseCases::revoke` stays outside the pipeline. Its permission is the
-  manage-grants permission of the grant's scope, and only the loaded grant knows
-  that scope; an unknown id asks for `ManageSystemGrants`. `ListGrantableRoles`
-  asks for no permission: the catalog is static data.
+- `ListGrantableRoles` asks for no permission: the catalog is static data.
 - `CreateGrant` builds the grant in `Prepare` and checks there, in this order,
   the role, the organization admission and the escalation rule. The bootstrap
   admin grant goes through `Actions` as the bootstrap service.
@@ -494,6 +491,16 @@ the row is still in the state the gate saw.
   app and its organization). It has the key `deleteApp`, so the same roles give
   it, and it is not in the permission catalog. `CreateAppSecret` and
   `ListAppSecrets` keep their permission on the app.
+- `RevokeGrant` uses the same method: it asks for `RevokeGrant` on the grant
+  (`ResourceRef::Grant`, one read of the grant scope, with a join to the
+  organization of a project scope). The access model then applies the
+  manage-grants action of the scope kind: `manageProjectGrants`,
+  `manageOrgGrants` or `manageSystemGrants`. The key of `RevokeGrant` is
+  `manageSystemGrants`, the key of an unknown grant, and it is not in the
+  permission catalog. An unknown grant is under System: without a
+  `manageSystemGrants` grant the caller gets `Forbidden`; with one, the call
+  succeeds and changes nothing, as before. `CreateGrant`, `RevokeAllAccess`
+  and `ListGrants` keep their permission on the scope.
 - `CreateTrigger` asks for `RunPipeline` a second time in its `Prepare` runner,
   and `UpdateTrigger` asks for `RunTriggerPipeline`. This check refuses:
   managing triggers must not give run rights. A `Policy` on `Prepare`

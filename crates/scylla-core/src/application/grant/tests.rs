@@ -1,8 +1,11 @@
 //! The grant's actions through the engine, on stub ports.
 
 use super::*;
+use crate::domain::caller::CallerContext;
 use crate::domain::caller::ServiceIdentity;
-use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::{AppId, GrantId, OrganizationId, ProjectId, UserId};
+use crate::domain::permission::Permission;
 use crate::domain::permission::ResourceRef;
 use crate::domain::role::RoleName;
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
@@ -10,7 +13,7 @@ use crate::test_support::stubs::{CountingPolicy, StubGrants, StubRegistry, StubR
 use async_trait::async_trait;
 use scylla_auth::authz::*;
 use scylla_auth::authz::{ResourceAncestors, Role};
-use scylla_extension::Actions;
+use scylla_extension::{Actions, Deleted};
 
 struct StubAncestry;
 #[async_trait]
@@ -69,6 +72,13 @@ impl Lab {
         self.actions.run(&self.uc, caller, cmd).await
     }
 
+    async fn revoke(&self, id: &str) -> DomainResult<Option<Deleted<Grant>>> {
+        let cmd = RevokeGrant {
+            id: GrantId::new(id),
+        };
+        self.actions.run(&self.uc, &admin(), cmd).await
+    }
+
     async fn list(&self, scope: Option<Scope>) -> DomainResult<Vec<Grant>> {
         self.actions
             .run(&self.uc, &admin(), ListGrants { scope })
@@ -84,12 +94,11 @@ fn lab_with(grants: Vec<Grant>, roles: Vec<Role>, permissions: Arc<dyn Permissio
     let grants = Arc::new(StubGrants::new(grants));
     let registry = Arc::new(StubRegistry::default());
     Lab {
-        actions: actions(permissions.clone()),
+        actions: actions(permissions),
         uc: GrantUseCases::new(
             grants.clone(),
             Arc::new(StubRoles::new(roles)),
             Arc::new(CountingPolicy::default()),
-            permissions,
             registry.clone(),
             Arc::new(StubAncestry),
         ),
@@ -443,7 +452,7 @@ async fn revoking_app_grant_disconnects_the_agent() {
     );
     let lab = lab(vec![grant.clone()]);
 
-    lab.uc.revoke(&admin(), &grant.id).await.unwrap();
+    lab.revoke(&grant.id).await.unwrap();
 
     assert_eq!(lab.registry.disconnected(), vec![AppId::new("agent-1")]);
 }
@@ -454,7 +463,7 @@ async fn cannot_revoke_last_owner_of_scope() {
     let lab = lab(vec![grant.clone()]);
 
     assert!(
-        lab.uc.revoke(&admin(), &grant.id).await.is_err(),
+        lab.revoke(&grant.id).await.is_err(),
         "revoking the last owner must be blocked"
     );
 }
@@ -466,7 +475,7 @@ async fn can_revoke_owner_when_another_exists() {
     let lab = lab(vec![g1.clone(), g2]);
 
     assert!(
-        lab.uc.revoke(&admin(), &g1.id).await.is_ok(),
+        lab.revoke(&g1.id).await.is_ok(),
         "revoking one of two owners is allowed"
     );
 }
@@ -477,13 +486,13 @@ async fn revoking_user_grant_leaves_agents_alone() {
     let co_owner = owner_grant(Principal::User(UserId::new("u2")), org());
     let lab = lab(vec![grant.clone(), co_owner]);
 
-    lab.uc.revoke(&admin(), &grant.id).await.unwrap();
+    lab.revoke(&grant.id).await.unwrap();
 
     assert!(lab.registry.disconnected().is_empty());
 }
 
 #[tokio::test]
-async fn a_revoke_checks_the_permission_on_the_loaded_grant_scope() {
+async fn a_revoke_checks_the_permission_on_the_grant_then_deletes_it() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let grant = Grant::new(
         Principal::App(AppId::new("agent-1")),
@@ -492,16 +501,38 @@ async fn a_revoke_checks_the_permission_on_the_loaded_grant_scope() {
     );
     let lab = lab_with(vec![grant.clone()], vec![], permissions.clone());
 
-    lab.uc.revoke(&admin(), &grant.id).await.unwrap();
-    lab.uc.revoke(&admin(), "unknown").await.unwrap();
+    let deleted = lab.revoke(&grant.id).await.unwrap().unwrap();
 
+    assert_eq!(deleted.last_state(), &grant);
     assert_eq!(
         permissions.permissions(),
-        vec![
-            Permission::ManageOrgGrants(OrganizationId::new("o1")),
-            Permission::ManageSystemGrants,
-        ]
+        vec![Permission::RevokeGrant(GrantId::new(grant.id.clone()))]
     );
+    assert_eq!(lab.grants.deleted(), vec![grant.id]);
+}
+
+#[tokio::test]
+async fn a_denied_revoke_never_deletes() {
+    let grant = owner_grant(Principal::User(UserId::new("u1")), org());
+    let co_owner = owner_grant(Principal::User(UserId::new("u2")), org());
+    let lab = lab_with(
+        vec![grant.clone(), co_owner],
+        vec![],
+        Arc::new(DenyingPermissionService::new()),
+    );
+
+    let err = lab.revoke(&grant.id).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert!(lab.grants.deleted().is_empty());
+}
+
+#[tokio::test]
+async fn an_allowed_revoke_of_an_unknown_grant_changes_nothing() {
+    let lab = lab(vec![]);
+
+    assert!(lab.revoke("unknown").await.unwrap().is_none());
+    assert!(lab.grants.deleted().is_empty());
 }
 
 #[test]

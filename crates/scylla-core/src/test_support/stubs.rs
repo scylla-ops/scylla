@@ -349,6 +349,7 @@ impl RoleRepository for StubRoles {
 pub struct StubGrants {
     rows: Vec<Grant>,
     created: Mutex<Vec<Grant>>,
+    deleted: Mutex<Vec<String>>,
 }
 
 impl StubGrants {
@@ -356,11 +357,16 @@ impl StubGrants {
         Self {
             rows,
             created: Mutex::default(),
+            deleted: Mutex::default(),
         }
     }
 
     pub fn created(&self) -> Vec<Grant> {
         self.created.lock().unwrap().clone()
+    }
+
+    pub fn deleted(&self) -> Vec<String> {
+        self.deleted.lock().unwrap().clone()
     }
 }
 
@@ -373,7 +379,8 @@ impl GrantRepository for StubGrants {
         self.created.lock().unwrap().push(grant.clone());
         Ok(())
     }
-    async fn delete(&self, _: &str) -> DomainResult<()> {
+    async fn delete(&self, id: &str) -> DomainResult<()> {
+        self.deleted.lock().unwrap().push(id.to_string());
         Ok(())
     }
     async fn revoke_all(&self, _: &Principal, _: &Scope) -> DomainResult<u64> {

@@ -74,6 +74,18 @@ A check on an unknown app secret finds no app. As for an unknown invitation,
 only a System grant reaches it. A caller without a System grant gets
 "forbidden", and a caller with a System grant gets "not found".
 
+## Revoking a grant
+
+A check to revoke one grant finds the scope that holds the grant. Then it
+applies the rule above to that scope, with the manage-grants permission of the
+scope kind: `manageProjectGrants` for a project grant, `manageOrgGrants` for an
+organization grant and `manageSystemGrants` for a System grant. Thus the roles
+that give this permission on the scope also give it on the grants of the scope.
+
+A check on an unknown grant finds no scope, and uses the System rule. Only a
+grant that gives `manageSystemGrants` reaches it. A caller without it gets
+"forbidden". A caller with it gets a success, and nothing changes.
+
 ## Being somewhere
 
 Being in an organization, or on a project, means **holding a role on it**. It is
