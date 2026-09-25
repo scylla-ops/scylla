@@ -1,8 +1,7 @@
 //! The adapter: each RPC is one `run` and its response. Parsing lives in the
 //! pipeline mapper, behind `Parse`; no RPC checks a permission or touches a port.
-//! `run_pipeline` then hands the new job to an agent, best-effort, as a trigger fire does.
 
-use crate::application::{DispatchOutcome, DispatchUseCases, PipelineUseCases};
+use crate::application::PipelineUseCases;
 use crate::grpc::adapter::run;
 use crate::grpc::convert::wrap;
 use crate::grpc::mappers::pipeline_to_proto;
@@ -23,7 +22,6 @@ use tonic::{Request, Response, Status};
 pub struct PipelineHandler {
     actions: Arc<Actions>,
     pipelines: Arc<PipelineUseCases>,
-    dispatch_uc: Arc<DispatchUseCases>,
 }
 
 #[async_trait::async_trait]
@@ -94,23 +92,7 @@ impl PipelineService for PipelineHandler {
         &self,
         request: Request<RunPipelineRequest>,
     ) -> Result<Response<RunPipelineResponse>, Status> {
-        let (job, dispatch) = run(&self.actions, &*self.pipelines, request).await?;
-        let pipeline_id = job.pipeline_id();
-
-        match self.dispatch_uc.dispatch_job(pipeline_id, &dispatch).await {
-            Ok(DispatchOutcome::Dispatched(app_id)) => {
-                tracing::info!(job_id = %job.id(), %app_id, "job dispatched to agent");
-                // Best-effort: the job ran regardless.
-                if let Err(e) = self.pipelines.assign_agent(job.id(), &app_id).await {
-                    tracing::warn!(job_id = %job.id(), %app_id, error = %e, "failed to record job agent attribution");
-                }
-            }
-            Ok(DispatchOutcome::NoAgentAvailable) => {}
-            Err(e) => {
-                tracing::warn!(job_id = %job.id(), error = %e, "agent dispatch failed; job left pending");
-            }
-        }
-
+        let job = run(&self.actions, &*self.pipelines, request).await?;
         Ok(Response::new(RunPipelineResponse {
             job_id: wrap(job.id().to_string()),
         }))

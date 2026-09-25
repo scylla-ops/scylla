@@ -1,16 +1,20 @@
 //! The agent's writes. One block per command, in the order it runs: the struct, its access,
 //! its payload types, what `Prepare` builds, what `Persist` writes. `DeleteAgent` stages the id
-//! alone: the row is not read before the write, as before.
+//! alone: the row is not read before the write, as before. `TouchAgent` and `RecordAgentHost`
+//! come from the agent's own stream: no permission reaches the agent's own App, because its grant
+//! is on an organization or a project, so they are `Authenticated` and the target is the caller.
 
 use super::AgentUseCases;
 use crate::application::app::mint_app_secret;
-use crate::domain::agent::Agent;
+use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential, AppName, AppSecret, AppSecretLabel};
-use crate::domain::errors::DomainResult;
+use crate::domain::caller::CallerContext;
+use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
@@ -134,6 +138,94 @@ impl Run<Persist<DeleteAgent>> for AgentUseCases {
                 self.app_repo.delete(&id).await?;
                 self.policy_control.reload().await?;
                 Ok(Deleted::new(id))
+            })
+            .await
+    }
+}
+
+fn reporting_agent(caller: &CallerContext) -> DomainResult<AppId> {
+    match caller {
+        CallerContext::App(app_id) => Ok(app_id.clone()),
+        _ => Err(DomainError::forbidden(
+            "only an agent reports its own state",
+        )),
+    }
+}
+
+#[derive(Debug)]
+pub struct TouchAgent;
+
+impl Describe for TouchAgent {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Command for TouchAgent {
+    type Staged = Draft<(AppId, DateTime<Utc>)>;
+    type Committed = DateTime<Utc>;
+}
+
+#[async_trait]
+impl Run<Prepare<TouchAgent>> for AgentUseCases {
+    async fn run(&self, input: Authorized<TouchAgent>) -> DomainResult<Prepared<TouchAgent>> {
+        let app_id = reporting_agent(input.caller())?;
+        Ok(input.prepared(Draft::new((app_id, Utc::now()))))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<TouchAgent>> for AgentUseCases {
+    async fn run(&self, input: Prepared<TouchAgent>) -> DomainResult<Committed<TouchAgent>> {
+        input
+            .commit(async |draft| {
+                let (app_id, at) = draft.into_inner();
+                self.agent_repo.touch_last_seen(&app_id, at).await?;
+                Ok(at)
+            })
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct RecordAgentHost {
+    pub host: AgentHost,
+}
+
+impl Describe for RecordAgentHost {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Command for RecordAgentHost {
+    type Staged = Draft<(AppId, AgentHost)>;
+    type Committed = AgentHost;
+}
+
+#[async_trait]
+impl Run<Prepare<RecordAgentHost>> for AgentUseCases {
+    async fn run(
+        &self,
+        input: Authorized<RecordAgentHost>,
+    ) -> DomainResult<Prepared<RecordAgentHost>> {
+        let app_id = reporting_agent(input.caller())?;
+        let host = input.command().host.clone();
+        Ok(input.prepared(Draft::new((app_id, host))))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<RecordAgentHost>> for AgentUseCases {
+    async fn run(
+        &self,
+        input: Prepared<RecordAgentHost>,
+    ) -> DomainResult<Committed<RecordAgentHost>> {
+        input
+            .commit(async |draft| {
+                let (app_id, host) = draft.into_inner();
+                self.agent_repo.record_host(&app_id, &host).await?;
+                Ok(host)
             })
             .await
     }

@@ -26,6 +26,32 @@ impl ServiceIdentity {
     }
 
     #[must_use]
+    pub fn job_reaper() -> Self {
+        Self { name: "job-reaper" }
+    }
+
+    #[must_use]
+    pub fn job_dispatcher() -> Self {
+        Self {
+            name: "job-dispatcher",
+        }
+    }
+
+    #[must_use]
+    pub fn cron_scheduler() -> Self {
+        Self {
+            name: "cron-scheduler",
+        }
+    }
+
+    #[must_use]
+    pub fn trigger_firer() -> Self {
+        Self {
+            name: "trigger-firer",
+        }
+    }
+
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         self.name
     }

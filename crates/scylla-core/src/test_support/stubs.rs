@@ -1,13 +1,14 @@
 use crate::application::agent::{AgentDispatch, DispatchNode, JobDispatch};
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
-    HashService, PipelineRepository, ProjectRepository, SecretResolver, SessionRepository,
-    SignupRepository, UserRepository,
+    HashService, JobRepository, PipelineRepository, ProjectRepository, SecretResolver,
+    SessionRepository, SignupRepository, UserRepository,
 };
 use crate::domain::app::{AppSecret, AppSecretHash};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::job::{Job, JobStatus};
 use crate::domain::organization::Organization;
 use crate::domain::pipeline::{Pipeline, PipelineNode};
 use crate::domain::project::Project;
@@ -112,6 +113,7 @@ impl HashService for StubHash {
 pub struct StubRegistry {
     connected: Mutex<Vec<AppId>>,
     disconnected: Mutex<Vec<AppId>>,
+    dispatched: Mutex<Vec<AppId>>,
 }
 
 impl StubRegistry {
@@ -122,6 +124,10 @@ impl StubRegistry {
     pub fn disconnected(&self) -> Vec<AppId> {
         self.disconnected.lock().unwrap().clone()
     }
+
+    pub fn dispatched(&self) -> Vec<AppId> {
+        self.dispatched.lock().unwrap().clone()
+    }
 }
 
 #[async_trait]
@@ -129,8 +135,9 @@ impl AgentDispatch for StubRegistry {
     fn connected(&self) -> Vec<AppId> {
         self.connected.lock().unwrap().clone()
     }
-    async fn dispatch(&self, _: &AppId, _: &JobDispatch) -> DomainResult<()> {
-        unreachable!("no dispatch in an admin action")
+    async fn dispatch(&self, app_id: &AppId, _: &JobDispatch) -> DomainResult<()> {
+        self.dispatched.lock().unwrap().push(app_id.clone());
+        Ok(())
     }
     fn disconnect(&self, app_id: &AppId) {
         self.disconnected.lock().unwrap().push(app_id.clone());
@@ -139,6 +146,121 @@ impl AgentDispatch for StubRegistry {
         usize::from(self.connected.lock().unwrap().contains(app_id))
     }
     fn release(&self, _: &AppId) {}
+}
+
+/// Lists its pending rows that no agent holds, records each attribution, and orphans a fixed
+/// count.
+#[derive(Default)]
+pub struct StubJobs {
+    rows: Mutex<Vec<Job>>,
+    assigned: Mutex<Vec<(JobId, AppId)>>,
+    swept: Mutex<Vec<Vec<AppId>>>,
+    orphans: u64,
+}
+
+impl StubJobs {
+    pub fn with(rows: Vec<Job>) -> Self {
+        Self {
+            rows: Mutex::new(rows),
+            ..Self::default()
+        }
+    }
+
+    pub fn orphaning(orphans: u64) -> Self {
+        Self {
+            orphans,
+            ..Self::default()
+        }
+    }
+
+    pub fn rows(&self) -> Vec<Job> {
+        self.rows.lock().unwrap().clone()
+    }
+
+    pub fn assigned(&self) -> Vec<(JobId, AppId)> {
+        self.assigned.lock().unwrap().clone()
+    }
+
+    pub fn swept(&self) -> Vec<Vec<AppId>> {
+        self.swept.lock().unwrap().clone()
+    }
+}
+
+#[async_trait]
+impl JobRepository for StubJobs {
+    async fn create(&self, job: &Job) -> DomainResult<Job> {
+        self.rows.lock().unwrap().push(job.clone());
+        Ok(job.clone())
+    }
+    async fn find_by_id(&self, id: &JobId) -> DomainResult<Job> {
+        self.rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|j| j.id() == id)
+            .cloned()
+            .ok_or_else(|| DomainError::not_found("Job", id.to_string()))
+    }
+    async fn update(&self, _: &Job) -> DomainResult<Job> {
+        unreachable!("no job update in this action")
+    }
+    async fn set_agent(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
+        if let Some(job) = self
+            .rows
+            .lock()
+            .unwrap()
+            .iter_mut()
+            .find(|j| j.id() == job_id)
+        {
+            job.assign_agent(app_id.clone());
+        }
+        self.assigned
+            .lock()
+            .unwrap()
+            .push((job_id.clone(), app_id.clone()));
+        Ok(())
+    }
+    async fn list_pending_unassigned(&self) -> DomainResult<Vec<Job>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|j| j.status() == JobStatus::Pending && j.agent_app_id().is_none())
+            .cloned()
+            .collect())
+    }
+    async fn orphan_running_without_agents(&self, connected: &[AppId]) -> DomainResult<u64> {
+        self.swept.lock().unwrap().push(connected.to_vec());
+        Ok(self.orphans)
+    }
+    async fn delete(&self, _: &JobId) -> DomainResult<()> {
+        unreachable!("no job delete in this action")
+    }
+    async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
+        empty_page()
+    }
+    async fn list_by_pipeline(
+        &self,
+        _: &PipelineId,
+        _: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Job>> {
+        empty_page()
+    }
+    async fn list_by_project(
+        &self,
+        _: &ProjectId,
+        _: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Job>> {
+        empty_page()
+    }
+    async fn list_by_organization(
+        &self,
+        _: &OrganizationId,
+        _: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Job>> {
+        empty_page()
+    }
 }
 
 pub struct EchoResolver;

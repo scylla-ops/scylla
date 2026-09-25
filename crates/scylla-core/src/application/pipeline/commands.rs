@@ -2,7 +2,6 @@
 //! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::PipelineUseCases;
-use crate::application::JobDispatch;
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{PipelineId, ProjectId};
@@ -150,7 +149,7 @@ impl Run<Persist<DeletePipeline>> for PipelineUseCases {
 }
 
 /// The repo reads bypass Cedar, so "run" does not also require "get". The job's origin is the
-/// caller; a trigger fire, whose origin is the trigger, goes through `run_with_inputs`.
+/// caller. The `commit` closure stores the job and hands it to an agent, best-effort.
 #[derive(Debug)]
 pub struct RunPipeline {
     pub id: PipelineId,
@@ -164,7 +163,7 @@ impl Describe for RunPipeline {
 
 impl Command for RunPipeline {
     type Staged = Draft<Job>;
-    type Committed = (Job, JobDispatch);
+    type Committed = Job;
 }
 
 #[async_trait]
@@ -192,6 +191,52 @@ impl Run<Prepare<RunPipeline>> for PipelineUseCases {
 #[async_trait]
 impl Run<Persist<RunPipeline>> for PipelineUseCases {
     async fn run(&self, input: Prepared<RunPipeline>) -> DomainResult<Committed<RunPipeline>> {
+        input
+            .commit(async |draft| self.start(&draft.into_inner()).await)
+            .await
+    }
+}
+
+/// A trigger fire, sent as the trigger-runner App of the organization. The origin is the
+/// trigger and not the caller, and the inputs come from the trigger; no RPC sends this command.
+#[derive(Debug)]
+pub struct RunPipelineWithInputs {
+    pub id: PipelineId,
+    pub inputs: Vec<(String, String)>,
+    pub origin: JobOrigin,
+}
+
+impl Describe for RunPipelineWithInputs {
+    fn access(&self) -> Access {
+        Access::Requires(Permission::RunPipeline(self.id.clone()))
+    }
+}
+
+impl Command for RunPipelineWithInputs {
+    type Staged = Draft<Job>;
+    type Committed = Job;
+}
+
+#[async_trait]
+impl Run<Prepare<RunPipelineWithInputs>> for PipelineUseCases {
+    async fn run(
+        &self,
+        input: Authorized<RunPipelineWithInputs>,
+    ) -> DomainResult<Prepared<RunPipelineWithInputs>> {
+        let cmd = input.command();
+        let pipeline = self.pipeline_repo.find_by_id(&cmd.id).await?;
+        let job = Job::create_from_pipeline(&pipeline, cmd.origin.clone())
+            .with_inputs(cmd.inputs.clone());
+        Ok(input.prepared(Draft::new(job)))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<RunPipelineWithInputs>> for PipelineUseCases {
+    async fn run(
+        &self,
+        input: Prepared<RunPipelineWithInputs>,
+    ) -> DomainResult<Committed<RunPipelineWithInputs>> {
         input
             .commit(async |draft| self.start(&draft.into_inner()).await)
             .await

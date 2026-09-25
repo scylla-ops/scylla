@@ -236,8 +236,8 @@ A `tests.rs` gets its engine from `test_support::authz::actions(permissions)`:
 the `PermissionAuthorizer` and no hooks. Use `actions_with(permissions, hooks)`
 when the test registers hooks. The stubs that more than one use case needs are
 in `test_support::stubs` (compiled for tests only): `CountingPolicy`,
-`StubHash`, `StubRegistry`, `StubRoles`, `StubGrants`, `NoUsers`, `OneProject`,
-`OnePipeline`, `EchoResolver`, `empty_page` and `alice`. Keep a stub in the
+`StubHash`, `StubRegistry`, `StubRoles`, `StubGrants`, `StubJobs`, `NoUsers`,
+`OneProject`, `OnePipeline`, `EchoResolver`, `empty_page` and `alice`. Keep a stub in the
 `tests.rs` of the use case when its behavior is specific to that use case.
 
 A permission check that never refuses is not a gate. `ListOrganizationProjects`
@@ -467,8 +467,9 @@ the row is still in the state the gate saw.
   job log, invitation, grant and role use cases are on the pipeline. The
   session (`Login`, `ValidateToken`, `RevokeToken`), `Signup`, the OAuth flow
   (`GetAuthUrl`, `OAuthCallback`), `IssueAppToken`, `AcceptInvitation` and
-  `IngestWebhook` are on it too, as `Public` actions. The other aggregates
-  keep their hand-written sequence until they migrate.
+  `IngestWebhook` are on it too, as `Public` actions. The writes of the server
+  drivers and of the agent stream are on it too. The other aggregates keep
+  their hand-written sequence until they migrate.
 - A `Public` action runs as `Anonymous`, so a `Policy` on `Authorize` sees
   every sign-in, signup and webhook delivery. The check that the use case does
   itself (the password, the app secret, the OAuth code, the invitation token,
@@ -486,23 +487,42 @@ the row is still in the state the gate saw.
   failure becomes `Internal`, so the route answers 404, 401 or 500 as before.
 - The `AuthInterceptor` stays outside the pipeline. It is not an action: it
   makes the caller that the actions get.
-- The agent stream sends `RecordJobStatus` and `AppendJobLog` through
-  `Actions` for each report, as the agent's own token, so the `WriteJobStatus`
-  and `AppendJobLog` checks are the authorize stage. The live fan-out
-  (`InMemoryJobLogStream::publish`) and the rest of the stream stay outside the
-  pipeline.
+- The agent stream sends each write through `Actions`, as the agent's own
+  token: `RecordJobStatus` and `AppendJobLog` for each report (the
+  `WriteJobStatus` and `AppendJobLog` checks are the authorize stage), and
+  `TouchAgent` and `RecordAgentHost` for the heartbeat and the host report. No
+  permission gets to the agent's own App, because its grant is on an
+  organization or a project. Thus these two are `Authenticated`, the target is
+  the caller, and `Prepare` refuses a caller that is not an App. The read loop,
+  the live fan-out (`InMemoryJobLogStream::publish`) and the registry stay
+  outside the pipeline.
 - `TailJobLogs` is a query: its `Fetch` returns the stream, so hooks see the
   subscription open, not each line. `JobLogLiveStream` is `Sync` for that
   reason, because a query output is.
 - `ListJobLogs` with a node sends `GetJob` first, from the handler. That
   `ReadJob` check refuses, so it is not a scope inside `Fetch`; a node that is
   not readable yet gives an empty page, as before.
-  `JobReaper` writes through the port directly: it runs as the server, not for
-  a caller.
-- `DispatchUseCases`, `PendingJobScheduler` and the agent stream
-  (`AgentHandler`) stay outside the pipeline. They run as the scheduler or as
-  the agent's own token, not for a caller that asks for a permission;
-  `dispatch_job` asks for `ExecuteJob` only to choose an agent, never to refuse.
+- Each write of a server driver goes through `Actions`, as a sealed
+  `CallerContext::Service`, with one identity for each driver: `JobReaper`
+  (`job-reaper`) sends `ReapOrphanedJobs`, `PendingJobScheduler`
+  (`job-dispatcher`) sends `DispatchPendingJobs`, `TriggerCronScheduler`
+  (`cron-scheduler`) sends `ScheduleCronTriggers` and `ClaimDueTriggers`, and
+  `TriggerFirer` (`trigger-firer`) sends `RecordTriggerFire`. The loops stay
+  outside the pipeline: they are not requests.
+- A pass over many rows (`ReapOrphanedJobs`, `DispatchPendingJobs`,
+  `ScheduleCronTriggers`, `ClaimDueTriggers`) has no resource for Cedar. Thus
+  it is `Authenticated`, and `Prepare` refuses a caller that is not a service
+  (`application::actions::service_only`). A pass that runs each 15 or 30
+  seconds does not write an audit row each time. A write on one row asks for
+  the permission of that row, as the bootstrap does: `RecordTriggerFire` asks
+  for `ManageTrigger`, and the `service` rule of the Cedar policies permits it.
+  That check writes one audit row for each fire.
+- A run gives its job to an agent in its `commit` closure, after the job row
+  is written: `DispatchUseCases::place` sends the job to an agent and records
+  that agent. `RunPipeline`, `RunPipelineWithInputs` and `DispatchPendingJobs`
+  use it. A failed attribution is logged and does not fail the command: the job
+  exists and an agent has it. `place` asks for `ExecuteJob` for each agent only
+  to choose one, never to refuse.
 - `DeleteApp` and `SetAppActive` stage the id alone: the row is not read
   before the write, so a missing app behaves as before.
 - `AcceptInvitation` is `Public`. The invitee has no account yet: the token
@@ -562,15 +582,19 @@ the row is still in the state the gate saw.
   rights. Both checks are in `Authorize`, so a `Policy` on `Prepare` runs
   after them. The runner app of the organization is provisioned in `Persist`,
   next to the trigger write.
-- `FireTriggerNow` fires in its `commit` closure as the trigger-runner App,
-  through `run_with_inputs`, as a scheduled fire does. `IngestWebhook` records
-  the delivery and fires in its `commit` closure. `TriggerFireUseCases::fire`
-  (the scheduler and the webhook ingress) stays outside the pipeline: it runs
-  as the server, not for a caller.
-- `PipelineUseCases::run_with_inputs` and `assign_agent` stay outside the
-  pipeline. A trigger fire calls them as the trigger-runner App, with an origin
-  and inputs that no RPC sends. `RunPipeline` is the RPC path; the handler then
-  gives the job to an agent, as before.
+- `FireTriggerNow` fires in its `commit` closure through the `TriggerFiring`
+  port, as a scheduled fire does. `IngestWebhook` records the delivery and
+  fires in its `commit` closure. `TriggerFirer` is that port for the cron
+  scheduler, the webhook ingress and `FireTriggerNow`. It reads the trigger,
+  sends `RunPipelineWithInputs` as the trigger-runner App of the organization
+  (one `RunPipeline` check), then sends `RecordTriggerFire`, best-effort. It
+  holds `Actions`, thus it is a driver and not a use case: a use case gets to
+  it through the port.
+- `RunPipelineWithInputs` is the fire path of a run: the origin is the trigger
+  and the inputs come from the trigger, so no RPC sends it. `RunPipeline` is
+  the RPC path.
+- `RecordTriggerFire` carries the trigger row that the fire read, and writes it
+  back with its observation, as before.
 - The policy reload after a create or a delete sits inside the `commit`
   closure, so a failed reload still fails the call, as before. It is a
   `Listener<Persist<C>>` once a failed reload may only be logged.

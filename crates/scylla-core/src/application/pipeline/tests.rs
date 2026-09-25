@@ -2,15 +2,20 @@
 
 use super::*;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::domain::caller::ServiceIdentity;
+use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::DomainError;
-use crate::domain::ids::{OrganizationId, ProjectId, TriggerId, UserId};
+use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, TriggerId, UserId};
+use crate::domain::job::JobOrigin;
+use crate::domain::permission::Permission;
 use crate::domain::pipeline::{Pipeline, PipelineName};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::pipelines::{PipelineBuilder, node};
 use crate::test_support::projects::ProjectBuilder;
-use crate::test_support::stubs::{EchoResolver, OneProject, alice, empty_page};
+use crate::test_support::stubs::{
+    EchoResolver, OneProject, StubJobs, StubRegistry, alice, empty_page,
+};
 use async_trait::async_trait;
+use scylla_auth::authz::PermissionService;
 use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -85,71 +90,12 @@ impl PipelineRepository for StubPipelines {
     }
 }
 
-#[derive(Default)]
-struct StubJobs {
-    rows: Mutex<Vec<Job>>,
-    assigned: Mutex<Vec<(JobId, AppId)>>,
-}
-
-#[async_trait]
-impl JobRepository for StubJobs {
-    async fn create(&self, job: &Job) -> DomainResult<Job> {
-        self.rows.lock().unwrap().push(job.clone());
-        Ok(job.clone())
-    }
-    async fn find_by_id(&self, id: &JobId) -> DomainResult<Job> {
-        Err(DomainError::not_found("Job", id.to_string()))
-    }
-    async fn update(&self, _: &Job) -> DomainResult<Job> {
-        unreachable!("no job update in a pipeline action")
-    }
-    async fn set_agent(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
-        self.assigned
-            .lock()
-            .unwrap()
-            .push((job_id.clone(), app_id.clone()));
-        Ok(())
-    }
-    async fn list_pending_unassigned(&self) -> DomainResult<Vec<Job>> {
-        Ok(Vec::new())
-    }
-    async fn orphan_running_without_agents(&self, _: &[AppId]) -> DomainResult<u64> {
-        Ok(0)
-    }
-    async fn delete(&self, _: &JobId) -> DomainResult<()> {
-        unreachable!("no job delete in a pipeline action")
-    }
-    async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
-        empty_page()
-    }
-    async fn list_by_pipeline(
-        &self,
-        _: &PipelineId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Job>> {
-        empty_page()
-    }
-    async fn list_by_project(
-        &self,
-        _: &ProjectId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Job>> {
-        empty_page()
-    }
-    async fn list_by_organization(
-        &self,
-        _: &OrganizationId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Job>> {
-        empty_page()
-    }
-}
-
 struct Lab {
     actions: Actions,
     uc: PipelineUseCases,
     pipelines: Arc<StubPipelines>,
     jobs: Arc<StubJobs>,
+    registry: Arc<StubRegistry>,
 }
 
 impl Lab {
@@ -171,20 +117,28 @@ impl Lab {
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let pipelines = Arc::new(StubPipelines::default());
     let jobs = Arc::new(StubJobs::default());
+    let registry = Arc::new(StubRegistry::default());
     let project = ProjectBuilder::for_org_id(OrganizationId::new("acme"), "rocket")
         .id(project_id())
         .build();
     Lab {
-        actions: actions(permissions.clone()),
+        actions: actions(permissions),
         uc: PipelineUseCases::new(
             pipelines.clone(),
             Arc::new(OneProject(project)),
             jobs.clone(),
-            permissions,
             Arc::new(EchoResolver),
+            Arc::new(DispatchUseCases::new(
+                registry.clone(),
+                Arc::new(RecordingPermissionService::new()),
+                jobs.clone(),
+                pipelines.clone(),
+                Arc::new(EchoResolver),
+            )),
         ),
         pipelines,
         jobs,
+        registry,
     }
 }
 
@@ -347,12 +301,12 @@ async fn a_get_and_a_project_list_check_their_permissions() {
 }
 
 #[tokio::test]
-async fn a_run_by_a_user_creates_a_job_with_a_human_origin_and_its_dispatch() {
+async fn a_run_by_a_user_creates_a_job_with_a_human_origin_and_leaves_it_pending_without_agents() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let seeded = lab.seed();
 
-    let (job, dispatch) = lab
+    let job = lab
         .actions
         .run(
             &lab.uc,
@@ -375,9 +329,34 @@ async fn a_run_by_a_user_creates_a_job_with_a_human_origin_and_its_dispatch() {
         }
     );
     assert!(job.inputs().is_empty());
-    assert_eq!(dispatch.job_id, job.id().to_string());
-    assert_eq!(dispatch.nodes.len(), 1);
-    assert_eq!(lab.jobs.rows.lock().unwrap().len(), 1);
+    assert!(job.agent_app_id().is_none());
+    assert_eq!(lab.jobs.rows().len(), 1);
+    assert!(lab.registry.dispatched().is_empty());
+    assert!(lab.jobs.assigned().is_empty());
+}
+
+#[tokio::test]
+async fn a_run_hands_the_job_to_a_connected_agent_and_records_it() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let seeded = lab.seed();
+    let agent = AppId::new("agent-1");
+    lab.registry.connect(&agent);
+
+    let job = lab
+        .actions
+        .run(
+            &lab.uc,
+            &alice(),
+            RunPipeline {
+                id: seeded.id().clone(),
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(job.agent_app_id(), Some(&agent));
+    assert_eq!(lab.registry.dispatched(), vec![agent.clone()]);
+    assert_eq!(lab.jobs.assigned(), vec![(job.id().clone(), agent)]);
 }
 
 #[tokio::test]
@@ -398,7 +377,7 @@ async fn a_run_by_a_service_caller_is_forbidden_and_creates_no_job() {
         .unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert!(lab.jobs.rows.lock().unwrap().is_empty());
+    assert!(lab.jobs.rows().is_empty());
 }
 
 #[tokio::test]
@@ -419,7 +398,7 @@ async fn a_denied_run_creates_no_job() {
         .unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert!(lab.jobs.rows.lock().unwrap().is_empty());
+    assert!(lab.jobs.rows().is_empty());
 }
 
 #[tokio::test]
@@ -427,34 +406,33 @@ async fn a_trigger_run_checks_run_pipeline_and_keeps_its_origin_and_inputs() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let seeded = lab.seed();
+    let agent = AppId::new("agent-1");
+    lab.registry.connect(&agent);
     let origin = JobOrigin::Cron {
         trigger_id: TriggerId::new("t-1"),
     };
-    let inputs = [("MODE".to_string(), "nightly".to_string())];
+    let inputs = vec![("MODE".to_string(), "nightly".to_string())];
+    let runner = CallerContext::App(AppId::new("runner"));
 
-    let (job, _) = lab
-        .uc
-        .run_with_inputs(
-            &CallerContext::App(AppId::new("runner")),
-            seeded.id(),
-            &inputs,
-            origin.clone(),
+    let job = lab
+        .actions
+        .run(
+            &lab.uc,
+            &runner,
+            RunPipelineWithInputs {
+                id: seeded.id().clone(),
+                inputs: inputs.clone(),
+                origin: origin.clone(),
+            },
         )
         .await
         .unwrap();
-    lab.uc
-        .assign_agent(job.id(), &AppId::new("agent-1"))
-        .await
-        .unwrap();
 
     assert_eq!(
-        permissions.permissions(),
-        vec![Permission::RunPipeline(seeded.id().clone())]
+        permissions.checks(),
+        vec![(runner, Permission::RunPipeline(seeded.id().clone()))]
     );
     assert_eq!(job.origin(), &origin);
-    assert_eq!(job.inputs(), &inputs);
-    assert_eq!(
-        lab.jobs.assigned.lock().unwrap().as_slice(),
-        &[(job.id().clone(), AppId::new("agent-1"))]
-    );
+    assert_eq!(job.inputs(), inputs.as_slice());
+    assert_eq!(lab.jobs.assigned(), vec![(job.id().clone(), agent)]);
 }

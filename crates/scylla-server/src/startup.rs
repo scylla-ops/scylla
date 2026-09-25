@@ -10,8 +10,8 @@ use scylla_core::application::{
     InvitationAcceptUseCases, InvitationUseCases, JobLogUseCases, JobReaper, JobUseCases, Mailer,
     NoopMailer, OAuthUseCases, OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer,
     PipelineUseCases, ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
-    TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
-    WebhookIngressUseCases,
+    TriggerCronScheduler, TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerUseCases,
+    UserUseCases, WebhookIngressUseCases,
 };
 use scylla_core::config::ControlPlaneConfig;
 use scylla_core::error::StartupError;
@@ -57,8 +57,6 @@ pub(crate) struct Services {
     pub app_uc: Arc<AppUseCases>,
     pub app_token_uc: Arc<AppTokenUseCases>,
     pub agent_uc: Arc<AgentUseCases>,
-    pub agent_repo: Arc<PgAgentRepository>,
-    pub dispatch_uc: Arc<DispatchUseCases>,
     pub agent_registry: Arc<InMemoryAgentRegistry>,
     pub pending_signal: Arc<Notify>,
     pub job_log_stream: Arc<InMemoryJobLogStream>,
@@ -151,16 +149,23 @@ pub(crate) async fn init_services(
         secret_repo.clone(),
         secret_cipher.clone(),
     ));
+    // Built before dispatch_uc, app_uc and grant_uc: they hand a job to a live stream, or drop it on disable, delete or revoke.
+    let agent_registry = Arc::new(InMemoryAgentRegistry::new());
+    let dispatch_uc = Arc::new(DispatchUseCases::new(
+        agent_registry.clone(),
+        permission_checker.clone(),
+        job_repo.clone(),
+        pipeline_repo.clone(),
+        secret_resolver.clone(),
+    ));
     let pipeline_uc = Arc::new(PipelineUseCases::new(
         pipeline_repo.clone(),
         project_repo.clone(),
         job_repo.clone(),
-        permission_checker.clone(),
         secret_resolver.clone(),
+        dispatch_uc.clone(),
     ));
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
-    // Built before app_uc and grant_uc: they drop an app's live stream on disable, delete or revoke.
-    let agent_registry = Arc::new(InMemoryAgentRegistry::new());
     let app_uc = Arc::new(AppUseCases::new(
         app_repo.clone(),
         app_credential_repo.clone(),
@@ -253,11 +258,6 @@ pub(crate) async fn init_services(
         job_log_repo.clone(),
         job_log_stream.clone(),
     ));
-    let dispatch_uc = Arc::new(DispatchUseCases::new(
-        agent_registry.clone(),
-        permission_checker.clone(),
-    ));
-
     let trigger_repo = Arc::new(PgTriggerRepository::new(db.clone()));
     let trigger_delivery_repo = Arc::new(PgTriggerDeliveryRepository::new(db.clone()));
     let cron_schedule: Arc<dyn CronSchedule> = Arc::new(CronScheduleService::new());
@@ -271,26 +271,25 @@ pub(crate) async fn init_services(
         secret_cipher.clone(),
         cron_schedule.clone(),
     ));
+    let firing: Arc<dyn TriggerFiring> = Arc::new(TriggerFirer::new(
+        actions.clone(),
+        trigger_uc.clone(),
+        pipeline_uc.clone(),
+    ));
     let trigger_fire_uc = Arc::new(TriggerFireUseCases::new(
         trigger_repo.clone(),
-        pipeline_repo.clone(),
-        project_repo.clone(),
-        app_repo.clone(),
-        pipeline_uc.clone(),
-        dispatch_uc.clone(),
+        firing.clone(),
     ));
     let webhook_ingress_uc = Arc::new(WebhookIngressUseCases::new(
         trigger_repo.clone(),
         trigger_delivery_repo.clone(),
         secret_cipher.clone(),
-        trigger_fire_uc.clone() as Arc<dyn TriggerFiring>,
+        firing.clone(),
     ));
 
     // The first tick fires immediately so a pre-restart backlog is picked up; 15s keeps latency under cron's minute.
     {
-        let firing: Arc<dyn TriggerFiring> = trigger_fire_uc.clone();
-        let scheduler =
-            TriggerCronScheduler::new(trigger_repo.clone(), firing, cron_schedule.clone());
+        let scheduler = TriggerCronScheduler::new(actions.clone(), trigger_uc.clone(), firing);
         tokio::spawn(async move {
             let mut tick = tokio::time::interval(std::time::Duration::from_secs(15));
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -303,12 +302,7 @@ pub(crate) async fn init_services(
 
     let pending_signal = Arc::new(Notify::new());
     {
-        let scheduler = PendingJobScheduler::new(
-            job_repo.clone(),
-            pipeline_repo.clone(),
-            dispatch_uc.clone(),
-            secret_resolver.clone(),
-        );
+        let scheduler = PendingJobScheduler::new(actions.clone(), dispatch_uc);
         let signal = pending_signal.clone();
         tokio::spawn(async move {
             scheduler.drain().await;
@@ -325,7 +319,7 @@ pub(crate) async fn init_services(
     }
 
     {
-        let reaper = JobReaper::new(job_repo.clone());
+        let reaper = JobReaper::new(actions.clone(), job_uc.clone());
         let registry = agent_registry.clone();
         tokio::spawn(async move {
             reaper.reap(&[]).await;
@@ -359,8 +353,6 @@ pub(crate) async fn init_services(
         app_uc,
         app_token_uc,
         agent_uc,
-        agent_repo,
-        dispatch_uc,
         agent_registry,
         pending_signal,
         job_log_stream,
@@ -491,11 +483,8 @@ where
     let org_handler = OrganizationHandler::new(services.actions.clone(), services.org_uc.clone());
     let project_handler =
         ProjectHandler::new(services.actions.clone(), services.project_uc.clone());
-    let pipeline_handler = PipelineHandler::new(
-        services.actions.clone(),
-        services.pipeline_uc.clone(),
-        services.dispatch_uc.clone(),
-    );
+    let pipeline_handler =
+        PipelineHandler::new(services.actions.clone(), services.pipeline_uc.clone());
     let trigger_handler = TriggerHandler::new(
         services.actions.clone(),
         services.trigger_uc.clone(),
@@ -520,7 +509,7 @@ where
         services.actions.clone(),
         services.job_uc.clone(),
         services.job_log_uc.clone(),
-        services.agent_repo.clone(),
+        services.agent_uc.clone(),
         services.pending_signal.clone(),
     );
     let agent_admin_handler =

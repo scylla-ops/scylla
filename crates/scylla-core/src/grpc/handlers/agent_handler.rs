@@ -1,5 +1,6 @@
+use crate::application::agent::{RecordAgentHost, TouchAgent};
 use crate::application::job::{AppendJobLog, RecordJobStatus};
-use crate::application::{AgentDispatch, AgentRepository, JobLogUseCases, JobUseCases};
+use crate::application::{AgentDispatch, AgentUseCases, JobLogUseCases, JobUseCases};
 use crate::application::{JobDispatch, JobEvent};
 use crate::domain::caller::CallerContext;
 use crate::extract_auth_context;
@@ -33,7 +34,7 @@ pub struct AgentHandler {
     actions: Arc<Actions>,
     job_use_cases: Arc<JobUseCases>,
     log_use_cases: Arc<JobLogUseCases>,
-    agent_repo: Arc<dyn AgentRepository>,
+    agent_use_cases: Arc<AgentUseCases>,
     pending_signal: Arc<Notify>,
 }
 
@@ -65,7 +66,7 @@ impl AgentService for AgentHandler {
             self.log_use_cases.clone(),
             self.log_stream.clone(),
             self.registry.clone(),
-            self.agent_repo.clone(),
+            self.agent_use_cases.clone(),
             conn_id,
         ));
 
@@ -92,11 +93,16 @@ async fn read_reports(
     log_use_cases: Arc<JobLogUseCases>,
     log_stream: Arc<InMemoryJobLogStream>,
     registry: Arc<InMemoryAgentRegistry>,
-    agent_repo: Arc<dyn AgentRepository>,
+    agent_use_cases: Arc<AgentUseCases>,
     conn_id: u64,
 ) {
     let caller = CallerContext::App(app_id.clone());
-    touch_last_seen(&agent_repo, &app_id).await;
+    let touch = async || {
+        if let Err(e) = actions.run(&*agent_use_cases, &caller, TouchAgent).await {
+            warn!(app_id = %app_id, error = %e, "failed to update agent last_seen");
+        }
+    };
+    touch().await;
     while let Ok(Some(up)) = inbound.message().await {
         match up.payload {
             Some(agent_up::Payload::Status(status)) => {
@@ -118,7 +124,7 @@ async fn read_reports(
                         registry.release(&app_id);
                     }
                 }
-                touch_last_seen(&agent_repo, &app_id).await;
+                touch().await;
             }
             Some(agent_up::Payload::Log(line)) => {
                 if let Some(log) = log_line_to_domain(&line) {
@@ -131,17 +137,19 @@ async fn read_reports(
                 }
             }
             Some(agent_up::Payload::Hello(hello)) => {
-                let host = hello_to_domain(&hello);
-                if let Err(e) = agent_repo.record_host(&app_id, &host).await {
+                let host = RecordAgentHost {
+                    host: hello_to_domain(&hello),
+                };
+                if let Err(e) = actions.run(&*agent_use_cases, &caller, host).await {
                     warn!(app_id = %app_id, error = %e, "failed to record agent host");
                 }
-                touch_last_seen(&agent_repo, &app_id).await;
+                touch().await;
             }
             None => {}
         }
     }
     // Only if this connection is still the live one: a reconnect may have replaced it.
-    touch_last_seen(&agent_repo, &app_id).await;
+    touch().await;
     registry.unregister_if_current(&app_id, conn_id);
 }
 
@@ -180,12 +188,6 @@ fn hello_to_domain(hello: &scylla_proto::agent::v1::AgentHello) -> AgentHost {
         cpu_count: (hello.cpu_count > 0).then_some(hello.cpu_count),
         total_memory_mb: (hello.total_memory_mb > 0).then_some(hello.total_memory_mb),
         reported_at: chrono::Utc::now(),
-    }
-}
-
-async fn touch_last_seen(agent_repo: &Arc<dyn AgentRepository>, app_id: &AppId) {
-    if let Err(e) = agent_repo.touch_last_seen(app_id, chrono::Utc::now()).await {
-        warn!(app_id = %app_id, error = %e, "failed to update agent last_seen");
     }
 }
 

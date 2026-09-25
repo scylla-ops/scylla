@@ -1,10 +1,7 @@
-use super::TRIGGER_RUNNER_APP_NAME;
-use crate::application::{
-    AppRepository, DispatchOutcome, DispatchUseCases, PipelineRepository, PipelineUseCases,
-    ProjectRepository, TriggerRepository,
-};
-use crate::domain::caller::CallerContext;
-use crate::domain::clock;
+use super::{RecordTriggerFire, TRIGGER_RUNNER_APP_NAME, TriggerUseCases};
+use crate::application::pipeline::RunPipelineWithInputs;
+use crate::application::{PipelineUseCases, TriggerRepository};
+use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId, TriggerId};
 use crate::domain::job::Job;
@@ -15,7 +12,7 @@ use crate::domain::trigger::{TriggerInputSource, TriggerSource};
 use async_trait::async_trait;
 use derive_more::Constructor;
 use scylla_extension::{
-    Access, Authorized, Command, Committed, Describe, Persist, Prepare, Prepared, Run,
+    Access, Actions, Authorized, Command, Committed, Describe, Persist, Prepare, Prepared, Run,
 };
 use std::sync::Arc;
 use tracing::{instrument, warn};
@@ -30,59 +27,34 @@ pub trait TriggerFiring: Send + Sync {
     ) -> DomainResult<Job>;
 }
 
-/// Every fire runs as the org's trigger-runner App through `run_with_inputs`: one `RunPipeline` check, normal dispatch.
+/// The fire of the cron scheduler, the webhook ingress and `FireTriggerNow`. It runs as the
+/// server and sends two commands: `RunPipelineWithInputs` as the organization's trigger-runner
+/// App, then `RecordTriggerFire` as the trigger firer service, best-effort.
 #[derive(Constructor)]
-pub struct TriggerFireUseCases {
-    trigger_repo: Arc<dyn TriggerRepository>,
-    pipeline_repo: Arc<dyn PipelineRepository>,
-    project_repo: Arc<dyn ProjectRepository>,
-    app_repo: Arc<dyn AppRepository>,
-    pipeline_uc: Arc<PipelineUseCases>,
-    dispatch_uc: Arc<DispatchUseCases>,
+pub struct TriggerFirer {
+    actions: Arc<Actions>,
+    triggers: Arc<TriggerUseCases>,
+    pipelines: Arc<PipelineUseCases>,
 }
 
-impl TriggerFireUseCases {
-    #[instrument(skip_all, fields(trigger_id = %trigger_id))]
-    pub async fn fire(
-        &self,
-        trigger_id: &TriggerId,
-        payload: Option<&serde_json::Value>,
-        delivery_id: Option<&str>,
-    ) -> DomainResult<Job> {
-        let trigger = self.trigger_repo.find_by_id(trigger_id).await?;
-        self.fire_loaded(trigger, payload, delivery_id).await
-    }
-
-    async fn fire_loaded(
-        &self,
-        mut trigger: Trigger,
-        payload: Option<&serde_json::Value>,
-        delivery_id: Option<&str>,
-    ) -> DomainResult<Job> {
-        if !trigger.is_enabled() {
-            return Err(DomainError::business_rule("trigger is disabled"));
-        }
-
-        let outcome = self.run_and_dispatch(&trigger, payload, delivery_id).await;
-
-        // Best-effort: a status-write failure must not mask the run outcome.
-        trigger.mark_fired(clock::now(), if outcome.is_ok() { "ok" } else { "error" });
-        if let Err(e) = self.trigger_repo.update(&trigger).await {
-            warn!(trigger_id = %trigger.id(), error = %e, "failed to record trigger fire status");
-        }
-        outcome
-    }
-
-    async fn run_and_dispatch(
+impl TriggerFirer {
+    async fn run(
         &self,
         trigger: &Trigger,
         payload: Option<&serde_json::Value>,
         delivery_id: Option<&str>,
     ) -> DomainResult<Job> {
-        let pipeline = self.pipeline_repo.find_by_id(trigger.pipeline_id()).await?;
-        let project = self.project_repo.find_by_id(pipeline.project_id()).await?;
+        let pipeline = self
+            .triggers
+            .pipeline_repo
+            .find_by_id(trigger.pipeline_id())
+            .await?;
+        let project = self
+            .triggers
+            .project_repo
+            .find_by_id(pipeline.project_id())
+            .await?;
         let runner = self.runner_app(project.organization_id()).await?;
-        let caller = CallerContext::App(runner);
 
         // The origin is the trigger, not the runner App it executes as.
         let origin = match trigger.source() {
@@ -94,25 +66,19 @@ impl TriggerFireUseCases {
                 delivery_id: delivery_id.map(str::to_owned),
             },
         };
-
-        let inputs = resolve_inputs(trigger, payload);
-        let (job, dispatch) = self
-            .pipeline_uc
-            .run_with_inputs(&caller, trigger.pipeline_id(), &inputs, origin)
-            .await?;
-
-        if let DispatchOutcome::Dispatched(app_id) = self
-            .dispatch_uc
-            .dispatch_job(trigger.pipeline_id(), &dispatch)
-            .await?
-        {
-            self.pipeline_uc.assign_agent(job.id(), &app_id).await?;
-        }
-        Ok(job)
+        let run = RunPipelineWithInputs {
+            id: trigger.pipeline_id().clone(),
+            inputs: resolve_inputs(trigger, payload),
+            origin,
+        };
+        self.actions
+            .run(&*self.pipelines, &CallerContext::App(runner), run)
+            .await
     }
 
     async fn runner_app(&self, organization_id: &OrganizationId) -> DomainResult<AppId> {
-        self.app_repo
+        self.triggers
+            .app_repo
             .list_by_organization(organization_id)
             .await?
             .into_iter()
@@ -124,8 +90,44 @@ impl TriggerFireUseCases {
     }
 }
 
-/// The fire runs as the trigger-runner App, as a scheduled one does; the caller's
-/// `runPipeline` on the trigger is the authorize stage.
+#[async_trait]
+impl TriggerFiring for TriggerFirer {
+    #[instrument(skip_all, fields(trigger_id = %trigger_id))]
+    async fn fire(
+        &self,
+        trigger_id: &TriggerId,
+        payload: Option<&serde_json::Value>,
+        delivery_id: Option<&str>,
+    ) -> DomainResult<Job> {
+        let trigger = self.triggers.trigger_repo.find_by_id(trigger_id).await?;
+        if !trigger.is_enabled() {
+            return Err(DomainError::business_rule("trigger is disabled"));
+        }
+
+        let outcome = self.run(&trigger, payload, delivery_id).await;
+
+        // Best-effort: a status-write failure must not mask the run outcome.
+        let caller = CallerContext::Service(ServiceIdentity::trigger_firer());
+        let record = RecordTriggerFire {
+            trigger,
+            status: if outcome.is_ok() { "ok" } else { "error" },
+        };
+        if let Err(e) = self.actions.run(&*self.triggers, &caller, record).await {
+            warn!(trigger_id = %trigger_id, error = %e, "failed to record trigger fire status");
+        }
+        outcome
+    }
+}
+
+/// The stage runner of `FireTriggerNow`: the fire goes through `firing`, as a scheduled one does.
+#[derive(Constructor)]
+pub struct TriggerFireUseCases {
+    trigger_repo: Arc<dyn TriggerRepository>,
+    firing: Arc<dyn TriggerFiring>,
+}
+
+/// The caller's `runPipeline` on the trigger is the authorize stage; the fire then runs as the
+/// trigger-runner App.
 #[derive(Debug)]
 pub struct FireTriggerNow {
     pub id: TriggerId,
@@ -160,21 +162,8 @@ impl Run<Persist<FireTriggerNow>> for TriggerFireUseCases {
         input: Prepared<FireTriggerNow>,
     ) -> DomainResult<Committed<FireTriggerNow>> {
         input
-            .commit(async |trigger| self.fire_loaded(trigger, None, None).await)
+            .commit(async |trigger| self.firing.fire(trigger.id(), None, None).await)
             .await
-    }
-}
-
-#[async_trait]
-impl TriggerFiring for TriggerFireUseCases {
-    async fn fire(
-        &self,
-        trigger_id: &TriggerId,
-        payload: Option<&serde_json::Value>,
-        delivery_id: Option<&str>,
-    ) -> DomainResult<Job> {
-        // The inherent method, not the trait one: no recursion.
-        TriggerFireUseCases::fire(self, trigger_id, payload, delivery_id).await
     }
 }
 

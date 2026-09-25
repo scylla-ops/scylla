@@ -2,9 +2,10 @@
 //! its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::JobUseCases;
+use crate::application::actions::service_only;
 use crate::application::job::JobEvent;
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::JobId;
+use crate::domain::ids::{AppId, JobId};
 use crate::domain::job::{Job, NodeOutcome};
 use crate::domain::permission::Permission;
 use crate::domain::pipeline::NodeId;
@@ -106,6 +107,52 @@ impl Run<Persist<DeleteJob>> for JobUseCases {
             .commit(async |job| {
                 self.job_repo.delete(job.id()).await?;
                 Ok(Deleted::new(job))
+            })
+            .await
+    }
+}
+
+/// One reconciliation pass: every running job whose agent is not in `connected` becomes
+/// orphaned. `Committed` is the count.
+#[derive(Debug)]
+pub struct ReapOrphanedJobs {
+    pub connected: Vec<AppId>,
+}
+
+impl Describe for ReapOrphanedJobs {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Command for ReapOrphanedJobs {
+    type Staged = Vec<AppId>;
+    type Committed = u64;
+}
+
+#[async_trait]
+impl Run<Prepare<ReapOrphanedJobs>> for JobUseCases {
+    async fn run(
+        &self,
+        input: Authorized<ReapOrphanedJobs>,
+    ) -> DomainResult<Prepared<ReapOrphanedJobs>> {
+        service_only(input.caller())?;
+        let connected = input.command().connected.clone();
+        Ok(input.prepared(connected))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<ReapOrphanedJobs>> for JobUseCases {
+    async fn run(
+        &self,
+        input: Prepared<ReapOrphanedJobs>,
+    ) -> DomainResult<Committed<ReapOrphanedJobs>> {
+        input
+            .commit(async |connected| {
+                self.job_repo
+                    .orphan_running_without_agents(&connected)
+                    .await
             })
             .await
     }

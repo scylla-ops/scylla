@@ -52,7 +52,7 @@ pub use secret::{
 pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
 pub use trigger::{
     CronSchedule, DEFAULT_SIGNATURE_HEADER, IngestOutcome, IngestWebhook, TriggerCronScheduler,
-    TriggerDeliveryRepository, TriggerFireUseCases, TriggerFiring, TriggerRepository,
+    TriggerDeliveryRepository, TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerRepository,
     TriggerUseCases, WebhookIngressUseCases, next_fire_time,
 };
 pub use user::{UserRepository, UserUseCases};

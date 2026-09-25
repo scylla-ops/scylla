@@ -7,9 +7,12 @@ pub mod schedule;
 pub mod scheduler;
 pub mod webhook;
 
-pub use commands::{CreateTrigger, DeleteTrigger, NewTrigger, SetTriggerEnabled, UpdateTrigger};
+pub use commands::{
+    ClaimDueTriggers, CreateTrigger, DeleteTrigger, NewTrigger, RecordTriggerFire,
+    ScheduleCronTriggers, SetTriggerEnabled, UpdateTrigger,
+};
 pub use delivery::TriggerDeliveryRepository;
-pub use fire::{FireTriggerNow, TriggerFireUseCases, TriggerFiring};
+pub use fire::{FireTriggerNow, TriggerFireUseCases, TriggerFirer, TriggerFiring};
 pub use queries::{GetTrigger, ListPipelineTriggers};
 pub use repository::TriggerRepository;
 pub use schedule::{CronSchedule, next_fire_time};
@@ -39,7 +42,8 @@ pub(crate) const TRIGGER_RUNNER_APP_NAME: &str = "trigger-runner";
 const RUNNER_SECRET_LABEL: &str = "default";
 
 /// The trigger aggregate's stage runners, one block per action in `commands.rs` and
-/// `queries.rs`. It has no public method; `Actions::run` drives it.
+/// `queries.rs`. It has no public method; `Actions::run` drives it, also for the writes of the
+/// cron scheduler and of the trigger firer.
 #[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct TriggerUseCases {

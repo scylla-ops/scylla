@@ -3,6 +3,7 @@
 use super::*;
 use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential, AppName};
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
@@ -76,6 +77,8 @@ impl AppRepository for StubApps {
 struct StubAgents {
     rows: Mutex<Vec<Agent>>,
     organizations: Mutex<HashMap<AppId, OrganizationId>>,
+    touched: Mutex<Vec<AppId>>,
+    hosts: Mutex<Vec<(AppId, AgentHost)>>,
 }
 
 #[async_trait]
@@ -100,11 +103,16 @@ impl AgentRepository for StubAgents {
             .cloned()
             .collect())
     }
-    async fn touch_last_seen(&self, _: &AppId, _: DateTime<Utc>) -> DomainResult<()> {
-        unreachable!("only the agent stream touches last_seen")
+    async fn touch_last_seen(&self, app_id: &AppId, _: DateTime<Utc>) -> DomainResult<()> {
+        self.touched.lock().unwrap().push(app_id.clone());
+        Ok(())
     }
-    async fn record_host(&self, _: &AppId, _: &AgentHost) -> DomainResult<()> {
-        unreachable!("only the agent stream records its host")
+    async fn record_host(&self, app_id: &AppId, host: &AgentHost) -> DomainResult<()> {
+        self.hosts
+            .lock()
+            .unwrap()
+            .push((app_id.clone(), host.clone()));
+        Ok(())
     }
     async fn agent_stats(&self, _: &AppId) -> DomainResult<AgentStats> {
         Ok(AgentStats {
@@ -313,4 +321,56 @@ async fn a_denied_delete_keeps_the_stream_and_the_row() {
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert!(lab.registry.disconnected().is_empty());
     assert_eq!(lab.policy.reloads(), 0);
+}
+
+fn host() -> AgentHost {
+    AgentHost {
+        version: "1.0.0".to_string(),
+        os: "linux".to_string(),
+        arch: "x86_64".to_string(),
+        hostname: "runner-1".to_string(),
+        cpu_count: Some(4),
+        total_memory_mb: None,
+        reported_at: Utc::now(),
+    }
+}
+
+#[tokio::test]
+async fn an_agent_touches_and_reports_its_own_row_with_no_permission_asked() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(permissions.clone());
+    let agent = CallerContext::App(AppId::new("agent-1"));
+
+    lab.actions.run(&lab.uc, &agent, TouchAgent).await.unwrap();
+    let reported = lab
+        .actions
+        .run(&lab.uc, &agent, RecordAgentHost { host: host() })
+        .await
+        .unwrap();
+
+    assert!(permissions.permissions().is_empty());
+    assert_eq!(
+        lab.agents.touched.lock().unwrap().as_slice(),
+        [AppId::new("agent-1")]
+    );
+    assert_eq!(
+        lab.agents.hosts.lock().unwrap().as_slice(),
+        [(AppId::new("agent-1"), reported)]
+    );
+}
+
+#[tokio::test]
+async fn only_an_agent_reports_its_own_state() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    let touch = lab.actions.run(&lab.uc, &alice(), TouchAgent).await;
+    let report = lab
+        .actions
+        .run(&lab.uc, &alice(), RecordAgentHost { host: host() })
+        .await;
+
+    assert!(matches!(touch, Err(DomainError::Forbidden(_))));
+    assert!(matches!(report, Err(DomainError::Forbidden(_))));
+    assert!(lab.agents.touched.lock().unwrap().is_empty());
+    assert!(lab.agents.hosts.lock().unwrap().is_empty());
 }
