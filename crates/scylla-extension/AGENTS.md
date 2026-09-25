@@ -476,9 +476,13 @@ the row is still in the state the gate saw.
   commands. `scylla-auth` keeps `Role`, `RoleRepository` and
   `validate_role_permissions`. `RoleUseCases::my_permissions` stays outside the
   pipeline: a caller reads its own grants and no permission is asked.
-- `SecretUseCases::delete` stays outside the pipeline. Its permission is
-  `DeleteSecret` on the secret's project, and only the loaded secret knows that
-  project; `Describe` sees the command alone.
+- `DeleteSecret` asks for its permission on the secret, not on the project.
+  The access model finds the project of the secret in `Authorize`
+  (`ResourceRef::Secret`, one join in `PgAuthzEntityProvider`). An unknown
+  secret is under System only: without a System grant the caller gets
+  `Forbidden`; with a System grant, `Prepare` gives `NotFound`. An action whose
+  permission is on a parent that only the loaded row knows can use the same
+  method.
 - `TriggerUseCases::get`, `update`, `set_enabled` and `delete`, and
   `TriggerFireUseCases::fire_now`, stay outside the pipeline. Their permission
   is on the trigger's pipeline, and only the loaded trigger knows that pipeline.

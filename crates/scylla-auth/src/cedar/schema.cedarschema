@@ -1,10 +1,10 @@
 // scylla — Cedar schema (V1). Validated against policies at startup.
 //
-// Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization and
-// Job ∈ Pipeline. Principals carry no attributes: what someone may do comes
-// entirely from the grants linked into the policy set. Actions are fine-grained
-// (one per use-case operation) so `appliesTo` pins the resource type and
-// policies stay readable.
+// Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization,
+// Job ∈ Pipeline and Secret ∈ Project. Principals carry no attributes: what
+// someone may do comes entirely from the grants linked into the policy set.
+// Actions are fine-grained (one per use-case operation) so `appliesTo` pins the
+// resource type and policies stay readable.
 
 namespace Scylla {
     entity Service;
@@ -22,6 +22,8 @@ namespace Scylla {
     entity Project in [Organization];
     entity Pipeline in [Project];
     entity Job in [Pipeline];
+    // An unknown secret sits under System, so only a System grant reaches it.
+    entity Secret in [Project, System];
 
     // Users are also `in [System]` so a System-scoped grant (system-admin)
     // reaches User-targeted actions (read/update/delete user) — without it,
@@ -70,7 +72,7 @@ namespace Scylla {
     action "readProject", "updateProject", "deleteProject",
            "listProjectMembers", "createPipeline",
            "listPipelinesByProject", "listJobsByProject",
-           "createSecret", "listSecrets", "deleteSecret"
+           "createSecret", "listSecrets"
         appliesTo { principal: [User, Service], resource: [Project] };
 
     // ── Pipeline-targeted ──────────────────────────────────────────────
@@ -90,6 +92,10 @@ namespace Scylla {
     // agent gets ONLY these, never full job mutation or the recorder path.
     action "writeJobStatus", "appendJobLog"
         appliesTo { principal: [User, Service, App], resource: [Job] };
+
+    // ── Secret-targeted ────────────────────────────────────────────────
+    action "deleteSecret"
+        appliesTo { principal: [User, Service], resource: [Secret] };
 
     // ── App-targeted (manage a specific app within its org) ─────────────
     // An agent is a specialized app, so reading/deleting an agent and reading

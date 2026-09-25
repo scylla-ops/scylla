@@ -80,6 +80,25 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                     None => Ok(ResourceAncestors::default()),
                 }
             }
+            ResourceRef::Secret(id) => {
+                let row = sqlx::query!(
+                    "SELECT s.project_id AS \"project_id!\", pr.organization_id AS \"organization_id!\" \
+                     FROM project_secrets s JOIN projects pr ON pr.id = s.project_id \
+                     WHERE s.id = $1",
+                    id.as_str(),
+                )
+                .fetch_optional(&self.pool)
+                .await
+                .to_domain()?;
+                match row {
+                    Some(r) => Ok(ResourceAncestors {
+                        organization: Some(OrganizationId::new(r.organization_id)),
+                        project: Some(ProjectId::new(r.project_id)),
+                        pipeline: None,
+                    }),
+                    None => Ok(ResourceAncestors::default()),
+                }
+            }
             ResourceRef::App(id) => {
                 let row = sqlx::query!(
                     "SELECT organization_id FROM apps WHERE id = $1",
@@ -107,3 +126,6 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
         Ok(row.is_some_and(|r| r.is_active))
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -1,10 +1,7 @@
 use crate::application::SecretUseCases;
-use crate::extract_auth_context;
 use crate::grpc::adapter::run;
-use crate::grpc::convert::id;
-use crate::grpc::mappers::{domain_error_to_status, secret_to_proto};
+use crate::grpc::mappers::secret_to_proto;
 use derive_more::Constructor;
-use scylla_domain::domain::ids::SecretId;
 use scylla_extension::Actions;
 use scylla_proto::secret::v1::{
     CreateSecretRequest, CreateSecretResponse, DeleteSecretRequest, DeleteSecretResponse,
@@ -45,12 +42,7 @@ impl SecretService for SecretHandler {
         &self,
         request: Request<DeleteSecretRequest>,
     ) -> Result<Response<DeleteSecretResponse>, Status> {
-        let caller = caller!(request);
-        let id: SecretId = id(request.into_inner().secret_id, "secret_id")?;
-        self.secrets
-            .delete(&caller, &id)
-            .await
-            .map_err(domain_error_to_status)?;
+        run(&self.actions, &*self.secrets, request).await?;
         Ok(Response::new(DeleteSecretResponse {}))
     }
 }

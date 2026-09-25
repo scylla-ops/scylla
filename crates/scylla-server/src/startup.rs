@@ -150,7 +150,6 @@ pub(crate) async fn init_services(
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),
         secret_cipher.clone(),
-        permission_checker.clone(),
     ));
     let pipeline_uc = Arc::new(PipelineUseCases::new(
         pipeline_repo.clone(),

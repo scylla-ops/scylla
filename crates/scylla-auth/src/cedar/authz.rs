@@ -22,6 +22,7 @@ pub(crate) fn resource_uid(resource: &ResourceRef) -> DomainResult<EntityUid> {
         ResourceRef::Project(id) => euid("Scylla::Project", id.as_str()),
         ResourceRef::Pipeline(id) => euid("Scylla::Pipeline", id.as_str()),
         ResourceRef::Job(id) => euid("Scylla::Job", id.as_str()),
+        ResourceRef::Secret(id) => euid("Scylla::Secret", id.as_str()),
         ResourceRef::App(id) => euid("Scylla::App", id.as_str()),
     }
 }
@@ -43,6 +44,7 @@ pub(crate) fn resource_parts(resource: &ResourceRef) -> (&'static str, Option<St
         ResourceRef::Project(id) => ("project", Some(id.as_str().to_string())),
         ResourceRef::Pipeline(id) => ("pipeline", Some(id.as_str().to_string())),
         ResourceRef::Job(id) => ("job", Some(id.as_str().to_string())),
+        ResourceRef::Secret(id) => ("secret", Some(id.as_str().to_string())),
         ResourceRef::App(id) => ("app", Some(id.as_str().to_string())),
     }
 }

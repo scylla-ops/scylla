@@ -3,12 +3,12 @@
 
 use super::SecretUseCases;
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::ProjectId;
+use crate::domain::ids::{ProjectId, SecretId};
 use crate::domain::permission::Permission;
 use crate::domain::secret::{Secret, SecretName};
 use async_trait::async_trait;
 use scylla_extension::{
-    Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
+    Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 
 /// No `Debug`: `value` is the plaintext. `Prepare` encrypts it, so only the ciphertext is staged.
@@ -53,6 +53,42 @@ impl Run<Persist<CreateSecret>> for SecretUseCases {
                 let secret = draft.into_inner();
                 self.secret_repo.create(&secret).await?;
                 Ok(secret)
+            })
+            .await
+    }
+}
+
+#[derive(Debug)]
+pub struct DeleteSecret {
+    pub id: SecretId,
+}
+
+impl Describe for DeleteSecret {
+    fn permission(&self) -> Permission {
+        Permission::DeleteSecret(self.id.clone())
+    }
+}
+
+impl Command for DeleteSecret {
+    type Staged = Secret;
+    type Committed = Deleted<Secret>;
+}
+
+#[async_trait]
+impl Run<Prepare<DeleteSecret>> for SecretUseCases {
+    async fn run(&self, input: Authorized<DeleteSecret>) -> DomainResult<Prepared<DeleteSecret>> {
+        let secret = self.secret_repo.find_by_id(&input.command().id).await?;
+        Ok(input.prepared(secret))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<DeleteSecret>> for SecretUseCases {
+    async fn run(&self, input: Prepared<DeleteSecret>) -> DomainResult<Committed<DeleteSecret>> {
+        input
+            .commit(async |secret| {
+                self.secret_repo.delete(secret.id()).await?;
+                Ok(Deleted::new(secret))
             })
             .await
     }

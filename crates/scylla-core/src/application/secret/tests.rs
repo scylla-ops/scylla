@@ -1,13 +1,15 @@
 //! The secret's actions through the engine, on stub ports.
 
 use super::*;
-use crate::domain::errors::DomainError;
-use crate::domain::ids::ProjectId;
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::{ProjectId, SecretId};
+use crate::domain::permission::Permission;
 use crate::domain::secret::{Secret, SecretName};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::stubs::alice;
 use async_trait::async_trait;
-use scylla_extension::Actions;
+use scylla_auth::authz::PermissionService;
+use scylla_extension::{Actions, Deleted};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -75,14 +77,20 @@ impl Lab {
     async fn create(&self) -> DomainResult<Secret> {
         self.actions.run(&self.uc, &alice(), create()).await
     }
+
+    async fn delete(&self, id: &SecretId) -> DomainResult<Deleted<Secret>> {
+        self.actions
+            .run(&self.uc, &alice(), DeleteSecret { id: id.clone() })
+            .await
+    }
 }
 
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let secrets = Arc::new(StubSecrets::default());
     let cipher = Arc::new(StubCipher::default());
     Lab {
-        actions: actions(permissions.clone()),
-        uc: SecretUseCases::new(secrets.clone(), cipher.clone(), permissions),
+        actions: actions(permissions),
+        uc: SecretUseCases::new(secrets.clone(), cipher.clone()),
         secrets,
         cipher,
     }
@@ -154,16 +162,43 @@ async fn a_list_checks_its_permission_and_reads_the_project_secrets() {
 }
 
 #[tokio::test]
-async fn a_delete_checks_the_permission_on_the_loaded_secret_project() {
+async fn a_delete_checks_the_permission_on_the_secret_then_removes_it() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let created = lab.create().await.unwrap();
 
-    lab.uc.delete(&alice(), created.id()).await.unwrap();
+    let deleted = lab.delete(created.id()).await.unwrap();
 
+    assert_eq!(deleted.last_state().id(), created.id());
     assert_eq!(
         permissions.permissions()[1],
-        Permission::DeleteSecret(project())
+        Permission::DeleteSecret(created.id().clone())
     );
     assert!(lab.secrets.rows.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn a_denied_delete_never_reads_or_removes() {
+    let lab = lab(Arc::new(DenyingPermissionService::new()));
+    let secret = Secret::create(
+        project(),
+        SecretName::new("DB_PASSWORD").unwrap(),
+        String::new(),
+        vec![0xAA],
+    );
+    lab.secrets.create(&secret).await.unwrap();
+
+    let err = lab.delete(secret.id()).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert!(lab.secrets.rows.lock().unwrap().contains_key(secret.id()));
+}
+
+#[tokio::test]
+async fn an_allowed_delete_of_an_unknown_secret_is_not_found() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    let err = lab.delete(&SecretId::new("missing")).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::NotFound { .. }));
 }

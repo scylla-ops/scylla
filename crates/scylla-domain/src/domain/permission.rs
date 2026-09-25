@@ -2,7 +2,7 @@ mod resource_ref;
 
 pub use resource_ref::*;
 
-use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId, SecretId, UserId};
 use std::sync::LazyLock;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,7 +46,7 @@ pub enum Permission {
 
     CreateSecret(ProjectId),
     ListSecrets(ProjectId),
-    DeleteSecret(ProjectId),
+    DeleteSecret(SecretId),
 
     CreateJob,
     ReadJob(JobId),
@@ -194,7 +194,6 @@ impl Permission {
             | Self::ListJobsByProject(id)
             | Self::CreateSecret(id)
             | Self::ListSecrets(id)
-            | Self::DeleteSecret(id)
             | Self::ManageProjectGrants(id) => ResourceRef::Project(id.clone()),
 
             Self::ReadPipeline(id)
@@ -212,6 +211,8 @@ impl Permission {
             | Self::WriteJobLogs(id)
             | Self::WriteJobStatus(id)
             | Self::AppendJobLog(id) => ResourceRef::Job(id.clone()),
+
+            Self::DeleteSecret(id) => ResourceRef::Secret(id.clone()),
 
             Self::ReadApp(id) | Self::ReadAppStats(id) | Self::DeleteApp(id) => {
                 ResourceRef::App(id.clone())
@@ -232,6 +233,7 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "project",
     "pipeline",
     "job",
+    "secret",
     "app",
 ];
 
@@ -241,6 +243,7 @@ fn catalog_variants() -> Vec<Permission> {
     let project = ProjectId::new("_");
     let pipeline = PipelineId::new("_");
     let job = JobId::new("_");
+    let secret = SecretId::new("_");
     let app = AppId::new("_");
     vec![
         Permission::CreateUser,
@@ -276,7 +279,7 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::ListPipelinesByOrganization(org.clone()),
         Permission::CreateSecret(project.clone()),
         Permission::ListSecrets(project.clone()),
-        Permission::DeleteSecret(project.clone()),
+        Permission::DeleteSecret(secret),
         Permission::CreateJob,
         Permission::ReadJob(job.clone()),
         Permission::UpdateJob(job.clone()),

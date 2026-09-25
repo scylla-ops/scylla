@@ -1,9 +1,11 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
-use crate::application::secret::{CreateSecret, ListSecrets};
+use crate::application::secret::{CreateSecret, DeleteSecret, ListSecrets};
 use crate::grpc::convert::{Parse, id, ts, valid, wrap};
 use scylla_domain::domain::secret::{Secret as DomainSecret, SecretName};
-use scylla_proto::secret::v1::{CreateSecretRequest, ListSecretsRequest, Secret};
+use scylla_proto::secret::v1::{
+    CreateSecretRequest, DeleteSecretRequest, ListSecretsRequest, Secret,
+};
 use tonic::Status;
 
 pub fn secret_to_proto(secret: &DomainSecret) -> Secret {
@@ -31,6 +33,8 @@ impl Parse for CreateSecretRequest {
 }
 
 parse!(ListSecretsRequest => ListSecrets { project_id: id(project_id) });
+
+parse!(DeleteSecretRequest => DeleteSecret { id: id(secret_id) });
 
 #[cfg(test)]
 mod tests {

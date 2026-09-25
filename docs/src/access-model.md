@@ -34,6 +34,17 @@ disagree with itself about who is where.
 | Organization | The organization and all its projects | Customer administrators   |
 | Project      | That project only                     | Delivery teams            |
 
+## Items inside a project
+
+Pipelines, jobs and secrets are not scopes. You cannot grant a role on them. A
+check on one of these items finds the project that holds the item, and then
+applies the rule above to that project.
+
+A check on an unknown secret finds no project. Only a System grant reaches it.
+Thus a caller without a System grant gets "forbidden" for an unknown secret,
+and does not learn if the secret exists. A caller with a System grant gets
+"not found".
+
 ## Being somewhere
 
 Being in an organization, or on a project, means **holding a role on it**. It is
