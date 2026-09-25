@@ -1,15 +1,17 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
-use crate::application::invitation::{CreateInvitation, ListInvitations, RevokeInvitation};
+use crate::application::invitation::{
+    AcceptInvitation, CreateInvitation, ListInvitations, RevokeInvitation,
+};
 use crate::grpc::convert::{Parse, id, optional, required, ts, valid, wrap};
 use scylla_domain::domain::invitation::{
     Invitation as DomainInvitation, InvitationStatus as DomainInvitationStatus,
 };
 use scylla_domain::domain::role::RoleName;
-use scylla_domain::domain::user::Email;
+use scylla_domain::domain::user::{Email, Password, Username};
 use scylla_proto::invitation::v1::{
-    CreateInvitationRequest, Invitation, InvitationStatus, ListInvitationsRequest,
-    RevokeInvitationRequest,
+    AcceptInvitationRequest, CreateInvitationRequest, Invitation, InvitationStatus,
+    ListInvitationsRequest, RevokeInvitationRequest,
 };
 use tonic::Status;
 
@@ -49,6 +51,18 @@ impl Parse for CreateInvitationRequest {
 parse!(ListInvitationsRequest => ListInvitations { organization_id: id(organization_id) });
 
 parse!(RevokeInvitationRequest => RevokeInvitation { id: id(invitation_id) });
+
+impl Parse for AcceptInvitationRequest {
+    type Into = AcceptInvitation;
+
+    fn parse(self) -> Result<AcceptInvitation, Status> {
+        Ok(AcceptInvitation {
+            token: self.token,
+            username: valid(self.username, Username::new)?,
+            password: valid(self.password, Password::new)?,
+        })
+    }
+}
 
 #[cfg(test)]
 mod tests {

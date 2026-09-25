@@ -10,7 +10,7 @@ use scylla_auth::audit::NoopAuditLog;
 use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
 use scylla_auth::cedar::CedarPermissionService;
 use scylla_core::application::invitation::{
-    CreateInvitation, InvitationAcceptUseCases, InvitationUseCases,
+    AcceptInvitation, CreateInvitation, InvitationAcceptUseCases, InvitationUseCases,
 };
 use scylla_core::application::{Mailer, NoopMailer};
 use scylla_core::infrastructure::Argon2HashService;
@@ -85,11 +85,15 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
         .expect("create invite");
 
     let outcome = lab
-        .accept
-        .accept(
-            invite.token(),
-            Username::new("newbie").unwrap(),
-            Password::new("SecurePass123!").unwrap(),
+        .actions
+        .run(
+            &lab.accept,
+            &CallerContext::Anonymous,
+            AcceptInvitation {
+                token: invite.token().to_string(),
+                username: Username::new("newbie").unwrap(),
+                password: Password::new("SecurePass123!").unwrap(),
+            },
         )
         .await
         .expect("accept invite");
@@ -109,11 +113,15 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
 async fn accept_with_unknown_token_fails(pool: sqlx::PgPool) {
     let lab = lab(&pool).await;
     let res = lab
-        .accept
-        .accept(
-            "no-such-token",
-            Username::new("ghost").unwrap(),
-            Password::new("SecurePass123!").unwrap(),
+        .actions
+        .run(
+            &lab.accept,
+            &CallerContext::Anonymous,
+            AcceptInvitation {
+                token: "no-such-token".to_string(),
+                username: Username::new("ghost").unwrap(),
+                password: Password::new("SecurePass123!").unwrap(),
+            },
         )
         .await;
     assert!(res.is_err());

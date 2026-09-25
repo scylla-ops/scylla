@@ -3,15 +3,19 @@ mod macros;
 
 pub mod agent_mapper;
 pub mod app_mapper;
+pub mod auth_mapper;
 pub mod error_mapper;
 pub mod grant_mapper;
 pub mod invitation_mapper;
 pub mod job_log_mapper;
 pub mod job_mapper;
+pub mod oauth_mapper;
 pub mod organization_mapper;
 pub mod pagination_mapper;
 pub mod pipeline_mapper;
 pub mod project_mapper;
+#[cfg(feature = "register")]
+pub mod registration_mapper;
 pub mod role_mapper;
 pub mod secret_mapper;
 pub mod trigger_mapper;

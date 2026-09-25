@@ -3,8 +3,7 @@ pub mod credential_repository;
 pub mod queries;
 pub mod repository;
 pub mod secret_mint;
-pub mod token_repository;
-pub mod token_use_case;
+pub mod token;
 
 pub use commands::{
     CreateApp, CreateAppSecret, CreatedApp, CreatedAppSecret, DeleteApp, NewApp, NewAppSecret,
@@ -14,8 +13,7 @@ pub use credential_repository::AppCredentialRepository;
 pub use queries::{GetApp, ListAppSecrets, ListApps};
 pub use repository::AppRepository;
 pub use secret_mint::mint_app_secret;
-pub use token_repository::AppTokenRepository;
-pub use token_use_case::{AppTokenOutcome, AppTokenUseCases};
+pub use token::{AppTokenRepository, AppTokenUseCases, IssueAppToken};
 
 use crate::application::HashService;
 use crate::application::agent::dispatch_port::AgentDispatch;

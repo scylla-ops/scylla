@@ -1,8 +1,8 @@
 use crate::application::InvitationAcceptUseCases;
+use crate::grpc::adapter::run_public;
 use crate::grpc::convert::wrap;
-use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_domain::domain::user::{Password, Username};
+use scylla_extension::Actions;
 use scylla_proto::invitation::v1::{
     AcceptInvitationRequest, AcceptInvitationResponse,
     invitation_accept_service_server::InvitationAcceptService,
@@ -12,7 +12,8 @@ use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
 pub struct InvitationAcceptHandler {
-    use_cases: Arc<InvitationAcceptUseCases>,
+    actions: Arc<Actions>,
+    accepts: Arc<InvitationAcceptUseCases>,
 }
 
 #[async_trait::async_trait]
@@ -21,15 +22,7 @@ impl InvitationAcceptService for InvitationAcceptHandler {
         &self,
         request: Request<AcceptInvitationRequest>,
     ) -> Result<Response<AcceptInvitationResponse>, Status> {
-        let req = request.into_inner();
-        let username = Username::new(&req.username).map_err(domain_error_to_status)?;
-        let password = Password::new(&req.password).map_err(domain_error_to_status)?;
-
-        let outcome = self
-            .use_cases
-            .accept(&req.token, username, password)
-            .await
-            .map_err(domain_error_to_status)?;
+        let outcome = run_public(&self.actions, &*self.accepts, request).await?;
         Ok(Response::new(AcceptInvitationResponse {
             token: outcome.token,
             user_id: wrap(outcome.user_id.to_string()),

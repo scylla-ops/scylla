@@ -15,7 +15,8 @@ pub use repository::TriggerRepository;
 pub use schedule::{CronSchedule, next_fire_time};
 pub use scheduler::TriggerCronScheduler;
 pub use webhook::{
-    DEFAULT_SIGNATURE_HEADER, IngestOutcome, WebhookError, WebhookIngressUseCases, verify_signature,
+    DEFAULT_SIGNATURE_HEADER, IngestOutcome, IngestWebhook, WebhookIngressUseCases,
+    verify_signature,
 };
 
 use crate::application::{

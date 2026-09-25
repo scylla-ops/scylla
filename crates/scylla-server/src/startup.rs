@@ -486,7 +486,7 @@ where
     use tower::ServiceBuilder;
     use tower_http::trace::TraceLayer;
 
-    let auth_handler = AuthHandler::new(services.auth_uc.clone());
+    let auth_handler = AuthHandler::new(services.actions.clone(), services.auth_uc.clone());
     let user_handler = UserHandler::new(services.actions.clone(), services.user_uc.clone());
     let org_handler = OrganizationHandler::new(services.actions.clone(), services.org_uc.clone());
     let project_handler =
@@ -512,7 +512,8 @@ where
     );
     let app_handler = AppHandler::new(services.actions.clone(), services.app_uc.clone());
     let secret_handler = SecretHandler::new(services.actions.clone(), services.secret_uc.clone());
-    let app_auth_handler = AppAuthHandler::new(services.app_token_uc.clone());
+    let app_auth_handler =
+        AppAuthHandler::new(services.actions.clone(), services.app_token_uc.clone());
     let agent_handler = AgentHandler::new(
         services.agent_registry.clone(),
         services.job_log_stream.clone(),
@@ -554,17 +555,21 @@ where
     let app_auth_service = AppAuthServiceServer::new(app_auth_handler);
 
     #[cfg(feature = "register")]
-    let registration_service =
-        RegistrationServiceServer::new(RegistrationHandler::new(services.signup_uc.clone()));
+    let registration_service = RegistrationServiceServer::new(RegistrationHandler::new(
+        services.actions.clone(),
+        services.signup_uc.clone(),
+    ));
 
-    let invitation_accept_service = InvitationAcceptServiceServer::new(
-        InvitationAcceptHandler::new(services.invitation_accept_uc.clone()),
-    );
+    let invitation_accept_service =
+        InvitationAcceptServiceServer::new(InvitationAcceptHandler::new(
+            services.actions.clone(),
+            services.invitation_accept_uc.clone(),
+        ));
 
     let oauth_service = services
         .oauth_uc
         .as_ref()
-        .map(|uc| OauthServiceServer::new(OAuthHandler::new(uc.clone())));
+        .map(|uc| OauthServiceServer::new(OAuthHandler::new(services.actions.clone(), uc.clone())));
 
     let user_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -661,7 +666,10 @@ where
         .http
         .into_iter()
         .fold(
-            scylla_core::rest::webhook::router(services.webhook_ingress_uc.clone()),
+            scylla_core::rest::webhook::router(
+                services.actions.clone(),
+                services.webhook_ingress_uc.clone(),
+            ),
             axum::Router::merge,
         )
         .layer(TraceLayer::new_for_http());

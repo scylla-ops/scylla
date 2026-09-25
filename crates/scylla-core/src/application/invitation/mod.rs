@@ -4,7 +4,7 @@ pub mod queries;
 pub mod repository;
 pub mod token;
 
-pub use accept::{AcceptOutcome, InvitationAcceptUseCases};
+pub use accept::{AcceptInvitation, AcceptOutcome, Acceptance, InvitationAcceptUseCases};
 pub use commands::{CreateInvitation, NewInvitation, RevokeInvitation};
 pub use queries::ListInvitations;
 pub use repository::InvitationRepository;

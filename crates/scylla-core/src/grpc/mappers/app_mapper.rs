@@ -1,14 +1,14 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
 use crate::application::app::{
-    CreateApp, CreateAppSecret, DeleteApp, GetApp, ListAppSecrets, ListApps, RevokeAppSecret,
-    SetAppActive, SetAppSecretEnabled,
+    CreateApp, CreateAppSecret, DeleteApp, GetApp, IssueAppToken, ListAppSecrets, ListApps,
+    RevokeAppSecret, SetAppActive, SetAppSecretEnabled,
 };
 use crate::grpc::convert::{Parse, id, ts, valid, wrap};
-use scylla_domain::domain::app::{App, AppCredential, AppName, AppSecretLabel};
+use scylla_domain::domain::app::{App, AppCredential, AppName, AppSecret, AppSecretLabel};
 use scylla_proto::app::v1::{
     App as ProtoApp, AppSecret as ProtoAppSecret, CreateAppRequest, CreateAppSecretRequest,
-    DeleteAppRequest, GetAppRequest, ListAppSecretsRequest, ListAppsRequest,
+    DeleteAppRequest, GetAppRequest, IssueTokenRequest, ListAppSecretsRequest, ListAppsRequest,
     RevokeAppSecretRequest, SetAppActiveRequest, SetAppSecretEnabledRequest,
 };
 use tonic::Status;
@@ -74,6 +74,19 @@ parse!(SetAppSecretEnabledRequest => SetAppSecretEnabled {
     enabled: copy,
 });
 
+impl Parse for IssueTokenRequest {
+    type Into = IssueAppToken;
+
+    /// A malformed secret is an auth failure, so the response never says why.
+    fn parse(self) -> Result<IssueAppToken, Status> {
+        Ok(IssueAppToken {
+            app_id: id(self.app_id, "app_id")?,
+            secret: AppSecret::new(self.secret)
+                .map_err(|_| Status::unauthenticated("Invalid app credentials"))?,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -129,6 +142,20 @@ mod tests {
         };
 
         assert_eq!(err.code(), Code::InvalidArgument);
+    }
+
+    #[test]
+    fn a_malformed_app_secret_is_unauthenticated_without_a_reason() {
+        let Err(err) = IssueTokenRequest {
+            app_id: wrap("app-1"),
+            secret: "short".into(),
+        }
+        .parse() else {
+            panic!("a malformed secret must not parse");
+        };
+
+        assert_eq!(err.code(), Code::Unauthenticated);
+        assert_eq!(err.message(), "Invalid app credentials");
     }
 
     #[test]

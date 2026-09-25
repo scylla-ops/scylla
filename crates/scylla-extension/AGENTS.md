@@ -202,6 +202,12 @@ async fn list_projects(&self, request: Request<ListProjectsRequest>)
 `grpc::adapter::run` (in `scylla-core`) takes the caller from the
 interceptor, turns the request into its command or query through
 `grpc::convert::Parse`, runs the engine and maps a `DomainError` to a `Status`.
+A service without the interceptor (sign-in, signup, OAuth, the app token
+exchange, the invitation accept) uses `grpc::adapter::run_public`: the same
+steps, with `Anonymous` as the caller, so only a `Public` action passes. An
+HTTP route uses `rest::adapter::run_public`: the route builds the command from
+the path, the headers and the body, and maps the `DomainError` to its own
+status.
 The request types implement `Parse` in the aggregate's mapper
 (`grpc/mappers/project_mapper.rs`), built from the small converters in
 `grpc::convert`: `id` for a required id wrapper, `valid` for a domain value
@@ -458,8 +464,28 @@ the row is still in the state the gate saw.
 ## Limits and follow-ups
 
 - The project, organization, user, secret, pipeline, trigger, app, agent, job,
-  job log, invitation, grant and role use cases are on the pipeline. The other aggregates
+  job log, invitation, grant and role use cases are on the pipeline. The
+  session (`Login`, `ValidateToken`, `RevokeToken`), `Signup`, the OAuth flow
+  (`GetAuthUrl`, `OAuthCallback`), `IssueAppToken`, `AcceptInvitation` and
+  `IngestWebhook` are on it too, as `Public` actions. The other aggregates
   keep their hand-written sequence until they migrate.
+- A `Public` action runs as `Anonymous`, so a `Policy` on `Authorize` sees
+  every sign-in, signup and webhook delivery. The check that the use case does
+  itself (the password, the app secret, the OAuth code, the invitation token,
+  the webhook signature) is in `Prepare`, before the write. A command that
+  holds a credential has no `Debug`.
+- Every sign-in path stages its session with `auth::new_session`, and a
+  signup and a first OAuth login build the account with
+  `signup::NewAccount`. The `commit` closure writes the account, then reloads
+  the policy, then stores the session, as before.
+- `ValidateToken` is a query. Its `Fetch` deletes an expired session,
+  best-effort, as before: a failed delete is ignored and the answer is
+  `false`.
+- `IngestWebhook` gives `NotFound` for an unknown, disabled or non-webhook
+  trigger and `Unauthorized` for a missing or wrong signature. Every other
+  failure becomes `Internal`, so the route answers 404, 401 or 500 as before.
+- The `AuthInterceptor` stays outside the pipeline. It is not an action: it
+  makes the caller that the actions get.
 - The agent stream sends `RecordJobStatus` and `AppendJobLog` through
   `Actions` for each report, as the agent's own token, so the `WriteJobStatus`
   and `AppendJobLog` checks are the authorize stage. The live fan-out
@@ -479,10 +505,10 @@ the row is still in the state the gate saw.
   `dispatch_job` asks for `ExecuteJob` only to choose an agent, never to refuse.
 - `DeleteApp` and `SetAppActive` stage the id alone: the row is not read
   before the write, so a missing app behaves as before.
-- `InvitationAcceptUseCases::accept` stays outside the pipeline. The invitee
-  has no account yet: the token is the credential, and no permission is asked.
-  The invite mail is sent in the `commit` closure of `CreateInvitation`, after
-  the write; a failed send is logged and does not fail the call, as before.
+- `AcceptInvitation` is `Public`. The invitee has no account yet: the token
+  is the credential, and no permission is asked. The invite mail is sent in
+  the `commit` closure of `CreateInvitation`, after the write; a failed send
+  is logged and does not fail the call, as before.
 - `ListGrantableRoles` and `GetMyPermissions` are `Authenticated` queries: the
   catalog is static data, and a caller reads its own grants. The gRPC
   interceptor refuses a call without a token, so `Anonymous` does not get to
@@ -537,7 +563,8 @@ the row is still in the state the gate saw.
   after them. The runner app of the organization is provisioned in `Persist`,
   next to the trigger write.
 - `FireTriggerNow` fires in its `commit` closure as the trigger-runner App,
-  through `run_with_inputs`, as a scheduled fire does. `TriggerFireUseCases::fire`
+  through `run_with_inputs`, as a scheduled fire does. `IngestWebhook` records
+  the delivery and fires in its `commit` closure. `TriggerFireUseCases::fire`
   (the scheduler and the webhook ingress) stays outside the pipeline: it runs
   as the server, not for a caller.
 - `PipelineUseCases::run_with_inputs` and `assign_agent` stay outside the

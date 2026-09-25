@@ -1,3 +1,4 @@
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::user::Email;
 use crate::postgres::{
@@ -10,9 +11,10 @@ use scylla_auth::audit::NoopAuditLog;
 use scylla_auth::authz::{GrantRepository, Principal, Scope};
 use scylla_auth::cedar::CedarPermissionService;
 use scylla_core::application::oauth::{
-    AccountOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo,
+    AccountOutcome, OAuthCallback, OAuthOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo,
 };
 use scylla_core::infrastructure::Argon2HashService;
+use scylla_extension::Actions;
 use std::sync::Arc;
 
 struct StubProvider {
@@ -29,7 +31,26 @@ impl OAuthProvider for StubProvider {
     }
 }
 
-async fn use_cases(pool: &sqlx::PgPool, info: OAuthUserInfo) -> OAuthUseCases {
+struct Lab {
+    actions: Actions,
+    uc: OAuthUseCases,
+}
+
+impl Lab {
+    async fn callback(&self, code: &str) -> DomainResult<OAuthOutcome> {
+        self.actions
+            .run(
+                &self.uc,
+                &CallerContext::Anonymous,
+                OAuthCallback {
+                    code: code.to_string(),
+                },
+            )
+            .await
+    }
+}
+
+async fn lab(pool: &sqlx::PgPool, info: OAuthUserInfo) -> Lab {
     let permission = Arc::new(
         CedarPermissionService::new(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
@@ -40,15 +61,18 @@ async fn use_cases(pool: &sqlx::PgPool, info: OAuthUserInfo) -> OAuthUseCases {
         .await
         .expect("cedar"),
     );
-    OAuthUseCases::new(
-        Arc::new(StubProvider { info }),
-        Arc::new(PgOAuthIdentityRepository::new(pool.clone())),
-        Arc::new(PgSignupRepository::new(pool.clone())),
-        Arc::new(PgUserRepository::new(pool.clone())),
-        Arc::new(PgSessionRepository::new(pool.clone())),
-        Arc::new(Argon2HashService::new()),
-        permission,
-    )
+    Lab {
+        actions: actions(permission.clone()),
+        uc: OAuthUseCases::new(
+            Arc::new(StubProvider { info }),
+            Arc::new(PgOAuthIdentityRepository::new(pool.clone())),
+            Arc::new(PgSignupRepository::new(pool.clone())),
+            Arc::new(PgUserRepository::new(pool.clone())),
+            Arc::new(PgSessionRepository::new(pool.clone())),
+            Arc::new(Argon2HashService::new()),
+            permission,
+        ),
+    }
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -58,9 +82,9 @@ async fn first_login_provisions_account_then_second_reuses(pool: sqlx::PgPool) {
         email: Some(Email::new("dev@example.com").unwrap()),
         login: "devuser".to_string(),
     };
-    let uc = use_cases(&pool, info).await;
+    let lab = lab(&pool, info).await;
 
-    let first = uc.callback("code-1").await.expect("first login");
+    let first = lab.callback("code-1").await.expect("first login");
     let AccountOutcome::New { organization_id } = &first.account else {
         panic!("new account gets an organization");
     };
@@ -76,7 +100,7 @@ async fn first_login_provisions_account_then_second_reuses(pool: sqlx::PgPool) {
         "the new account holds an owner grant on its organization"
     );
 
-    let second = uc.callback("code-2").await.expect("second login");
+    let second = lab.callback("code-2").await.expect("second login");
     assert_eq!(
         first.user_id, second.user_id,
         "same identity reuses account"
@@ -104,9 +128,9 @@ async fn login_links_to_existing_user_by_email(pool: sqlx::PgPool) {
         email: Some(Email::new("match@example.com").unwrap()),
         login: "whatever".to_string(),
     };
-    let uc = use_cases(&pool, info).await;
+    let lab = lab(&pool, info).await;
 
-    let out = uc.callback("code").await.expect("login");
+    let out = lab.callback("code").await.expect("login");
     assert_eq!(out.user_id, *existing.id(), "linked to existing account");
     assert!(
         matches!(out.account, AccountOutcome::Existing),

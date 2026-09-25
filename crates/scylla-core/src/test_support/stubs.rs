@@ -1,14 +1,17 @@
 use crate::application::agent::{AgentDispatch, DispatchNode, JobDispatch};
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
-    HashService, PipelineRepository, ProjectRepository, SecretResolver, UserRepository,
+    HashService, PipelineRepository, ProjectRepository, SecretResolver, SessionRepository,
+    SignupRepository, UserRepository,
 };
 use crate::domain::app::{AppSecret, AppSecretHash};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::organization::Organization;
 use crate::domain::pipeline::{Pipeline, PipelineNode};
 use crate::domain::project::Project;
+use crate::domain::session::Session;
 use crate::domain::user::{Email, Password, PasswordHash, User, Username};
 use async_trait::async_trait;
 use scylla_auth::authz::{
@@ -385,5 +388,150 @@ impl GrantRepository for StubGrants {
     }
     async fn revoke_all(&self, _: &Principal, _: &Scope) -> DomainResult<u64> {
         Ok(0)
+    }
+}
+
+pub struct OneUser(pub User);
+
+#[async_trait]
+impl UserRepository for OneUser {
+    async fn create(&self, _: &User) -> DomainResult<User> {
+        unreachable!("no user write in this action")
+    }
+    async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
+        if id == self.0.id() {
+            Ok(self.0.clone())
+        } else {
+            Err(DomainError::not_found("User", id.to_string()))
+        }
+    }
+    async fn find_by_ids(&self, _: &[UserId]) -> DomainResult<Vec<User>> {
+        Ok(vec![self.0.clone()])
+    }
+    async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
+        if username == self.0.username() {
+            Ok(self.0.clone())
+        } else {
+            Err(DomainError::not_found("User", username.to_string()))
+        }
+    }
+    async fn find_by_email(&self, email: &Email) -> DomainResult<User> {
+        if Some(email) == self.0.email() {
+            Ok(self.0.clone())
+        } else {
+            Err(DomainError::not_found("User", email.to_string()))
+        }
+    }
+    async fn update(&self, _: &User) -> DomainResult<User> {
+        unreachable!("no user write in this action")
+    }
+    async fn delete(&self, _: &UserId) -> DomainResult<()> {
+        unreachable!("no user write in this action")
+    }
+    async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> {
+        empty_page()
+    }
+    async fn username_exists(&self, username: &Username) -> DomainResult<bool> {
+        Ok(username == self.0.username())
+    }
+}
+
+#[derive(Default)]
+pub struct StubSessions {
+    rows: Mutex<Vec<Session>>,
+    deleted: Mutex<Vec<String>>,
+}
+
+impl StubSessions {
+    pub fn with(session: Session) -> Self {
+        Self {
+            rows: Mutex::new(vec![session]),
+            deleted: Mutex::default(),
+        }
+    }
+
+    pub fn rows(&self) -> Vec<Session> {
+        self.rows.lock().unwrap().clone()
+    }
+
+    pub fn deleted(&self) -> Vec<String> {
+        self.deleted.lock().unwrap().clone()
+    }
+}
+
+#[async_trait]
+impl SessionRepository for StubSessions {
+    async fn create(&self, session: &Session) -> DomainResult<Session> {
+        self.rows.lock().unwrap().push(session.clone());
+        Ok(session.clone())
+    }
+    async fn find_by_token(&self, token: &str) -> DomainResult<Session> {
+        self.rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|s| s.token() == token)
+            .cloned()
+            .ok_or_else(|| DomainError::not_found("Session", token))
+    }
+    async fn update(&self, _: &Session) -> DomainResult<Session> {
+        unreachable!("no session update in this action")
+    }
+    async fn delete_by_token(&self, token: &str) -> DomainResult<()> {
+        self.rows.lock().unwrap().retain(|s| s.token() != token);
+        self.deleted.lock().unwrap().push(token.to_string());
+        Ok(())
+    }
+    async fn delete_expired(&self) -> DomainResult<u64> {
+        unreachable!("no session sweep in this action")
+    }
+    async fn list_for_user(&self, _: &UserId) -> DomainResult<Vec<Session>> {
+        unreachable!("no session listing in this action")
+    }
+}
+
+/// Each provisioned account, with the provider identity when there is one.
+#[derive(Default)]
+pub struct StubSignups {
+    provisioned: Mutex<Vec<(User, Organization, Grant, Option<String>)>>,
+}
+
+impl StubSignups {
+    pub fn provisioned(&self) -> Vec<(User, Organization, Grant, Option<String>)> {
+        self.provisioned.lock().unwrap().clone()
+    }
+}
+
+#[async_trait]
+impl SignupRepository for StubSignups {
+    async fn provision_account(
+        &self,
+        user: &User,
+        organization: &Organization,
+        grant: &Grant,
+    ) -> DomainResult<()> {
+        self.provisioned.lock().unwrap().push((
+            user.clone(),
+            organization.clone(),
+            grant.clone(),
+            None,
+        ));
+        Ok(())
+    }
+    async fn provision_account_with_identity(
+        &self,
+        user: &User,
+        organization: &Organization,
+        grant: &Grant,
+        _: &str,
+        provider_user_id: &str,
+    ) -> DomainResult<()> {
+        self.provisioned.lock().unwrap().push((
+            user.clone(),
+            organization.clone(),
+            grant.clone(),
+            Some(provider_user_id.to_string()),
+        ));
+        Ok(())
     }
 }
