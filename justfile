@@ -146,16 +146,16 @@ release-promote version tag:
 [group('proto')]
 [no-exit-message]
 proto-lint:
-    buf lint
+    buf lint crates/scylla-proto/proto
 
 # Rewrite every .proto in canonical buf formatting
 [group('proto')]
 [no-exit-message]
 proto-fmt:
-    buf format -w
+    buf format -w crates/scylla-proto/proto
 
-# Fail if the schema breaks wire or source compatibility with main
+# Fail if the submodule's schema breaks wire or source compatibility with the pin on main
 [group('proto')]
 [no-exit-message]
 proto-breaking:
-    buf breaking --against '.git#branch=main'
+    buf breaking crates/scylla-proto/proto --against '.git#branch=main,subdir=crates/scylla-proto/proto,recurse_submodules=true'

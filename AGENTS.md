@@ -12,7 +12,7 @@ libraries they link.
 |---|---|
 | `crates/scylla-extension` | the edition boundary: the action pipeline (commands, stages, `Hooks`); depends on `scylla-domain` only. Guide: [`crates/scylla-extension/AGENTS.md`](./crates/scylla-extension/AGENTS.md) |
 | `crates/scylla-domain` | dependency-light shared kernel (domain model, `JobEvent`) |
-| `crates/scylla-proto` | the wire contract — protos under `proto/scylla/<domain>/v1/` |
+| `crates/scylla-proto` | the wire contract: the Rust bindings; the protos are the `scylla-protos` git submodule in `proto/scylla/<domain>/v1/` |
 | `crates/scylla-auth` | the access model: RBAC ports and types, the Cedar adapter |
 | `crates/scylla-core` | use cases and ports, gRPC + HTTP surfaces, config, in-memory adapters |
 | `crates/scylla-db` | the Postgres adapters, the pool, the embedded migrations |
@@ -55,6 +55,12 @@ them that depth is load-bearing: `sqlx::migrate!("../../migrations")`
   `just db-prepare` and commit the result.
 - **Protos are linted and breaking-checked.** `just proto-lint`,
   `just proto-fmt`, `just proto-breaking`.
+- **The protos are a git submodule.** `crates/scylla-proto/proto` is
+  [`scylla-ops/scylla-protos`](https://github.com/scylla-ops/scylla-protos).
+  To change a proto: commit and push in the submodule first, then commit the
+  new pin here. Clone with `--recurse-submodules`, or run
+  `git submodule update --init`. A new file must also go in
+  `crates/scylla-proto/build.rs`.
 - **The frontend has hard CI gates** beyond typecheck and lint: architecture
   boundaries (`pnpm depcruise`), module cycles, and i18n catalog
   collisions. A change that passes `tsc` can still fail the build.

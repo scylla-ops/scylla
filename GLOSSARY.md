@@ -20,7 +20,7 @@ The shared kernel, and the only Rust code both binaries run. Holds the domain mo
 Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
 
 ### `scylla-proto`
-Library crate holding shared `.proto` definitions and their generated Rust + TypeScript bindings. Both the backend and the frontend import these.
+Library crate that generates the Rust bindings. The `.proto` files are in `crates/scylla-proto/proto/`, a git submodule of [`scylla-ops/scylla-protos`](https://github.com/scylla-ops/scylla-protos). The frontend generates its TypeScript bindings from the same submodule, so the backend and the frontend use one pinned version.
 
 ### `postgres`
 Primary datastore. PostgreSQL 18 in the compose stack, listening on port `5432`. Schema is managed by versioned SQL files in `migrations/` applied via `sqlx::migrate!` at boot. The offline query cache lives in `.sqlx/` so Docker builds can compile without a live database.
@@ -214,7 +214,7 @@ An agent is connected when its [App](#app) holds an open `WorkerService` stream 
 ## Networking & protocol
 
 ### gRPC
-Primary transport between API and internal services. Defined in `.proto` files in `crates/scylla-proto/proto/`, which is the single include root. Each file's path below that root **is** its package: `scylla/job/v1/job.proto` declares `package scylla.job.v1`. Packages carry a version suffix from day one, so a breaking change means a new `v2` directory beside `v1`, never an edit in place. `buf lint` and `buf breaking` enforce both (`just proto-lint`, `just proto-breaking`).
+Primary transport between API and internal services. Defined in `.proto` files in `crates/scylla-proto/proto/` (the `scylla-protos` submodule), which is the single include root. Each file's path below that root **is** its package: `scylla/job/v1/job.proto` declares `package scylla.job.v1`. Packages carry a version suffix from day one, so a breaking change means a new `v2` directory beside `v1`, never an edit in place. `buf lint` and `buf breaking` enforce both (`just proto-lint`, `just proto-breaking`).
 
 Two packages are deliberate leaves that others may import: `scylla.common.v1` (id wrappers, `Email`, pagination) and `scylla.exec.v1` (the step contract shared by pipelines and agents). Feature packages never import each other — they reference across contexts by id.
 

@@ -28,6 +28,7 @@ cp .env.example .env
 # Install dependencies
 pnpm install
 
+# The protos are a git submodule of the backend repo: run `git submodule update --init` once
 # Start the dev server (includes proto generation + i18n compilation)
 pnpm dev
 ```

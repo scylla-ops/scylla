@@ -22,7 +22,7 @@ The workspace is a stack of library crates under `crates/` with the two binaries
 crates/
   scylla-extension/   the edition boundary: the action pipeline every write goes through (depends on scylla-domain only)
   scylla-domain/      the shared kernel: domain model, JobEvent (no I/O, no crypto)
-  scylla-proto/       the wire contract: .proto files + generated bindings (also consumed by the frontend)
+  scylla-proto/       the Rust bindings; the .proto files are the scylla-protos submodule in proto/ (the frontend reads it too)
   scylla-auth/        the access model: RBAC ports and types, the Cedar adapter
   scylla-core/        use cases and their ports, gRPC + HTTP surfaces, server config, in-memory adapters
   scylla-db/          the Postgres adapters, the pool, the embedded migrations
@@ -136,9 +136,11 @@ belt-and-braces.) `apps/frontend/.env` points the dev bundle at `:8080`;
 `local.toml` allows that origin through CORS.
 
 To run the real thing natively, build the UI first — a release `cargo build`
-embeds whatever is in `apps/frontend/dist`:
+embeds whatever is in `apps/frontend/dist`. The protos are a git submodule, so
+get them first (or clone with `--recurse-submodules`):
 
 ```sh
+git submodule update --init
 just ui-build
 cargo build --release -p scylla-ce
 ```
@@ -201,6 +203,7 @@ Requires Node.js >= 20 and pnpm >= 9 (`corepack enable`). See [apps/frontend/REA
 Requires the Rust toolchain. Standard Cargo workflow:
 
 ```sh
+git submodule update --init
 cargo build
 cargo test
 ```

@@ -52,7 +52,7 @@ Package manager is **pnpm** (`pnpm@11.1.2`). Run all commands from `apps/fronten
 | `pnpm coverage` | Vitest + v8 coverage, enforces the thresholds in `vitest.config.ts` |
 | `pnpm lint` | ESLint, `--max-warnings 0` (warnings are errors) |
 | `pnpm lint:fix` | ESLint with `--fix` |
-| `pnpm gen-proto` | Generate gRPC/protobuf-ts clients |
+| `pnpm gen-proto` | Generate gRPC/protobuf-ts clients from `crates/scylla-proto/proto` (a git submodule: `git submodule update --init`) |
 | `pnpm extract` / `pnpm compile` | Lingui: extract messages (`--clean`, drops obsolete entries) / compile catalogs |
 | `pnpm depcruise` | Architecture rules: layer direction **and** public-API surface — **must be clean** |
 | `pnpm depcruise:cycles` | Module dependency cycles — **must be zero** |

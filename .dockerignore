@@ -1,5 +1,6 @@
 target
 .git
+**/.git
 .github
 .venv
 scylla-bruno

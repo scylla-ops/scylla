@@ -1,15 +1,17 @@
 name: Frontend
 
 # Typecheck, tests, lint, architecture boundaries and build for apps/frontend.
-# Also triggers on the proto crate: the TS gRPC clients are generated from it at
-# build time and are not committed, so a proto change can break the frontend
-# without touching a single file under apps/frontend/.
+# Also triggers on the proto submodule: the TS gRPC clients are generated from
+# it at build time and are not committed, so a proto change can break the
+# frontend without touching a single file under apps/frontend/. A pin bump
+# changes only the gitlink, hence the path without `/**`.
 on:
   push:
     branches: [main]
   pull_request:
     paths:
       - "apps/frontend/**"
+      - "crates/scylla-proto/proto"
       - "crates/scylla-proto/proto/**"
       - ".github/workflows/frontend.yml"
   workflow_dispatch:
@@ -31,6 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # Same reasoning as apps/frontend/Dockerfile: give @protobuf-ts/protoc a
       # system protoc so it never reaches out to GitHub mid-build. protobuf-dev
