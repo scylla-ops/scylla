@@ -74,16 +74,6 @@ impl OrganizationRepository for PgOrganizationRepository {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip_all, fields(n = ids.len()))]
-    async fn find_by_ids(&self, ids: &[OrganizationId]) -> DomainResult<Vec<Organization>> {
-        queries::find_by_ids(&self.pool, ids).await
-    }
-
-    #[instrument(skip_all, fields(name = %name))]
-    async fn find_by_name(&self, name: &OrganizationName) -> DomainResult<Organization> {
-        queries::find_by_name(&self.pool, name).await
-    }
-
     #[instrument(skip_all, fields(org_id = %organization.id()))]
     async fn update(&self, organization: &Organization) -> DomainResult<Organization> {
         queries::update(&self.pool, organization).await
@@ -102,17 +92,6 @@ impl OrganizationRepository for PgOrganizationRepository {
         let params = pagination.copied().unwrap_or_default();
         let total = queries::count_all(&self.pool).await?;
         let items = queries::list_page(&self.pool, &params, false).await?;
-        Ok(PaginatedResult::new(items, &params, total))
-    }
-
-    #[instrument(skip(self, pagination))]
-    async fn list_active(
-        &self,
-        pagination: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Organization>> {
-        let params = pagination.copied().unwrap_or_default();
-        let total = queries::count_active(&self.pool).await?;
-        let items = queries::list_page(&self.pool, &params, true).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
 
@@ -326,71 +305,6 @@ pub mod queries {
         )
     }
 
-    pub async fn find_by_ids<'e, E>(
-        executor: E,
-        ids: &[OrganizationId],
-    ) -> DomainResult<Vec<Organization>>
-    where
-        E: PgExecutor<'e>,
-    {
-        if ids.is_empty() {
-            return Ok(Vec::new());
-        }
-        let id_strs: Vec<String> = ids.iter().map(|i| i.as_str().to_owned()).collect();
-        let rows = sqlx::query!(
-            r#"
-            SELECT id, name, description, is_active, created_at, updated_at
-            FROM organizations
-            WHERE id = ANY($1::text[])
-            "#,
-            &id_strs,
-        )
-        .fetch_all(executor)
-        .await
-        .to_domain()?;
-        rows.into_iter()
-            .map(|r| {
-                row_into_org(
-                    r.id,
-                    r.name,
-                    r.description,
-                    r.is_active,
-                    r.created_at,
-                    r.updated_at,
-                )
-            })
-            .collect()
-    }
-
-    pub async fn find_by_name<'e, E>(
-        executor: E,
-        name: &OrganizationName,
-    ) -> DomainResult<Organization>
-    where
-        E: PgExecutor<'e>,
-    {
-        let rec = sqlx::query!(
-            r#"
-            SELECT id, name, description, is_active, created_at, updated_at
-            FROM organizations
-            WHERE name = $1
-            LIMIT 1
-            "#,
-            name.as_str(),
-        )
-        .fetch_one(executor)
-        .await
-        .not_found_as("Organization", name.as_str().to_string())?;
-        row_into_org(
-            rec.id,
-            rec.name,
-            rec.description,
-            rec.is_active,
-            rec.created_at,
-            rec.updated_at,
-        )
-    }
-
     pub async fn update<'e, E>(executor: E, org: &Organization) -> DomainResult<Organization>
     where
         E: PgExecutor<'e>,
@@ -435,17 +349,6 @@ pub mod queries {
         E: PgExecutor<'e>,
     {
         let row = sqlx::query!(r#"SELECT COUNT(*) AS "count!" FROM organizations"#)
-            .fetch_one(executor)
-            .await
-            .to_domain()?;
-        Ok(u64::try_from(row.count).unwrap_or(0))
-    }
-
-    pub async fn count_active<'e, E>(executor: E) -> DomainResult<u64>
-    where
-        E: PgExecutor<'e>,
-    {
-        let row = sqlx::query!(r#"SELECT COUNT(*) AS "count!" FROM organizations WHERE is_active"#)
             .fetch_one(executor)
             .await
             .to_domain()?;

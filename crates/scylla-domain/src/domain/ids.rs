@@ -69,3 +69,4 @@ define_id!(AppCredentialId);
 define_id!(InvitationId);
 define_id!(SecretId);
 define_id!(TriggerId);
+define_id!(GrantId);

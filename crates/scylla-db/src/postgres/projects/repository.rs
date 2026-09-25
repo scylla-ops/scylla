@@ -23,6 +23,18 @@ impl PgProjectRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
+
+    // A write that matched no row is a stale read if the row still exists, else a missing row.
+    async fn stale(&self, project: &Project) -> DomainError {
+        match queries::exists(&self.pool, project.id()).await {
+            Ok(true) => DomainError::conflict(format!(
+                "project {} changed since it was read",
+                project.id()
+            )),
+            Ok(false) => DomainError::not_found("Project", project.id().to_string()),
+            Err(e) => e,
+        }
+    }
 }
 
 #[async_trait]
@@ -70,19 +82,21 @@ impl ProjectRepository for PgProjectRepository {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip_all, fields(n = ids.len()))]
-    async fn find_by_ids(&self, ids: &[ProjectId]) -> DomainResult<Vec<Project>> {
-        queries::find_by_ids(&self.pool, ids).await
-    }
-
-    #[instrument(skip_all, fields(project_id = %project.id()))]
+    #[instrument(skip_all, fields(project_id = %project.id(), version = project.version()))]
     async fn update(&self, project: &Project) -> DomainResult<Project> {
-        queries::update(&self.pool, project).await
+        match queries::update(&self.pool, project).await? {
+            Some(updated) => Ok(updated),
+            None => Err(self.stale(project).await),
+        }
     }
 
-    #[instrument(skip_all, fields(project_id = %id))]
-    async fn delete(&self, id: &ProjectId) -> DomainResult<()> {
-        queries::delete(&self.pool, id).await
+    #[instrument(skip_all, fields(project_id = %project.id(), version = project.version()))]
+    async fn delete(&self, project: &Project) -> DomainResult<()> {
+        if queries::delete(&self.pool, project).await? {
+            Ok(())
+        } else {
+            Err(self.stale(project).await)
+        }
     }
 
     #[instrument(skip(self, pagination))]
@@ -94,18 +108,6 @@ impl ProjectRepository for PgProjectRepository {
         let unrestricted = queries::VisibilityFilter::unrestricted();
         let total = queries::count(&self.pool, false, None, &unrestricted).await?;
         let items = queries::list_page(&self.pool, &params, false, None, &unrestricted).await?;
-        Ok(PaginatedResult::new(items, &params, total))
-    }
-
-    #[instrument(skip(self, pagination))]
-    async fn list_active(
-        &self,
-        pagination: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        let params = pagination.copied().unwrap_or_default();
-        let unrestricted = queries::VisibilityFilter::unrestricted();
-        let total = queries::count(&self.pool, true, None, &unrestricted).await?;
-        let items = queries::list_page(&self.pool, &params, true, None, &unrestricted).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
 
@@ -217,7 +219,7 @@ pub mod queries {
         let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
         let rows = sqlx::query!(
             r#"
-            SELECT id, name, description, organization_id, is_active, created_at, updated_at
+            SELECT id, name, description, organization_id, is_active, created_at, updated_at, version
             FROM projects p
             WHERE p.id IN (
                 SELECT scope_id FROM grants
@@ -247,6 +249,7 @@ pub mod queries {
                     r.is_active,
                     r.created_at,
                     r.updated_at,
+                    r.version,
                 )
             })
             .collect()
@@ -261,6 +264,7 @@ pub mod queries {
         is_active: bool,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
+        version: i64,
     ) -> DomainResult<Project> {
         let name = ProjectName::new(name).db_field("project name")?;
         let description = description
@@ -275,6 +279,7 @@ pub mod queries {
             is_active,
             created_at,
             updated_at,
+            u64::try_from(version).unwrap_or(0),
         ))
     }
 
@@ -284,8 +289,8 @@ pub mod queries {
     {
         sqlx::query!(
             r#"
-            INSERT INTO projects (id, name, description, organization_id, is_active, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO projects (id, name, description, organization_id, is_active, created_at, updated_at, version)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             "#,
             project.id().as_str(),
             project.name().as_str(),
@@ -294,6 +299,7 @@ pub mod queries {
             project.is_active(),
             project.created_at(),
             project.updated_at(),
+            version_column(project),
         )
         .execute(executor)
         .await
@@ -307,7 +313,7 @@ pub mod queries {
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, name, description, organization_id, is_active, created_at, updated_at
+            SELECT id, name, description, organization_id, is_active, created_at, updated_at, version
             FROM projects
             WHERE id = $1
             "#,
@@ -324,56 +330,27 @@ pub mod queries {
             rec.is_active,
             rec.created_at,
             rec.updated_at,
+            rec.version,
         )
     }
 
-    pub async fn find_by_ids<'e, E>(executor: E, ids: &[ProjectId]) -> DomainResult<Vec<Project>>
+    /// `None` when no row carries the staged version: the caller tells a stale read from a
+    /// missing row with `exists`, on its own statement.
+    pub async fn update<'e, E>(executor: E, project: &Project) -> DomainResult<Option<Project>>
     where
         E: PgExecutor<'e>,
     {
-        if ids.is_empty() {
-            return Ok(Vec::new());
-        }
-        let id_strs: Vec<String> = ids.iter().map(|i| i.as_str().to_owned()).collect();
-        let rows = sqlx::query!(
-            r#"
-            SELECT id, name, description, organization_id, is_active, created_at, updated_at
-            FROM projects
-            WHERE id = ANY($1::text[])
-            "#,
-            &id_strs,
-        )
-        .fetch_all(executor)
-        .await
-        .to_domain()?;
-        rows.into_iter()
-            .map(|r| {
-                row_into_project(
-                    r.id,
-                    r.name,
-                    r.description,
-                    r.organization_id,
-                    r.is_active,
-                    r.created_at,
-                    r.updated_at,
-                )
-            })
-            .collect()
-    }
-
-    pub async fn update<'e, E>(executor: E, project: &Project) -> DomainResult<Project>
-    where
-        E: PgExecutor<'e>,
-    {
-        let res = sqlx::query!(
+        let rec = sqlx::query!(
             r#"
             UPDATE projects
             SET name = $2,
                 description = $3,
                 organization_id = $4,
                 is_active = $5,
-                updated_at = $6
-            WHERE id = $1
+                updated_at = $6,
+                version = version + 1
+            WHERE id = $1 AND version = $7
+            RETURNING id, name, description, organization_id, is_active, created_at, updated_at, version
             "#,
             project.id().as_str(),
             project.name().as_str(),
@@ -381,25 +358,58 @@ pub mod queries {
             project.organization_id().as_str(),
             project.is_active(),
             project.updated_at(),
+            version_column(project),
+        )
+        .fetch_optional(executor)
+        .await
+        .to_domain()?;
+        rec.map(|r| {
+            row_into_project(
+                r.id,
+                r.name,
+                r.description,
+                r.organization_id,
+                r.is_active,
+                r.created_at,
+                r.updated_at,
+                r.version,
+            )
+        })
+        .transpose()
+    }
+
+    /// `false` when no row carries the staged version.
+    pub async fn delete<'e, E>(executor: E, project: &Project) -> DomainResult<bool>
+    where
+        E: PgExecutor<'e>,
+    {
+        let res = sqlx::query!(
+            "DELETE FROM projects WHERE id = $1 AND version = $2",
+            project.id().as_str(),
+            version_column(project),
         )
         .execute(executor)
         .await
         .to_domain()?;
-        if res.rows_affected() == 0 {
-            return Err(DomainError::not_found("Project", project.id().to_string()));
-        }
-        Ok(project.clone())
+        Ok(res.rows_affected() > 0)
     }
 
-    pub async fn delete<'e, E>(executor: E, id: &ProjectId) -> DomainResult<()>
+    pub async fn exists<'e, E>(executor: E, id: &ProjectId) -> DomainResult<bool>
     where
         E: PgExecutor<'e>,
     {
-        sqlx::query!("DELETE FROM projects WHERE id = $1", id.as_str())
-            .execute(executor)
-            .await
-            .to_domain()?;
-        Ok(())
+        let rec = sqlx::query!(
+            r#"SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1) AS "exists!""#,
+            id.as_str(),
+        )
+        .fetch_one(executor)
+        .await
+        .to_domain()?;
+        Ok(rec.exists)
+    }
+
+    fn version_column(project: &Project) -> i64 {
+        i64::try_from(project.version()).unwrap_or(i64::MAX)
     }
 
     pub struct VisibilityFilter {
@@ -477,7 +487,7 @@ pub mod queries {
         let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
         let rows = sqlx::query!(
             r#"
-            SELECT id, name, description, organization_id, is_active, created_at, updated_at
+            SELECT id, name, description, organization_id, is_active, created_at, updated_at, version
             FROM projects
             WHERE (NOT $3 OR is_active)
               AND ($4::text IS NULL OR organization_id = $4)
@@ -506,6 +516,7 @@ pub mod queries {
                     r.is_active,
                     r.created_at,
                     r.updated_at,
+                    r.version,
                 )
             })
             .collect()

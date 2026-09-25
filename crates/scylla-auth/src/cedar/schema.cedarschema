@@ -1,10 +1,11 @@
 // scylla — Cedar schema (V1). Validated against policies at startup.
 //
-// Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization and
-// Job ∈ Pipeline. Principals carry no attributes: what someone may do comes
-// entirely from the grants linked into the policy set. Actions are fine-grained
-// (one per use-case operation) so `appliesTo` pins the resource type and
-// policies stay readable.
+// Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization,
+// Job ∈ Pipeline, Trigger ∈ Pipeline, Secret ∈ Project,
+// Invitation ∈ Organization, AppSecret ∈ App and Grant ∈ its scope. Principals carry no attributes: what someone may
+// do comes entirely from the grants linked into the policy set. Actions are
+// fine-grained (one per use-case operation) so `appliesTo` pins the resource
+// type and policies stay readable.
 
 namespace Scylla {
     entity Service;
@@ -22,6 +23,15 @@ namespace Scylla {
     entity Project in [Organization];
     entity Pipeline in [Project];
     entity Job in [Pipeline];
+    // An unknown secret sits under System, so only a System grant reaches it.
+    entity Secret in [Project, System];
+    // Same for an unknown trigger, invitation and app secret.
+    entity Trigger in [Pipeline, System];
+    entity Invitation in [Organization, System];
+    entity AppSecret in [App, System];
+    // A grant sits under the scope it is bound at; a System grant and an
+    // unknown grant sit under System.
+    entity Grant in [Project, Organization, System];
 
     // Users are also `in [System]` so a System-scoped grant (system-admin)
     // reaches User-targeted actions (read/update/delete user) — without it,
@@ -46,12 +56,14 @@ namespace Scylla {
     // Cedar `resource in ?resource` on the role template confines each admin to
     // its own subtree, so an org admin cannot touch another org's grants
     // (anti-escalation). The UI presents the three as one "manage grants".
+    // A revoke is checked on the grant, with the action of the grant's scope
+    // kind, so the same grants reach it.
     action "manageSystemGrants"
-        appliesTo { principal: [User, Service], resource: [System] };
+        appliesTo { principal: [User, Service], resource: [System, Grant] };
     action "manageOrgGrants"
-        appliesTo { principal: [User, Service], resource: [Organization] };
+        appliesTo { principal: [User, Service], resource: [Organization, Grant] };
     action "manageProjectGrants"
-        appliesTo { principal: [User, Service], resource: [Project] };
+        appliesTo { principal: [User, Service], resource: [Project, Grant] };
 
     // ── User-targeted ──────────────────────────────────────────────────
     action "readUser", "updateUser", "deleteUser",
@@ -60,27 +72,40 @@ namespace Scylla {
 
     // ── Organization-targeted ──────────────────────────────────────────
     action "readOrganization", "updateOrganization", "deleteOrganization",
-           "listOrganizationMembers", "manageInvitations",
+           "listOrganizationMembers",
            "createProject", "createApp", "createAgent",
            "listProjectsByOrganization", "listPipelinesByOrganization", "listJobsByOrganization",
            "listAppsByOrganization", "listAgents"
         appliesTo { principal: [User, Service], resource: [Organization] };
 
+    // ── Organization- or invitation-targeted ───────────────────────────
+    // A revoke is checked on the invitation, which is in its organization, so
+    // a grant on the organization reaches it.
+    action "manageInvitations"
+        appliesTo { principal: [User, Service], resource: [Organization, Invitation] };
+
     // ── Project-targeted ───────────────────────────────────────────────
     action "readProject", "updateProject", "deleteProject",
            "listProjectMembers", "createPipeline",
            "listPipelinesByProject", "listJobsByProject",
-           "createSecret", "listSecrets", "deleteSecret"
+           "createSecret", "listSecrets"
         appliesTo { principal: [User, Service], resource: [Project] };
 
     // ── Pipeline-targeted ──────────────────────────────────────────────
-    action "updatePipeline", "deletePipeline", "manageTriggers",
-           "listJobsByPipeline"
+    action "updatePipeline", "deletePipeline", "listJobsByPipeline"
         appliesTo { principal: [User, Service], resource: [Pipeline] };
-    // Also grantable to Apps: agents read the pipeline + execute its jobs; a
-    // trigger-runner App runs the pipeline (runPipeline) when a trigger fires.
-    action "readPipeline", "executeJob", "runPipeline"
+    // Also grantable to Apps: agents read the pipeline + execute its jobs.
+    action "readPipeline", "executeJob"
         appliesTo { principal: [User, Service, App], resource: [Pipeline] };
+
+    // ── Pipeline- or trigger-targeted ──────────────────────────────────
+    // An action on one trigger is checked on the trigger, which is in its
+    // pipeline, so a grant on the pipeline's project reaches it. A
+    // trigger-runner App runs the pipeline (runPipeline) when a trigger fires.
+    action "manageTriggers"
+        appliesTo { principal: [User, Service], resource: [Pipeline, Trigger] };
+    action "runPipeline"
+        appliesTo { principal: [User, Service, App], resource: [Pipeline, Trigger] };
 
     // ── Job-targeted ───────────────────────────────────────────────────
     action "readJob", "updateJob", "deleteJob", "readJobLogs", "writeJobLogs"
@@ -91,9 +116,19 @@ namespace Scylla {
     action "writeJobStatus", "appendJobLog"
         appliesTo { principal: [User, Service, App], resource: [Job] };
 
+    // ── Secret-targeted ────────────────────────────────────────────────
+    action "deleteSecret"
+        appliesTo { principal: [User, Service], resource: [Secret] };
+
     // ── App-targeted (manage a specific app within its org) ─────────────
     // An agent is a specialized app, so reading/deleting an agent and reading
-    // its run stats reuse these App-targeted actions (agent_app_id == app id).
-    action "readApp", "readAppStats", "deleteApp"
+    // its run stats reuse the App-targeted actions (agent_app_id == app id).
+    action "readApp", "readAppStats"
         appliesTo { principal: [User, Service], resource: [App] };
+
+    // ── App- or app-secret-targeted ────────────────────────────────────
+    // A revoke or a toggle of one secret is checked on the secret, which is in
+    // its app, so a grant on the app's organization reaches it.
+    action "deleteApp"
+        appliesTo { principal: [User, Service], resource: [App, AppSecret] };
 }

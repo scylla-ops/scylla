@@ -1,22 +1,15 @@
-use crate::application::{BootstrapUseCases, HashService, UserRepository};
+use crate::application::BootstrapUseCases;
 use crate::config::BootstrapConfig;
 use crate::error::BootstrapError;
-use scylla_auth::authz::{GrantRepository, PermissionService, PolicyControl, SYSTEM_ADMIN_ROLE};
+use scylla_auth::authz::SYSTEM_ADMIN_ROLE;
 use scylla_domain::domain::errors::DomainError;
 use scylla_domain::domain::role::RoleName;
 use scylla_domain::domain::user::{Email, Password, Username};
 
-pub async fn bootstrap_admin<U, H, PS, G, PC>(
-    bootstrap_uc: &BootstrapUseCases<U, H, PS, G, PC>,
+pub async fn bootstrap_admin(
+    bootstrap_uc: &BootstrapUseCases,
     cfg: &BootstrapConfig,
-) -> Result<(), BootstrapError>
-where
-    U: UserRepository,
-    H: HashService,
-    PS: PermissionService,
-    G: GrantRepository,
-    PC: PolicyControl,
-{
+) -> Result<(), BootstrapError> {
     if cfg.username == "admin" && cfg.password == "admin123" {
         tracing::warn!(
             "Bootstrapping the admin account with the DEFAULT credentials (admin/admin123). \

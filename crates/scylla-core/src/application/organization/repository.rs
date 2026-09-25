@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use scylla_auth::authz::Grant;
 
 #[async_trait]
-pub trait OrganizationRepository {
+pub trait OrganizationRepository: Send + Sync {
     async fn create(&self, organization: &Organization) -> DomainResult<Organization>;
 
     async fn provision_with_owner(
@@ -31,20 +31,11 @@ pub trait OrganizationRepository {
 
     async fn find_by_id(&self, id: &OrganizationId) -> DomainResult<Organization>;
 
-    async fn find_by_ids(&self, ids: &[OrganizationId]) -> DomainResult<Vec<Organization>>;
-
-    async fn find_by_name(&self, name: &OrganizationName) -> DomainResult<Organization>;
-
     async fn update(&self, organization: &Organization) -> DomainResult<Organization>;
 
     async fn delete(&self, id: &OrganizationId) -> DomainResult<()>;
 
     async fn list_all(
-        &self,
-        pagination: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Organization>>;
-
-    async fn list_active(
         &self,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Organization>>;

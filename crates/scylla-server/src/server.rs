@@ -3,7 +3,7 @@ use crate::startup::{init_services, run_server, shutdown_signal};
 use crate::surface::Surface;
 use anyhow::{Context as _, Result};
 use scylla_core::config::ControlPlaneConfig;
-use scylla_extension::Extensions;
+use scylla_extension::{Extension, Hooks};
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
@@ -12,7 +12,7 @@ use tracing::info;
 pub struct Server {
     config: ControlPlaneConfig,
     db: PgPool,
-    extensions: Extensions,
+    hooks: Hooks,
     features: Vec<Box<dyn Feature>>,
     surface: Surface,
 }
@@ -23,15 +23,17 @@ impl Server {
         Self {
             config,
             db,
-            extensions: Extensions::new(),
+            hooks: Hooks::new(),
             features: Vec::new(),
             surface: Surface::default(),
         }
     }
 
+    /// Registers before `Feature::hooks`, which runs at `serve`; within one position, hooks run
+    /// in registration order.
     #[must_use]
-    pub fn extension<T: ?Sized + Send + Sync + 'static>(mut self, implementation: Arc<T>) -> Self {
-        self.extensions.insert(implementation);
+    pub fn extension<E: Extension>(mut self, extension: &Arc<E>) -> Self {
+        extension.register(&mut self.hooks);
         self
     }
 
@@ -91,13 +93,13 @@ impl Server {
         let Self {
             config,
             db,
-            mut extensions,
+            mut hooks,
             features,
             mut surface,
         } = self;
 
         for feature in &features {
-            feature.extensions(&mut extensions);
+            feature.hooks(&mut hooks);
         }
         for feature in &features {
             feature
@@ -106,13 +108,13 @@ impl Server {
                 .context("feature prepare failed")?;
         }
 
-        let services = init_services(&config, db.clone(), extensions.clone())
+        let services = init_services(&config, db.clone(), Arc::new(hooks))
             .await
             .context("init_services failed")?;
 
         let ctx = Context {
             db: db.clone(),
-            extensions,
+            actions: services.actions.clone(),
             permissions: services.permission_checker.clone(),
             policy_control: services.permission_checker.clone(),
             visibility: services.permission_checker.clone(),

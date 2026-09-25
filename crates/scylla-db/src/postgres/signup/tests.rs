@@ -83,12 +83,14 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn login_by_email_or_username(pool: PgPool) {
+    use crate::domain::caller::CallerContext;
     use crate::domain::user::User;
     use crate::domain::user::{Email, Password, Username};
     use crate::postgres::PgSessionRepository;
-    use scylla_core::application::auth::use_case::AuthUseCases;
+    use scylla_core::application::auth::{AuthUseCases, Login};
     use scylla_core::application::{HashService, UserRepository};
     use scylla_core::infrastructure::Argon2HashService;
+    use scylla_core::test_support::authz::DenyingPermissionService;
     use std::sync::Arc;
 
     let hash = Arc::new(Argon2HashService::new());
@@ -110,20 +112,25 @@ async fn login_by_email_or_username(pool: PgPool) {
     );
     user_repo.create(&user).await.expect("seed user");
 
-    auth.login(
-        "kevin@example.com".to_string(),
-        Password::new("SecurePass123!").unwrap(),
-    )
-    .await
-    .expect("login by email");
-    auth.login(
-        "kevin".to_string(),
-        Password::new("SecurePass123!").unwrap(),
-    )
-    .await
-    .expect("login by username");
-    let err = auth
-        .login("kevin".to_string(), Password::new("WrongPass123!").unwrap())
+    let engine = actions(Arc::new(DenyingPermissionService::new()));
+    let login = |identifier: &str, password: &str| {
+        engine.run(
+            &auth,
+            &CallerContext::Anonymous,
+            Login {
+                identifier: identifier.to_string(),
+                password: Password::new(password).unwrap(),
+            },
+        )
+    };
+
+    login("kevin@example.com", "SecurePass123!")
+        .await
+        .expect("login by email");
+    login("kevin", "SecurePass123!")
+        .await
+        .expect("login by username");
+    let err = login("kevin", "WrongPass123!")
         .await
         .expect_err("wrong password rejected");
     assert!(matches!(
@@ -134,6 +141,7 @@ async fn login_by_email_or_username(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
+    use crate::domain::caller::CallerContext;
     use crate::domain::organization::OrganizationName;
     use crate::domain::permission::Permission;
     use crate::domain::user::{Email, Password, Username};
@@ -141,9 +149,9 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use crate::postgres::PgSessionRepository;
     use scylla_auth::audit::NoopAuditLog;
     use scylla_auth::authz::PermissionService;
-    use scylla_auth::caller::CallerContext;
     use scylla_auth::cedar::CedarPermissionService;
     use scylla_core::application::SignupUseCases;
+    use scylla_core::application::signup::Signup;
     use scylla_core::infrastructure::Argon2HashService;
     use std::sync::Arc;
 
@@ -166,12 +174,16 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
         permission.clone(),
     );
 
-    let outcome = signup_uc
-        .signup(
-            Username::new("founder").unwrap(),
-            Email::new("founder@example.com").unwrap(),
-            Password::new("SecurePass123!").unwrap(),
-            OrganizationName::new("Founders Inc").unwrap(),
+    let outcome = actions(permission.clone())
+        .run(
+            &signup_uc,
+            &CallerContext::Anonymous,
+            Signup {
+                username: Username::new("founder").unwrap(),
+                email: Email::new("founder@example.com").unwrap(),
+                password: Password::new("SecurePass123!").unwrap(),
+                organization_name: OrganizationName::new("Founders Inc").unwrap(),
+            },
         )
         .await
         .expect("signup");

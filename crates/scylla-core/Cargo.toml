@@ -6,7 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 # This package lives exactly two directories below the workspace root, and that
-# depth is load-bearing: `src/rest/ui.rs` embeds `../../apps/frontend/dist` with
+# depth is load-bearing: `src/rest/ui.rs` embeds `../../web/dist` with
 # rust-embed and build.rs watches the same path, both resolved against
 # CARGO_MANIFEST_DIR. Moving it one level deeper silently ships no web UI.
 
@@ -16,9 +16,9 @@ repository.workspace = true
 # edition binaries.
 register = []
 
-# Exposes the `test_support` builders and the PermissionService / QuotaPolicy
-# doubles to downstream test code (the persistence crate's tests seed through
-# the builders).
+# Exposes the `test_support` builders, the PermissionService doubles and the
+# `actions` engine builder to downstream test code (the persistence crate's
+# tests seed through the builders).
 test-utils = []
 
 [dependencies]
@@ -26,7 +26,7 @@ test-utils = []
 scylla-domain = { workspace = true }
 # the access model (RBAC ports, scoped grants, the Cedar adapter)
 scylla-auth = { workspace = true }
-# the edition boundary: the extension traits the use cases call through
+# the edition boundary: the action pipeline every write goes through
 scylla-extension = { workspace = true }
 tokio.workspace = true
 async-trait.workspace = true

@@ -9,9 +9,10 @@
 // control over everything. See `application/permission/grant.rs` (SYSTEM scope).
 
 // ── Internal services ──────────────────────────────────────────────────
-// In-process subsystems (recorder, bootstrap) bypass user RBAC. Explicit,
-// auditable replacement for the old silent recorder bypass. Tighten later to
-// per-service action allowlists once service identities are on the wire.
+// In-process subsystems (recorder, bootstrap, the server drivers) bypass user
+// RBAC. Explicit, auditable replacement for the old silent recorder bypass.
+// Tighten later to per-service action allowlists once service identities are
+// on the wire.
 @id("service")
 permit (
     principal,

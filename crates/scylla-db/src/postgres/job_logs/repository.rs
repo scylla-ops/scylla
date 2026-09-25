@@ -31,11 +31,6 @@ impl JobLogRepository for PgJobLogRepository {
         queries::create(&self.pool, log).await
     }
 
-    #[instrument(skip_all, fields(log_id = %id))]
-    async fn find_by_id(&self, id: &JobLogId) -> DomainResult<JobLog> {
-        queries::find_by_id(&self.pool, id).await
-    }
-
     #[instrument(skip_all, fields(job_id = %job_id))]
     async fn list_by_job(
         &self,
@@ -118,32 +113,6 @@ pub mod queries {
         .await
         .to_domain()?;
         Ok(log.clone())
-    }
-
-    pub async fn find_by_id<'e, E>(executor: E, id: &JobLogId) -> DomainResult<JobLog>
-    where
-        E: PgExecutor<'e>,
-    {
-        let rec = sqlx::query!(
-            r#"
-            SELECT id, job_id, node_id, stream, line, timestamp, created_at
-            FROM job_logs
-            WHERE id = $1
-            "#,
-            id.as_str(),
-        )
-        .fetch_one(executor)
-        .await
-        .not_found_as("JobLog", id.to_string())?;
-        row_into_log(
-            rec.id,
-            rec.job_id,
-            rec.node_id,
-            rec.stream,
-            rec.line,
-            rec.timestamp,
-            rec.created_at,
-        )
     }
 
     pub async fn count_by_job<'e, E>(

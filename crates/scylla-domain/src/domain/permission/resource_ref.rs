@@ -1,14 +1,22 @@
-use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::ids::{
+    AppCredentialId, AppId, GrantId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId,
+    SecretId, TriggerId, UserId,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResourceRef {
     System,
     User(UserId),
     Organization(OrganizationId),
+    Invitation(InvitationId),
     Project(ProjectId),
     Pipeline(PipelineId),
     Job(JobId),
+    Secret(SecretId),
+    Trigger(TriggerId),
     App(AppId),
+    AppSecret(AppCredentialId),
+    Grant(GrantId),
 }
 
 impl ResourceRef {
@@ -18,10 +26,15 @@ impl ResourceRef {
             Self::System => "system",
             Self::User(_) => "user",
             Self::Organization(_) => "organization",
+            Self::Invitation(_) => "invitation",
             Self::Project(_) => "project",
             Self::Pipeline(_) => "pipeline",
             Self::Job(_) => "job",
+            Self::Secret(_) => "secret",
+            Self::Trigger(_) => "trigger",
             Self::App(_) => "app",
+            Self::AppSecret(_) => "app_secret",
+            Self::Grant(_) => "grant",
         }
     }
 }
@@ -32,10 +45,15 @@ impl std::fmt::Display for ResourceRef {
             Self::System => write!(f, "{}", self.kind()),
             Self::User(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Organization(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Invitation(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Project(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Pipeline(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Job(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Secret(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Trigger(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::App(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::AppSecret(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Grant(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
         }
     }
 }

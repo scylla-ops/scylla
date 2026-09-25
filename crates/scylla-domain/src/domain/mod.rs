@@ -7,6 +7,7 @@ pub mod ids;
 
 pub mod agent;
 pub mod app;
+pub mod caller;
 pub mod invitation;
 pub mod job;
 pub mod organization;

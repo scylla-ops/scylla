@@ -2920,7 +2920,6 @@ dependencies = [
  "async-trait",
  "cedar-policy",
  "chrono",
- "derive_more",
  "scylla-domain",
  "tokio",
  "tracing",
@@ -2990,6 +2989,7 @@ dependencies = [
  "scylla-auth",
  "scylla-core",
  "scylla-domain",
+ "scylla-extension",
  "sqlx",
  "tokio",
  "tracing",
@@ -3012,7 +3012,10 @@ name = "scylla-extension"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "thiserror 2.0.20",
+ "chrono",
+ "scylla-domain",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

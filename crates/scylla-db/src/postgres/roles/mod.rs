@@ -217,23 +217,15 @@ mod tests {
 
     #[sqlx::test(migrations = "../../migrations")]
     async fn effective_permissions_resolves_roles_and_direct_grants(pool: PgPool) {
+        use crate::domain::caller::{CallerContext, ServiceIdentity};
         use crate::domain::errors::DomainResult;
         use crate::domain::ids::UserId;
-        use crate::domain::permission::Permission;
         use crate::postgres::PgGrantRepository;
-        use scylla_auth::authz::{
-            PermissionService, PolicyControl, Principal, RoleUseCases, Scope,
-        };
-        use scylla_auth::caller::{CallerContext, ServiceIdentity};
+        use scylla_auth::authz::{PolicyControl, Principal, Scope};
+        use scylla_core::application::role::{GetEffectivePermissions, RoleUseCases};
+        use scylla_core::test_support::authz::{RecordingPermissionService, actions};
         use std::sync::Arc;
 
-        struct AllowAll;
-        #[async_trait::async_trait]
-        impl PermissionService for AllowAll {
-            async fn check(&self, _c: &CallerContext, _p: Permission) -> DomainResult<()> {
-                Ok(())
-            }
-        }
         struct NoopPolicy;
         #[async_trait::async_trait]
         impl PolicyControl for NoopPolicy {
@@ -282,12 +274,18 @@ mod tests {
         let uc = RoleUseCases::new(
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool)),
-            Arc::new(AllowAll),
             Arc::new(NoopPolicy),
         );
+        let actions = actions(Arc::new(RecordingPermissionService::new()));
         let caller = CallerContext::Service(ServiceIdentity::recorder());
-        let scopes = uc
-            .effective_permissions(&caller, &Principal::User(UserId::new("alice")))
+        let scopes = actions
+            .run(
+                &uc,
+                &caller,
+                GetEffectivePermissions {
+                    principal: Principal::User(UserId::new("alice")),
+                },
+            )
             .await
             .unwrap();
 
@@ -308,23 +306,17 @@ mod tests {
 
     #[sqlx::test(migrations = "../../migrations")]
     async fn my_permissions_needs_no_permission_unlike_the_admin_view(pool: PgPool) {
-        use crate::domain::errors::{DomainError, DomainResult};
+        use crate::domain::caller::{CallerContext, ServiceIdentity};
+        use crate::domain::errors::DomainResult;
         use crate::domain::ids::UserId;
-        use crate::domain::permission::Permission;
         use crate::postgres::PgGrantRepository;
-        use scylla_auth::authz::{
-            PermissionService, PolicyControl, Principal, RoleUseCases, Scope,
+        use scylla_auth::authz::{PolicyControl, Principal, Scope};
+        use scylla_core::application::role::{
+            GetEffectivePermissions, GetMyPermissions, RoleUseCases,
         };
-        use scylla_auth::caller::{CallerContext, ServiceIdentity};
+        use scylla_core::test_support::authz::{DenyingPermissionService, actions};
         use std::sync::Arc;
 
-        struct DenyAll;
-        #[async_trait::async_trait]
-        impl PermissionService for DenyAll {
-            async fn check(&self, _c: &CallerContext, _p: Permission) -> DomainResult<()> {
-                Err(DomainError::Forbidden("denied".to_string()))
-            }
-        }
         struct NoopPolicy;
         #[async_trait::async_trait]
         impl PolicyControl for NoopPolicy {
@@ -344,27 +336,39 @@ mod tests {
         let uc = RoleUseCases::new(
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool)),
-            Arc::new(DenyAll),
             Arc::new(NoopPolicy),
         );
+        let actions = actions(Arc::new(DenyingPermissionService::new()));
 
         let alice = CallerContext::User(UserId::new("alice"));
-        let scopes = uc.my_permissions(&alice).await.expect("own permissions");
+        let scopes = actions
+            .run(&uc, &alice, GetMyPermissions)
+            .await
+            .expect("own permissions");
         assert_eq!(scopes.len(), 1);
         assert!(matches!(&scopes[0].scope, Scope::Organization(o) if o.as_str() == "o1"));
         assert!(scopes[0].full_control, "organization-admin confers '*'");
 
         let bob = CallerContext::User(UserId::new("bob"));
-        assert!(uc.my_permissions(&bob).await.unwrap().is_empty());
+        let scopes = actions.run(&uc, &bob, GetMyPermissions).await.unwrap();
+        assert!(scopes.is_empty());
 
         assert!(
-            uc.effective_permissions(&alice, &Principal::User(UserId::new("bob")))
+            actions
+                .run(
+                    &uc,
+                    &alice,
+                    GetEffectivePermissions {
+                        principal: Principal::User(UserId::new("bob")),
+                    },
+                )
                 .await
                 .is_err(),
             "reading another principal must still require manageSystemGrants",
         );
 
         let service = CallerContext::Service(ServiceIdentity::recorder());
-        assert!(uc.my_permissions(&service).await.is_err());
+        let refused = actions.run(&uc, &service, GetMyPermissions).await;
+        assert!(refused.is_err());
     }
 }

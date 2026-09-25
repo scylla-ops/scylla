@@ -1,7 +1,8 @@
 use crate::authz::role::RoleRepository;
-use crate::caller::CallerContext;
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
+use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 
 pub const SYSTEM_ADMIN_ROLE: &str = "system-admin";
@@ -54,6 +55,16 @@ impl Scope {
             Self::System => ScopeKind::System,
             Self::Organization(_) => ScopeKind::Organization,
             Self::Project(_) => ScopeKind::Project,
+        }
+    }
+
+    /// Cedar's `resource in ?resource` confines the caller to its own subtree; no trust in the caller.
+    #[must_use]
+    pub fn manage_permission(&self) -> Permission {
+        match self {
+            Self::System => Permission::ManageSystemGrants,
+            Self::Organization(id) => Permission::ManageOrgGrants(id.clone()),
+            Self::Project(id) => Permission::ManageProjectGrants(id.clone()),
         }
     }
 }

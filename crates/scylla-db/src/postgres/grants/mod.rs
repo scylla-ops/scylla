@@ -42,60 +42,6 @@ where
     Ok(())
 }
 
-pub async fn delete_by_principal_and_scope<'e, E>(
-    executor: E,
-    principal: &Principal,
-    scope: &Scope,
-) -> DomainResult<()>
-where
-    E: PgExecutor<'e>,
-{
-    let (scope_kind, scope_id) = match scope {
-        Scope::System => (SCOPE_SYSTEM, SYSTEM_SCOPE_ID),
-        Scope::Organization(id) => (SCOPE_ORGANIZATION, id.as_str()),
-        Scope::Project(id) => (SCOPE_PROJECT, id.as_str()),
-    };
-    sqlx::query!(
-        "DELETE FROM grants \
-         WHERE principal_kind = $1 AND principal_id = $2 \
-           AND scope_kind = $3 AND scope_id = $4",
-        principal.kind(),
-        principal.id(),
-        scope_kind,
-        scope_id,
-    )
-    .execute(executor)
-    .await
-    .to_domain()?;
-    Ok(())
-}
-
-pub async fn delete_by_user_under_org<'e, E>(
-    executor: E,
-    user_id: &UserId,
-    org_id: &OrganizationId,
-) -> DomainResult<()>
-where
-    E: PgExecutor<'e>,
-{
-    sqlx::query!(
-        "DELETE FROM grants \
-         WHERE principal_kind = $1 AND principal_id = $2 \
-           AND ((scope_kind = $3 AND scope_id = $4) \
-             OR (scope_kind = $5 AND scope_id IN \
-                   (SELECT id FROM projects WHERE organization_id = $4)))",
-        PRINCIPAL_USER,
-        user_id.as_str(),
-        SCOPE_ORGANIZATION,
-        org_id.as_str(),
-        SCOPE_PROJECT,
-    )
-    .execute(executor)
-    .await
-    .to_domain()?;
-    Ok(())
-}
-
 /// System-scoped grants stay out of reach: an org admin must not strip a platform operator.
 pub async fn delete_under_scope<'e, E>(
     executor: E,

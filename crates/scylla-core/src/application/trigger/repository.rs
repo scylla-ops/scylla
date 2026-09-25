@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
 #[async_trait]
-pub trait TriggerRepository {
+pub trait TriggerRepository: Send + Sync {
     async fn create(
         &self,
         trigger: &Trigger,

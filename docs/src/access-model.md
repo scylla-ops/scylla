@@ -34,6 +34,58 @@ disagree with itself about who is where.
 | Organization | The organization and all its projects | Customer administrators   |
 | Project      | That project only                     | Delivery teams            |
 
+## Items inside a project
+
+Pipelines, jobs, triggers and secrets are not scopes. You cannot grant a role
+on them. A check on one of these items finds the project that holds the item,
+and then applies the rule above to that project.
+
+A check on one trigger uses the permissions of its pipeline: `manageTriggers`
+to read, change, enable, disable or delete it, and `runPipeline` to fire it
+now. A change also needs `runPipeline`. Thus the roles that give these
+permissions on the pipeline also give them on its triggers.
+
+A check on an unknown secret or trigger finds no project. Only a System grant
+reaches it. Thus a caller without a System grant gets "forbidden" for an
+unknown secret or trigger, and does not learn if it exists. A caller with a
+System grant gets "not found".
+
+## Invitations
+
+An invitation is not a scope. A check on one invitation, for example to revoke
+it, finds the organization that holds the invitation. Then it applies the rule
+above to that organization, with the permission `manageInvitations`. Thus the
+roles that give this permission on the organization also give it on its
+invitations.
+
+A check on an unknown invitation finds no organization. As for an unknown
+secret or trigger, only a System grant reaches it. A caller without a System
+grant gets "forbidden", and a caller with a System grant gets "not found".
+
+## App secrets
+
+An app secret is not a scope. A check on one app secret, for example to revoke
+it or to disable it, finds the app that holds the secret, and then the
+organization that holds the app. Then it applies the rule above to that
+organization, with the permission `deleteApp`. Thus the roles that give this
+permission on the organization also give it on the secrets of its apps.
+
+A check on an unknown app secret finds no app. As for an unknown invitation,
+only a System grant reaches it. A caller without a System grant gets
+"forbidden", and a caller with a System grant gets "not found".
+
+## Revoking a grant
+
+A check to revoke one grant finds the scope that holds the grant. Then it
+applies the rule above to that scope, with the manage-grants permission of the
+scope kind: `manageProjectGrants` for a project grant, `manageOrgGrants` for an
+organization grant and `manageSystemGrants` for a System grant. Thus the roles
+that give this permission on the scope also give it on the grants of the scope.
+
+A check on an unknown grant finds no scope, and uses the System rule. Only a
+grant that gives `manageSystemGrants` reaches it. A caller without it gets
+"forbidden". A caller with it gets a success, and nothing changes.
+
 ## Being somewhere
 
 Being in an organization, or on a project, means **holding a role on it**. It is

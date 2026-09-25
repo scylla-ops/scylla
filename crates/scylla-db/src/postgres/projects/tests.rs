@@ -20,17 +20,51 @@ async fn create_then_find_round_trip(pool: PgPool) {
     assert_eq!(found.created_at(), project.created_at());
 }
 
+/// The quota scenario the Enterprise Edition needs: a `Policy` on `Prepare` that counts creates
+/// per organization and vetoes past a limit, registered in the hooks the pipeline runs.
+struct DenyAfter {
+    limit: usize,
+    seen: std::sync::Mutex<std::collections::HashMap<String, usize>>,
+}
+
+#[async_trait::async_trait]
+impl scylla_extension::Policy for DenyAfter {
+    async fn enforce(
+        &self,
+        _: scylla_extension::StageKind,
+        action: &dyn scylla_extension::Action,
+    ) -> crate::domain::errors::DomainResult<()> {
+        let Some(org) = action.access().permissions().iter().find_map(|p| match p {
+            crate::domain::permission::Permission::CreateProject(org) => Some(org),
+            _ => None,
+        }) else {
+            return Ok(());
+        };
+        let mut seen = self.seen.lock().unwrap();
+        let count = seen.entry(org.as_str().to_owned()).or_insert(0);
+        if *count >= self.limit {
+            return Err(DomainError::quota_exceeded(format!(
+                "project quota reached for this organization ({count}/{})",
+                self.limit
+            )));
+        }
+        *count += 1;
+        Ok(())
+    }
+}
+
 #[sqlx::test(migrations = "../../migrations")]
-async fn project_quota_enforced(pool: PgPool) {
+async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
+    use crate::domain::caller::{CallerContext, ServiceIdentity};
     use crate::domain::project::ProjectName;
     use crate::postgres::{
         PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository, PgUserRepository,
     };
     use scylla_auth::audit::NoopAuditLog;
-    use scylla_auth::caller::CallerContext;
-    use scylla_auth::caller::ServiceIdentity;
     use scylla_auth::cedar::CedarPermissionService;
     use scylla_core::application::ProjectUseCases;
+    use scylla_core::application::project::CreateProject;
+    use scylla_extension::{Hooks, StageKind};
     use std::sync::Arc;
 
     let org = seed_org(&pool, "limited").await;
@@ -44,33 +78,37 @@ async fn project_quota_enforced(pool: PgPool) {
         .await
         .expect("cedar"),
     );
+    let mut hooks = Hooks::new();
+    hooks.policy(
+        StageKind::Prepare,
+        Arc::new(DenyAfter {
+            limit: 2,
+            seen: std::sync::Mutex::default(),
+        }),
+    );
+    let actions = actions_with(permission.clone(), hooks);
     let uc = ProjectUseCases::new(
         Arc::new(PgProjectRepository::new(pool.clone())),
         Arc::new(PgUserRepository::new(pool.clone())),
         permission.clone(),
         permission.clone(),
         permission,
-        Arc::new(DenyAfter::new(2)),
     );
     let caller = CallerContext::Service(ServiceIdentity::recorder());
+    let create = |name: &str| CreateProject {
+        organization_id: org.id().clone(),
+        name: ProjectName::new(name).unwrap(),
+        description: None,
+    };
 
     for n in ["a", "b"] {
-        uc.create(
-            &caller,
-            ProjectName::new(n).unwrap(),
-            None,
-            org.id().clone(),
-        )
-        .await
-        .expect("under quota");
+        actions
+            .run(&uc, &caller, create(n))
+            .await
+            .expect("under quota");
     }
-    let err = uc
-        .create(
-            &caller,
-            ProjectName::new("c").unwrap(),
-            None,
-            org.id().clone(),
-        )
+    let err = actions
+        .run(&uc, &caller, create("c"))
         .await
         .expect_err("over quota");
     assert!(matches!(err, DomainError::QuotaExceeded(_)));
@@ -114,29 +152,6 @@ async fn list_by_organization_filters_other_orgs(pool: PgPool) {
     );
     assert_eq!(
         repo.list_by_organization(org_b.id(), None, &Visibility::All)
-            .await
-            .unwrap()
-            .metadata()
-            .total_count(),
-        1,
-    );
-}
-
-#[sqlx::test(migrations = "../../migrations")]
-async fn list_active_filters_inactive(pool: PgPool) {
-    let org = seed_org(&pool, "org").await;
-    let repo = PgProjectRepository::new(pool);
-    repo.create(&project(&org, "active")).await.unwrap();
-    repo.create(
-        &ProjectBuilder::new(&org, "dormant")
-            .is_active(false)
-            .build(),
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(
-        repo.list_active(None)
             .await
             .unwrap()
             .metadata()
@@ -230,6 +245,7 @@ async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
+    use crate::domain::caller::CallerContext;
     use crate::domain::role::RoleName;
     use crate::postgres::{PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository};
     use scylla_auth::audit::NoopAuditLog;
@@ -237,7 +253,6 @@ async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
         Grant, GrantRepository, PROJECT_VIEWER_ROLE, Principal, Scope, Visibility,
         VisibilityResolver,
     };
-    use scylla_auth::caller::CallerContext;
     use scylla_auth::cedar::CedarPermissionService;
     use std::sync::Arc;
 
@@ -286,4 +301,75 @@ async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
         "the other project is not hers"
     );
     assert_eq!(page.items()[0].id(), mine.id());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_update_from_a_stale_read_is_a_conflict_and_the_first_write_wins(pool: PgPool) {
+    use crate::domain::project::ProjectName;
+
+    let org = seed_org(&pool, "acme").await;
+    let repo = PgProjectRepository::new(pool);
+    let project = project(&org, "one");
+    repo.create(&project).await.expect("create");
+
+    let mut first = repo.find_by_id(project.id()).await.expect("first read");
+    let mut second = repo.find_by_id(project.id()).await.expect("second read");
+    assert_eq!(first.version(), 0);
+
+    first.update_name(ProjectName::new("a").unwrap()).unwrap();
+    let written = repo.update(&first).await.expect("first write");
+    assert_eq!(written.version(), 1);
+
+    second.update_name(ProjectName::new("b").unwrap()).unwrap();
+    let err = repo.update(&second).await.expect_err("stale write");
+    assert!(matches!(err, DomainError::Conflict(_)));
+
+    let stored = repo.find_by_id(project.id()).await.expect("find");
+    assert_eq!(stored.name().as_str(), "a");
+    assert_eq!(stored.version(), 1);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_delete_with_a_stale_version_is_a_conflict(pool: PgPool) {
+    use crate::domain::project::ProjectName;
+
+    let org = seed_org(&pool, "acme").await;
+    let repo = PgProjectRepository::new(pool);
+    let project = project(&org, "one");
+    repo.create(&project).await.expect("create");
+
+    let stale = repo.find_by_id(project.id()).await.expect("read");
+    let mut fresh = stale.clone();
+    fresh
+        .update_name(ProjectName::new("renamed").unwrap())
+        .unwrap();
+    let fresh = repo.update(&fresh).await.expect("write");
+
+    let err = repo.delete(&stale).await.expect_err("stale delete");
+    assert!(matches!(err, DomainError::Conflict(_)));
+    assert!(repo.find_by_id(project.id()).await.is_ok());
+
+    repo.delete(&fresh)
+        .await
+        .expect("delete at the current version");
+    assert!(matches!(
+        repo.find_by_id(project.id()).await,
+        Err(DomainError::NotFound { .. })
+    ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_write_on_a_missing_row_is_not_found(pool: PgPool) {
+    let org = seed_org(&pool, "acme").await;
+    let repo = PgProjectRepository::new(pool);
+    let never_persisted = project(&org, "ghost");
+
+    assert!(matches!(
+        repo.update(&never_persisted).await,
+        Err(DomainError::NotFound { .. })
+    ));
+    assert!(matches!(
+        repo.delete(&never_persisted).await,
+        Err(DomainError::NotFound { .. })
+    ));
 }

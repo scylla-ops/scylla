@@ -1,17 +1,20 @@
-use crate::application::{
-    AgentDispatch, AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
-};
+use crate::application::actions::app_only;
+use crate::application::agent::{RecordAgentHost, TouchAgent};
+use crate::application::job::{AppendJobLog, RecordJobStatus};
+use crate::application::{AgentDispatch, AgentUseCases, JobLogUseCases, JobUseCases};
 use crate::application::{JobDispatch, JobEvent};
+use crate::domain::agent::AgentHost;
+use crate::domain::caller::CallerContext;
+use crate::domain::clock;
+use crate::domain::ids::{AppId, JobId};
+use crate::domain::job::JobLog;
+use crate::domain::pipeline::{NodeId, Step};
 use crate::extract_auth_context;
 use crate::grpc::convert::dt;
+use crate::grpc::mappers::domain_error_to_status;
 use crate::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
 use derive_more::Constructor;
-use scylla_auth::authz::PermissionService;
-use scylla_auth::caller::CallerContext;
-use scylla_domain::domain::agent::AgentHost;
-use scylla_domain::domain::ids::{AppId, JobId};
-use scylla_domain::domain::job::JobLog;
-use scylla_domain::domain::pipeline::{NodeId, Step};
+use scylla_extension::Actions;
 use scylla_proto::agent::v1::{
     AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, ResolvedEnv, agent_down,
     agent_node, agent_service_server::AgentService, agent_up,
@@ -28,27 +31,18 @@ use tonic::{Request, Response, Status, Streaming};
 use tracing::warn;
 
 #[derive(Constructor)]
-pub struct AgentHandler<J, L, PS>
-where
-    J: JobRepository,
-    L: JobLogRepository,
-    PS: PermissionService,
-{
+pub struct AgentHandler {
+    actions: Arc<Actions>,
+    jobs: Arc<JobUseCases>,
+    logs: Arc<JobLogUseCases>,
+    agents: Arc<AgentUseCases>,
     registry: Arc<InMemoryAgentRegistry>,
     log_stream: Arc<InMemoryJobLogStream>,
-    job_use_cases: Arc<JobUseCases<J, PS>>,
-    log_use_cases: Arc<JobLogUseCases<L, PS>>,
-    agent_repo: Arc<dyn AgentRepository>,
     pending_signal: Arc<Notify>,
 }
 
 #[async_trait::async_trait]
-impl<
-    J: JobRepository + Send + Sync + 'static,
-    L: JobLogRepository + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-> AgentService for AgentHandler<J, L, PS>
-{
+impl AgentService for AgentHandler {
     type OpenStream = Pin<Box<dyn Stream<Item = Result<AgentDown, Status>> + Send + 'static>>;
 
     async fn open(
@@ -56,27 +50,27 @@ impl<
         request: Request<Streaming<AgentUp>>,
     ) -> Result<Response<Self::OpenStream>, Status> {
         let caller = caller!(request);
-        let CallerContext::App(app_id) = caller else {
-            return Err(Status::permission_denied(
-                "the agent stream requires an app token",
-            ));
-        };
+        self.actions
+            .run(&*self.agents, &caller, TouchAgent)
+            .await
+            .map_err(domain_error_to_status)?;
+        let app_id = app_only(&caller).map_err(domain_error_to_status)?;
 
         let inbound = request.into_inner();
         let (conn_id, dispatch_rx) = self.registry.register(&app_id);
-
         self.pending_signal.notify_one();
 
-        tokio::spawn(read_reports(
-            inbound,
-            app_id.clone(),
-            self.job_use_cases.clone(),
-            self.log_use_cases.clone(),
-            self.log_stream.clone(),
-            self.registry.clone(),
-            self.agent_repo.clone(),
-            conn_id,
-        ));
+        let reader = Reader {
+            caller,
+            app_id: app_id.clone(),
+            actions: self.actions.clone(),
+            jobs: self.jobs.clone(),
+            logs: self.logs.clone(),
+            agents: self.agents.clone(),
+            log_stream: self.log_stream.clone(),
+            registry: self.registry.clone(),
+        };
+        tokio::spawn(reader.read(inbound, conn_id));
 
         // The stream owns a `DisconnectGuard`: a half-closed client must not leave a stale sender.
         let down = ReceiverStream::new(dispatch_rx).map(|d| Ok(dispatch_to_proto(&d)));
@@ -84,7 +78,7 @@ impl<
             inner: down,
             _guard: DisconnectGuard {
                 registry: self.registry.clone(),
-                app_id: app_id.clone(),
+                app_id,
                 conn_id,
             },
         };
@@ -92,64 +86,90 @@ impl<
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-async fn read_reports<J, L, PS>(
-    mut inbound: Streaming<AgentUp>,
+struct Reader {
+    caller: CallerContext,
     app_id: AppId,
-    job_use_cases: Arc<JobUseCases<J, PS>>,
-    log_use_cases: Arc<JobLogUseCases<L, PS>>,
+    actions: Arc<Actions>,
+    jobs: Arc<JobUseCases>,
+    logs: Arc<JobLogUseCases>,
+    agents: Arc<AgentUseCases>,
     log_stream: Arc<InMemoryJobLogStream>,
     registry: Arc<InMemoryAgentRegistry>,
-    agent_repo: Arc<dyn AgentRepository>,
-    conn_id: u64,
-) where
-    J: JobRepository + Send + Sync + 'static,
-    L: JobLogRepository + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-{
-    let caller = CallerContext::App(app_id.clone());
-    touch_last_seen(&agent_repo, &app_id).await;
-    while let Ok(Some(up)) = inbound.message().await {
-        match up.payload {
-            Some(agent_up::Payload::Status(status)) => {
-                let job_id = JobId::new(status.job_id.clone().unwrap_or_default().value);
-                if let Some(event) = scylla_proto::convert::status_to_job_event(&status) {
-                    if let Err(e) = job_use_cases.record_status(&caller, &job_id, &event).await {
-                        warn!(app_id = %app_id, job_id = %job_id, error = %e, "failed to record job status");
+}
+
+impl Reader {
+    async fn read(self, mut inbound: Streaming<AgentUp>, conn_id: u64) {
+        while let Ok(Some(up)) = inbound.message().await {
+            match up.payload {
+                Some(agent_up::Payload::Status(status)) => {
+                    let job_id = JobId::new(status.job_id.clone().unwrap_or_default().value);
+                    if let Some(event) = scylla_proto::convert::status_to_job_event(&status) {
+                        self.record_status(job_id, event).await;
                     }
-                    // Open at start so a reader tailing before the first line joins; subscribe never creates a channel.
-                    if matches!(event, JobEvent::JobStarted) {
-                        log_stream.open(job_id.as_str());
-                    }
-                    if matches!(event, JobEvent::JobCompleted | JobEvent::JobFailed { .. }) {
-                        log_stream.close(job_id.as_str());
-                        registry.release(&app_id);
+                    self.touch().await;
+                }
+                Some(agent_up::Payload::Log(line)) => {
+                    if let Some(log) = log_line_to_domain(&line) {
+                        self.append_log(log).await;
                     }
                 }
-                touch_last_seen(&agent_repo, &app_id).await;
-            }
-            Some(agent_up::Payload::Log(line)) => {
-                if let Some(log) = log_line_to_domain(&line) {
-                    if let Err(e) = log_use_cases.append(&caller, &log).await {
-                        warn!(app_id = %app_id, job_id = %log.job_id(), error = %e, "failed to append job log");
-                    } else {
-                        log_stream.publish(log);
+                Some(agent_up::Payload::Hello(hello)) => {
+                    let host = RecordAgentHost {
+                        host: hello_to_domain(&hello),
+                    };
+                    if let Err(e) = self.actions.run(&*self.agents, &self.caller, host).await {
+                        warn!(app_id = %self.app_id, error = %e, "failed to record agent host");
                     }
+                    self.touch().await;
                 }
+                None => {}
             }
-            Some(agent_up::Payload::Hello(hello)) => {
-                let host = hello_to_domain(&hello);
-                if let Err(e) = agent_repo.record_host(&app_id, &host).await {
-                    warn!(app_id = %app_id, error = %e, "failed to record agent host");
-                }
-                touch_last_seen(&agent_repo, &app_id).await;
-            }
-            None => {}
+        }
+        // Only if this connection is still the live one: a reconnect may have replaced it.
+        self.touch().await;
+        self.registry.unregister_if_current(&self.app_id, conn_id);
+    }
+
+    async fn touch(&self) {
+        if let Err(e) = self
+            .actions
+            .run(&*self.agents, &self.caller, TouchAgent)
+            .await
+        {
+            warn!(app_id = %self.app_id, error = %e, "failed to update agent last_seen");
         }
     }
-    // Only if this connection is still the live one: a reconnect may have replaced it.
-    touch_last_seen(&agent_repo, &app_id).await;
-    registry.unregister_if_current(&app_id, conn_id);
+
+    async fn record_status(&self, job_id: JobId, event: JobEvent) {
+        let record = RecordJobStatus {
+            job_id: job_id.clone(),
+            event: event.clone(),
+        };
+        let recorded = self.actions.run(&*self.jobs, &self.caller, record).await;
+        if let Err(e) = &recorded {
+            warn!(app_id = %self.app_id, job_id = %job_id, error = %e, "failed to record job status");
+        }
+        // Open at start so a reader tailing before the first line joins; subscribe never creates a channel.
+        // A terminal report frees the slot even if the write failed: the agent no longer runs the job.
+        match event {
+            JobEvent::JobStarted if recorded.is_ok() => self.log_stream.open(job_id.as_str()),
+            JobEvent::JobCompleted | JobEvent::JobFailed { .. } => {
+                self.log_stream.close(job_id.as_str());
+                self.registry.release(&self.app_id);
+            }
+            _ => {}
+        }
+    }
+
+    async fn append_log(&self, log: JobLog) {
+        let append = AppendJobLog { log: log.clone() };
+        match self.actions.run(&*self.logs, &self.caller, append).await {
+            Ok(_) => self.log_stream.publish(log),
+            Err(e) => {
+                warn!(app_id = %self.app_id, job_id = %log.job_id(), error = %e, "failed to append job log");
+            }
+        }
+    }
 }
 
 struct DisconnectGuard {
@@ -186,13 +206,7 @@ fn hello_to_domain(hello: &scylla_proto::agent::v1::AgentHello) -> AgentHost {
         hostname: hello.hostname.clone(),
         cpu_count: (hello.cpu_count > 0).then_some(hello.cpu_count),
         total_memory_mb: (hello.total_memory_mb > 0).then_some(hello.total_memory_mb),
-        reported_at: chrono::Utc::now(),
-    }
-}
-
-async fn touch_last_seen(agent_repo: &Arc<dyn AgentRepository>, app_id: &AppId) {
-    if let Err(e) = agent_repo.touch_last_seen(app_id, chrono::Utc::now()).await {
-        warn!(app_id = %app_id, error = %e, "failed to update agent last_seen");
+        reported_at: clock::now(),
     }
 }
 
@@ -254,7 +268,7 @@ fn log_line_to_domain(line: &scylla_proto::agent::v1::JobLogLine) -> Option<JobL
         .map_err(|e| warn!(node_id = %node_id_str, error = %e, "invalid node_id in agent log"))
         .ok()?;
     let stream = scylla_proto::convert::log_stream_from_proto(line.stream);
-    let timestamp = dt(line.timestamp).unwrap_or_else(chrono::Utc::now);
+    let timestamp = dt(line.timestamp).unwrap_or_else(clock::now);
     Some(JobLog::new(
         JobId::new(line.job_id.clone().unwrap_or_default().value),
         node_id,

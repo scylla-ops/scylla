@@ -13,7 +13,7 @@ pub struct Cli {
     #[arg(short, long)]
     pub config: Option<String>,
 
-    /// Serve the API only, without the web UI (the `pnpm dev` loop). Overrides `[ui].enabled`.
+    /// Serve the API only, without the web UI (the scylla-web dev server loop). Overrides `[ui].enabled`.
     #[arg(long = "no-ui")]
     pub no_ui: bool,
 }
@@ -73,6 +73,7 @@ pub fn init_tracing(edition_targets: &[&str]) {
     let core_targets = [
         "scylla_server",
         "scylla_core",
+        "scylla_extension",
         "scylla_auth",
         "scylla_db",
         "scylla_domain",

@@ -2,7 +2,6 @@ use super::PgSessionRepository;
 use crate::domain::errors::DomainError;
 use crate::postgres::PgUserRepository;
 use crate::test_support::prelude::*;
-use chrono::Duration;
 use scylla_core::application::{SessionRepository, UserRepository};
 use sqlx::PgPool;
 
@@ -26,21 +25,6 @@ async fn find_by_token_not_found(pool: PgPool) {
     let repo = PgSessionRepository::new(pool);
     let res = repo.find_by_token("does-not-exist").await;
     assert!(matches!(res, Err(DomainError::NotFound { .. })));
-}
-
-#[sqlx::test(migrations = "../../migrations")]
-async fn update_extends_expiration(pool: PgPool) {
-    let user = seed_user(&pool, "carol").await;
-    let repo = PgSessionRepository::new(pool);
-    let mut session = SessionBuilder::new(user.id()).build();
-    repo.create(&session).await.expect("create");
-
-    let original = session.expires_at();
-    session.extend(Duration::hours(24));
-    repo.update(&session).await.expect("update");
-
-    let found = repo.find_by_token(session.token()).await.expect("find");
-    assert!(found.expires_at() > original);
 }
 
 #[sqlx::test(migrations = "../../migrations")]

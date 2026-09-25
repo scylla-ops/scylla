@@ -1,11 +1,18 @@
+//! Wire to command, command outcome to wire. The handler holds none of it.
+
+use crate::application::job::{
+    DeleteJob, GetJob, ListJobs, ListOrganizationJobs, ListPipelineJobs, ListProjectJobs,
+};
 use crate::grpc::convert::{ts, wrap};
 use scylla_domain::domain::job::JobOrigin;
 use scylla_domain::domain::job::{
     Job, JobNode, JobState, NodeExecution, NodeOutcome, TerminalOutcome,
 };
 use scylla_proto::job::v1::{
-    Job as ProtoJob, JobNode as ProtoJobNode, JobOutcome, NodeOutcome as ProtoNodeOutcome, job,
-    job_node,
+    DeleteJobRequest, GetJobRequest, Job as ProtoJob, JobNode as ProtoJobNode, JobOutcome,
+    ListJobsRequest, ListJobsResponse, ListOrganizationJobsRequest, ListOrganizationJobsResponse,
+    ListPipelineJobsRequest, ListPipelineJobsResponse, ListProjectJobsRequest,
+    ListProjectJobsResponse, NodeOutcome as ProtoNodeOutcome, job, job_node,
 };
 
 pub fn job_to_proto(job: &Job) -> ProtoJob {
@@ -103,5 +110,76 @@ fn node_outcome_to_proto(outcome: NodeOutcome) -> ProtoNodeOutcome {
         NodeOutcome::Failed => ProtoNodeOutcome::Failed,
         NodeOutcome::Cancelled => ProtoNodeOutcome::Cancelled,
         NodeOutcome::Skipped => ProtoNodeOutcome::Skipped,
+    }
+}
+
+parse!(GetJobRequest => GetJob { id: id(job_id) });
+parse!(DeleteJobRequest => DeleteJob { id: id(job_id) });
+parse!(ListJobsRequest => ListJobs { pagination: page });
+
+parse!(ListPipelineJobsRequest => ListPipelineJobs {
+    pipeline_id: id(pipeline_id),
+    pagination: page,
+});
+
+parse!(ListProjectJobsRequest => ListProjectJobs {
+    project_id: id(project_id),
+    pagination: page,
+});
+
+parse!(ListOrganizationJobsRequest => ListOrganizationJobs {
+    organization_id: id(organization_id),
+    pagination: page,
+});
+
+page_response!(
+    Job => jobs: job_to_proto;
+    ListJobsResponse,
+    ListPipelineJobsResponse,
+    ListProjectJobsResponse,
+    ListOrganizationJobsResponse,
+);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::grpc::convert::Parse;
+    use scylla_proto::common::v1 as common;
+    use tonic::Code;
+
+    #[test]
+    fn a_get_request_becomes_a_query_on_the_job() {
+        let query = GetJobRequest {
+            job_id: wrap("job-1"),
+        }
+        .parse()
+        .unwrap();
+
+        assert_eq!(query.id.as_str(), "job-1");
+    }
+
+    #[test]
+    fn a_missing_id_is_an_invalid_argument() {
+        let err = DeleteJobRequest {
+            job_id: None::<common::JobId>,
+        }
+        .parse()
+        .unwrap_err();
+
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "missing job_id");
+    }
+
+    #[test]
+    fn a_pipeline_list_request_carries_its_pipeline_and_page() {
+        let query = ListPipelineJobsRequest {
+            pipeline_id: wrap("pipe-1"),
+            pagination: None,
+        }
+        .parse()
+        .unwrap();
+
+        assert_eq!(query.pipeline_id.as_str(), "pipe-1");
+        assert!(query.pagination.is_none());
     }
 }

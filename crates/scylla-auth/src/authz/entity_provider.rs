@@ -8,6 +8,7 @@ pub struct ResourceAncestors {
     pub organization: Option<OrganizationId>,
     pub project: Option<ProjectId>,
     pub pipeline: Option<PipelineId>,
+    pub app: Option<AppId>,
 }
 
 #[async_trait]

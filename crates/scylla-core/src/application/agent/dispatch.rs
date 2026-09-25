@@ -30,14 +30,11 @@ pub struct DispatchEnv {
 }
 
 /// Both the immediate run and the pending retry go through here so a job dispatches identically.
-pub async fn assemble_dispatch<P>(
-    pipeline_repo: &P,
+pub async fn assemble_dispatch(
+    pipeline_repo: &dyn PipelineRepository,
     secret_resolver: &dyn SecretResolver,
     job: &Job,
-) -> DomainResult<JobDispatch>
-where
-    P: PipelineRepository + ?Sized,
-{
+) -> DomainResult<JobDispatch> {
     let pipeline = pipeline_repo.find_by_id(job.pipeline_id()).await?;
     let nodes = secret_resolver
         .resolve(pipeline.project_id(), pipeline.nodes())

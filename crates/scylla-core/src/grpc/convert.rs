@@ -1,6 +1,8 @@
+use crate::grpc::mappers::domain_error_to_status;
 use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
 use scylla_auth::authz::{Principal, Scope, ScopeKind};
+use scylla_domain::domain::errors::DomainResult;
 use scylla_domain::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
 use scylla_proto::authz::v1::{
     Permission, PrincipalRef, ScopeKind as ProtoScopeKind, ScopeRef, principal_ref, scope_ref,
@@ -52,6 +54,26 @@ pub fn required<T: Wrapper>(field: Option<T>, name: &str) -> Result<String, Stat
 
 pub fn optional<T: Wrapper>(field: Option<T>) -> Option<String> {
     field.map(T::into_value)
+}
+
+/// A required id wrapper as its domain id.
+pub fn id<W: Wrapper, I: From<String>>(field: Option<W>, name: &str) -> Result<I, Status> {
+    required(field, name).map(I::from)
+}
+
+/// A domain value built from a wire string; a validation failure is the client's fault.
+pub fn valid<T>(
+    value: impl Into<String>,
+    new: impl FnOnce(String) -> DomainResult<T>,
+) -> Result<T, Status> {
+    new(value.into()).map_err(domain_error_to_status)
+}
+
+/// A request knows the command or query it becomes, so a handler never assembles one by hand.
+pub trait Parse: Sized {
+    type Into;
+
+    fn parse(self) -> Result<Self::Into, Status>;
 }
 
 #[must_use]

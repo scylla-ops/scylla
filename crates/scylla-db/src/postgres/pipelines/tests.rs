@@ -99,7 +99,7 @@ async fn cascade_project_delete_removes_pipelines(pool: PgPool) {
     let repo = PgPipelineRepository::new(pool.clone());
 
     PgProjectRepository::new(pool)
-        .delete(project.id())
+        .delete(&project)
         .await
         .unwrap();
 

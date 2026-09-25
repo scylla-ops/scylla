@@ -1,53 +1,27 @@
-use crate::application::{
-    AccountOutcome, HashService, OAuthIdentityRepository, OAuthOutcome, OAuthProvider,
-    OAuthUseCases, SessionRepository, SignupRepository, UserRepository,
-};
-use crate::grpc::convert::wrap;
-use crate::grpc::mappers::domain_error_to_status;
+use crate::application::OAuthUseCases;
+use crate::grpc::adapter::run_public;
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
+use scylla_extension::Actions;
 use scylla_proto::oauth::v1::{
-    CallbackRequest, CallbackResponse, GetAuthUrlRequest, GetAuthUrlResponse, callback_response,
-    callback_response::{ExistingAccount, NewAccount},
+    CallbackRequest, CallbackResponse, GetAuthUrlRequest, GetAuthUrlResponse,
     oauth_service_server::OauthService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct OAuthHandler<P, IR, SR, U, S, H, PC>
-where
-    P: OAuthProvider,
-    IR: OAuthIdentityRepository,
-    SR: SignupRepository,
-    U: UserRepository,
-    S: SessionRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
-    use_cases: Arc<OAuthUseCases<P, IR, SR, U, S, H, PC>>,
+pub struct OAuthHandler {
+    actions: Arc<Actions>,
+    oauth: Arc<OAuthUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    P: OAuthProvider + Send + Sync + 'static,
-    IR: OAuthIdentityRepository + Send + Sync + 'static,
-    SR: SignupRepository + Send + Sync + 'static,
-    U: UserRepository + Send + Sync + 'static,
-    S: SessionRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> OauthService for OAuthHandler<P, IR, SR, U, S, H, PC>
-{
+impl OauthService for OAuthHandler {
     async fn get_auth_url(
         &self,
         request: Request<GetAuthUrlRequest>,
     ) -> Result<Response<GetAuthUrlResponse>, Status> {
-        let req = request.into_inner();
-        let url = self
-            .use_cases
-            .authorize_url(&req.state)
-            .map_err(domain_error_to_status)?;
+        let url = run_public(&self.actions, &*self.oauth, request).await?;
         Ok(Response::new(GetAuthUrlResponse { url }))
     }
 
@@ -55,30 +29,7 @@ impl<
         &self,
         request: Request<CallbackRequest>,
     ) -> Result<Response<CallbackResponse>, Status> {
-        let req = request.into_inner();
-        let OAuthOutcome {
-            token,
-            user_id,
-            account,
-        } = self
-            .use_cases
-            .callback(&req.code)
-            .await
-            .map_err(domain_error_to_status)?;
-        let outcome = match account {
-            AccountOutcome::New { organization_id } => {
-                callback_response::Outcome::NewAccount(NewAccount {
-                    organization_id: wrap(organization_id.to_string()),
-                })
-            }
-            AccountOutcome::Existing => {
-                callback_response::Outcome::ExistingAccount(ExistingAccount {})
-            }
-        };
-        Ok(Response::new(CallbackResponse {
-            token,
-            user_id: wrap(user_id.to_string()),
-            outcome: Some(outcome),
-        }))
+        let outcome = run_public(&self.actions, &*self.oauth, request).await?;
+        Ok(Response::new(outcome.into()))
     }
 }

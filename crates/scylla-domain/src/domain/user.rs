@@ -67,16 +67,6 @@ impl User {
         Ok(())
     }
 
-    pub fn set_email(&mut self, email: Option<Email>) {
-        self.email = email;
-        self.updated_at = clock::now();
-    }
-
-    pub fn update_password_hash(&mut self, password_hash: PasswordHash) {
-        self.password_hash = password_hash;
-        self.updated_at = clock::now();
-    }
-
     #[must_use]
     pub fn id(&self) -> &UserId {
         &self.id

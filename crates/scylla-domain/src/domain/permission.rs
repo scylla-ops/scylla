@@ -2,7 +2,10 @@ mod resource_ref;
 
 pub use resource_ref::*;
 
-use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::ids::{
+    AppCredentialId, AppId, GrantId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId,
+    SecretId, TriggerId, UserId,
+};
 use std::sync::LazyLock;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,6 +24,8 @@ pub enum Permission {
     ListOrganizationMembers(OrganizationId),
     /// Separate from member listing so a plain member cannot enumerate invitee emails.
     ManageInvitations(OrganizationId),
+    /// `manageInvitations` on the invitation's organization. Shares its key, so it is not in the catalog.
+    RevokeInvitation(InvitationId),
     ListUserOrganizations(UserId),
 
     CreateProject(OrganizationId),
@@ -40,13 +45,17 @@ pub enum Permission {
     ExecuteJob(PipelineId),
     /// Does not confer `RunPipeline`.
     ManageTriggers(PipelineId),
+    /// `manageTriggers` on the trigger's pipeline. Shares its key, so it is not in the catalog.
+    ManageTrigger(TriggerId),
+    /// `runPipeline` on the trigger's pipeline. Shares its key, so it is not in the catalog.
+    RunTriggerPipeline(TriggerId),
     ListPipelines,
     ListPipelinesByProject(ProjectId),
     ListPipelinesByOrganization(OrganizationId),
 
     CreateSecret(ProjectId),
     ListSecrets(ProjectId),
-    DeleteSecret(ProjectId),
+    DeleteSecret(SecretId),
 
     CreateJob,
     ReadJob(JobId),
@@ -66,6 +75,8 @@ pub enum Permission {
     ReadApp(AppId),
     ReadAppStats(AppId),
     DeleteApp(AppId),
+    /// `deleteApp` on the secret's app. Shares its key, so it is not in the catalog.
+    ManageAppSecret(AppCredentialId),
     ListAppsByOrganization(OrganizationId),
 
     CreateAgent(OrganizationId),
@@ -74,6 +85,9 @@ pub enum Permission {
     ManageSystemGrants,
     ManageOrgGrants(OrganizationId),
     ManageProjectGrants(ProjectId),
+    /// The manage-grants permission of the grant's scope kind, which the access model resolves.
+    /// The key is the System one, the key of an unknown grant, so it is not in the catalog.
+    RevokeGrant(GrantId),
     ManageRoles,
 }
 
@@ -93,7 +107,7 @@ impl Permission {
             Self::DeleteOrganization(_) => "deleteOrganization",
             Self::ListOrganizations => "listOrganizations",
             Self::ListOrganizationMembers(_) => "listOrganizationMembers",
-            Self::ManageInvitations(_) => "manageInvitations",
+            Self::ManageInvitations(_) | Self::RevokeInvitation(_) => "manageInvitations",
             Self::ListUserOrganizations(_) => "listUserOrganizations",
 
             Self::CreateProject(_) => "createProject",
@@ -109,9 +123,9 @@ impl Permission {
             Self::ReadPipeline(_) => "readPipeline",
             Self::UpdatePipeline(_) => "updatePipeline",
             Self::DeletePipeline(_) => "deletePipeline",
-            Self::RunPipeline(_) => "runPipeline",
+            Self::RunPipeline(_) | Self::RunTriggerPipeline(_) => "runPipeline",
             Self::ExecuteJob(_) => "executeJob",
-            Self::ManageTriggers(_) => "manageTriggers",
+            Self::ManageTriggers(_) | Self::ManageTrigger(_) => "manageTriggers",
             Self::ListPipelines => "listPipelines",
             Self::ListPipelinesByProject(_) => "listPipelinesByProject",
             Self::ListPipelinesByOrganization(_) => "listPipelinesByOrganization",
@@ -136,14 +150,14 @@ impl Permission {
             Self::CreateApp(_) => "createApp",
             Self::ReadApp(_) => "readApp",
             Self::ReadAppStats(_) => "readAppStats",
-            Self::DeleteApp(_) => "deleteApp",
+            Self::DeleteApp(_) | Self::ManageAppSecret(_) => "deleteApp",
             Self::ListAppsByOrganization(_) => "listAppsByOrganization",
 
             Self::CreateAgent(_) => "createAgent",
             Self::ListAgents(_) => "listAgents",
 
             // One action per scope so the Cedar schema pins `appliesTo`; a shared action would let one permit cover all three.
-            Self::ManageSystemGrants => "manageSystemGrants",
+            Self::ManageSystemGrants | Self::RevokeGrant(_) => "manageSystemGrants",
             Self::ManageOrgGrants(_) => "manageOrgGrants",
             Self::ManageProjectGrants(_) => "manageProjectGrants",
             Self::ManageRoles => "manageRoles",
@@ -185,6 +199,8 @@ impl Permission {
             | Self::ListAgents(id)
             | Self::ManageOrgGrants(id) => ResourceRef::Organization(id.clone()),
 
+            Self::RevokeInvitation(id) => ResourceRef::Invitation(id.clone()),
+
             Self::ReadProject(id)
             | Self::UpdateProject(id)
             | Self::DeleteProject(id)
@@ -194,7 +210,6 @@ impl Permission {
             | Self::ListJobsByProject(id)
             | Self::CreateSecret(id)
             | Self::ListSecrets(id)
-            | Self::DeleteSecret(id)
             | Self::ManageProjectGrants(id) => ResourceRef::Project(id.clone()),
 
             Self::ReadPipeline(id)
@@ -213,9 +228,19 @@ impl Permission {
             | Self::WriteJobStatus(id)
             | Self::AppendJobLog(id) => ResourceRef::Job(id.clone()),
 
+            Self::DeleteSecret(id) => ResourceRef::Secret(id.clone()),
+
+            Self::ManageTrigger(id) | Self::RunTriggerPipeline(id) => {
+                ResourceRef::Trigger(id.clone())
+            }
+
             Self::ReadApp(id) | Self::ReadAppStats(id) | Self::DeleteApp(id) => {
                 ResourceRef::App(id.clone())
             }
+
+            Self::ManageAppSecret(id) => ResourceRef::AppSecret(id.clone()),
+
+            Self::RevokeGrant(id) => ResourceRef::Grant(id.clone()),
         }
     }
 
@@ -229,10 +254,15 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "system",
     "user",
     "organization",
+    "invitation",
     "project",
     "pipeline",
     "job",
+    "secret",
+    "trigger",
     "app",
+    "app_secret",
+    "grant",
 ];
 
 fn catalog_variants() -> Vec<Permission> {
@@ -241,6 +271,7 @@ fn catalog_variants() -> Vec<Permission> {
     let project = ProjectId::new("_");
     let pipeline = PipelineId::new("_");
     let job = JobId::new("_");
+    let secret = SecretId::new("_");
     let app = AppId::new("_");
     vec![
         Permission::CreateUser,
@@ -276,7 +307,7 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::ListPipelinesByOrganization(org.clone()),
         Permission::CreateSecret(project.clone()),
         Permission::ListSecrets(project.clone()),
-        Permission::DeleteSecret(project.clone()),
+        Permission::DeleteSecret(secret),
         Permission::CreateJob,
         Permission::ReadJob(job.clone()),
         Permission::UpdateJob(job.clone()),
@@ -311,11 +342,6 @@ pub static PERMISSION_CATALOG: LazyLock<Vec<(&'static str, &'static str)>> = Laz
 });
 
 #[must_use]
-pub fn is_known_permission(key: &str) -> bool {
-    PERMISSION_CATALOG.iter().any(|(k, _)| *k == key)
-}
-
-#[must_use]
 pub fn permission_resource_type(key: &str) -> Option<&'static str> {
     PERMISSION_CATALOG
         .iter()
@@ -325,8 +351,15 @@ pub fn permission_resource_type(key: &str) -> Option<&'static str> {
 
 #[cfg(test)]
 mod catalog_tests {
-    use super::{PERMISSION_CATALOG, RESOURCE_TYPES, catalog_variants};
+    use super::{
+        PERMISSION_CATALOG, Permission, RESOURCE_TYPES, catalog_variants, permission_resource_type,
+    };
+    use crate::domain::ids::{AppCredentialId, GrantId, InvitationId, TriggerId};
     use std::collections::HashSet;
+
+    fn is_known_permission(key: &str) -> bool {
+        permission_resource_type(key).is_some()
+    }
 
     #[test]
     fn permission_catalog_is_consistent() {
@@ -342,5 +375,37 @@ mod catalog_tests {
             );
         }
         assert_eq!(PERMISSION_CATALOG.len(), catalog_variants().len());
+    }
+
+    #[test]
+    fn trigger_permissions_reuse_catalog_keys() {
+        let trigger = TriggerId::new("_");
+        for permission in [
+            Permission::ManageTrigger(trigger.clone()),
+            Permission::RunTriggerPipeline(trigger),
+        ] {
+            assert!(is_known_permission(permission.key()));
+        }
+    }
+
+    #[test]
+    fn invitation_permissions_reuse_catalog_keys() {
+        assert!(is_known_permission(
+            Permission::RevokeInvitation(InvitationId::new("_")).key()
+        ));
+    }
+
+    #[test]
+    fn app_secret_permissions_reuse_catalog_keys() {
+        assert!(is_known_permission(
+            Permission::ManageAppSecret(AppCredentialId::new("_")).key()
+        ));
+    }
+
+    #[test]
+    fn grant_permissions_reuse_catalog_keys() {
+        assert!(is_known_permission(
+            Permission::RevokeGrant(GrantId::new("_")).key()
+        ));
     }
 }
