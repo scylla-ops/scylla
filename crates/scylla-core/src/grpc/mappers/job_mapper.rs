@@ -1,7 +1,7 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
 use crate::application::job::{
-    DeleteJob, GetJob, ListJobs, ListOrganizationJobs, ListPipelineJobs, ListProjectJobs,
+    CancelJob, DeleteJob, GetJob, ListJobs, ListOrganizationJobs, ListPipelineJobs, ListProjectJobs,
 };
 use crate::grpc::convert::{ts, wrap};
 use scylla_domain::domain::job::JobOrigin;
@@ -9,10 +9,11 @@ use scylla_domain::domain::job::{
     Job, JobNode, JobState, NodeExecution, NodeOutcome, TerminalOutcome,
 };
 use scylla_proto::job::v1::{
-    DeleteJobRequest, GetJobRequest, Job as ProtoJob, JobNode as ProtoJobNode, JobOutcome,
-    ListJobsRequest, ListJobsResponse, ListOrganizationJobsRequest, ListOrganizationJobsResponse,
-    ListPipelineJobsRequest, ListPipelineJobsResponse, ListProjectJobsRequest,
-    ListProjectJobsResponse, NodeOutcome as ProtoNodeOutcome, job, job_node,
+    CancelJobRequest, DeleteJobRequest, GetJobRequest, Job as ProtoJob, JobNode as ProtoJobNode,
+    JobOutcome, ListJobsRequest, ListJobsResponse, ListOrganizationJobsRequest,
+    ListOrganizationJobsResponse, ListPipelineJobsRequest, ListPipelineJobsResponse,
+    ListProjectJobsRequest, ListProjectJobsResponse, NodeOutcome as ProtoNodeOutcome, job,
+    job_node,
 };
 
 pub fn job_to_proto(job: &Job) -> ProtoJob {
@@ -26,14 +27,16 @@ pub fn job_to_proto(job: &Job) -> ProtoJob {
             .collect(),
         created_at: ts(job.created_at()),
         updated_at: ts(job.updated_at()),
-        state: Some(job_state_to_proto(job.state())),
+        state: Some(job_state_to_proto(job)),
         origin: Some(origin_to_proto(job.origin())),
     }
 }
 
-fn job_state_to_proto(state: &JobState) -> job::State {
-    match state {
-        JobState::Pending => job::State::Pending(job::Pending {}),
+fn job_state_to_proto(job: &Job) -> job::State {
+    match job.state() {
+        JobState::Pending => job::State::Pending(job::Pending {
+            agent_id: job.agent_app_id().and_then(|id| wrap(id.to_string())),
+        }),
         JobState::Running { started_at } => job::State::Running(job::Running {
             started_at: ts(*started_at),
         }),
@@ -114,6 +117,7 @@ fn node_outcome_to_proto(outcome: NodeOutcome) -> ProtoNodeOutcome {
 }
 
 parse!(GetJobRequest => GetJob { id: id(job_id) });
+parse!(CancelJobRequest => CancelJob { id: id(job_id) });
 parse!(DeleteJobRequest => DeleteJob { id: id(job_id) });
 parse!(ListJobsRequest => ListJobs { pagination: page });
 
@@ -168,6 +172,37 @@ mod tests {
 
         assert_eq!(err.code(), Code::InvalidArgument);
         assert_eq!(err.message(), "missing job_id");
+    }
+
+    #[test]
+    fn a_pending_job_names_the_agent_it_is_placed_on() {
+        use crate::domain::ids::{AppId, ProjectId};
+        use crate::test_support::jobs::JobBuilder;
+        use crate::test_support::pipelines::PipelineBuilder;
+        let pipeline = PipelineBuilder::for_project_id(ProjectId::new("p")).build();
+        let agent = |job: &Job| match job_to_proto(job).state {
+            Some(job::State::Pending(pending)) => pending.agent_id.map(|id| id.value),
+            other => panic!("expected a pending job, got {other:?}"),
+        };
+
+        let placed = JobBuilder::new(&pipeline)
+            .agent(AppId::new("agent-1"))
+            .build();
+        let waiting = JobBuilder::new(&pipeline).build();
+
+        assert_eq!(agent(&placed).as_deref(), Some("agent-1"));
+        assert_eq!(agent(&waiting), None);
+    }
+
+    #[test]
+    fn a_cancel_request_becomes_a_command_on_the_job() {
+        let command = CancelJobRequest {
+            job_id: wrap("job-1"),
+        }
+        .parse()
+        .unwrap();
+
+        assert_eq!(command.id.as_str(), "job-1");
     }
 
     #[test]

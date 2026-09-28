@@ -1,6 +1,6 @@
-use crate::domain::errors::DomainResult;
+use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{InvitationId, OrganizationId, UserId};
-use crate::domain::invitation::Invitation;
+use crate::domain::invitation::{Invitation, InvitationStatus};
 use crate::domain::user::User;
 use async_trait::async_trait;
 use scylla_auth::authz::Grant;
@@ -9,6 +9,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::SqlxResultExt;
+use super::super::version::written;
 use super::super::{grants, users};
 
 #[derive(Clone)]
@@ -26,8 +27,8 @@ impl PgInvitationRepository {
 #[async_trait]
 impl InvitationRepository for PgInvitationRepository {
     #[instrument(skip_all, fields(invite_id = %invite.id()))]
-    async fn create(&self, invite: &Invitation) -> DomainResult<()> {
-        queries::create(&self.pool, invite).await
+    async fn create(&self, invite: &Invitation, token: &str) -> DomainResult<()> {
+        queries::create(&self.pool, invite, token).await
     }
 
     #[instrument(skip_all, fields(invite_id = %id))]
@@ -47,7 +48,16 @@ impl InvitationRepository for PgInvitationRepository {
 
     #[instrument(skip_all, fields(invite_id = %id))]
     async fn revoke(&self, id: &InvitationId) -> DomainResult<()> {
-        queries::revoke(&self.pool, id).await
+        let revoked = queries::settle(&self.pool, id, InvitationStatus::Revoked)
+            .await?
+            .then_some(());
+        written(
+            revoked,
+            "Invitation",
+            id,
+            queries::find_by_id(&self.pool, id),
+        )
+        .await
     }
 
     #[instrument(skip_all, fields(invite_id = %invite_id, member = %member))]
@@ -60,11 +70,13 @@ impl InvitationRepository for PgInvitationRepository {
     ) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
 
+        if !queries::settle(&mut *tx, invite_id, InvitationStatus::Accepted).await? {
+            return Err(DomainError::stale("Invitation", invite_id));
+        }
         if let Some(user) = new_user {
             users::repository::queries::create(&mut *tx, user).await?;
         }
         grants::insert(&mut *tx, grant).await?;
-        queries::mark_accepted(&mut *tx, invite_id).await?;
 
         tx.commit().await.to_domain()?;
         Ok(())
@@ -86,7 +98,6 @@ pub mod queries {
         organization_id: String,
         email: String,
         role_name: Option<String>,
-        token: String,
         status: String,
         invited_by: String,
         expires_at: DateTime<Utc>,
@@ -103,7 +114,6 @@ pub mod queries {
             OrganizationId::new(organization_id),
             email,
             role,
-            token,
             status,
             UserId::new(invited_by),
             expires_at,
@@ -111,21 +121,22 @@ pub mod queries {
         ))
     }
 
-    pub async fn create<'e, E>(executor: E, invite: &Invitation) -> DomainResult<()>
+    /// Stores the SHA-256 of the token, never the token.
+    pub async fn create<'e, E>(executor: E, invite: &Invitation, token: &str) -> DomainResult<()>
     where
         E: PgExecutor<'e>,
     {
         sqlx::query!(
             r#"
             INSERT INTO organization_invites
-                (id, organization_id, email, role_name, token, status, invited_by, expires_at, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                (id, organization_id, email, role_name, token_hash, status, invited_by, expires_at, created_at)
+            VALUES ($1, $2, $3, $4, encode(sha256(convert_to($5, 'UTF8')), 'hex'), $6, $7, $8, $9)
             "#,
             invite.id().as_str(),
             invite.organization_id().as_str(),
             invite.email().as_str(),
             invite.role().map(RoleName::as_str),
-            invite.token(),
+            token,
             invite.status().as_str(),
             invite.invited_by().as_str(),
             invite.expires_at(),
@@ -143,7 +154,7 @@ pub mod queries {
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, organization_id, email, role_name, token, status, invited_by, expires_at, created_at
+            SELECT id, organization_id, email, role_name, status, invited_by, expires_at, created_at
             FROM organization_invites
             WHERE id = $1
             "#,
@@ -151,13 +162,12 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        .not_found_as("Invitation", id.to_string())?;
+        .not_found_as("Invitation", id)?;
         row_into_invitation(
             rec.id,
             rec.organization_id,
             rec.email,
             rec.role_name,
-            rec.token,
             rec.status,
             rec.invited_by,
             rec.expires_at,
@@ -171,9 +181,9 @@ pub mod queries {
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, organization_id, email, role_name, token, status, invited_by, expires_at, created_at
+            SELECT id, organization_id, email, role_name, status, invited_by, expires_at, created_at
             FROM organization_invites
-            WHERE token = $1
+            WHERE token_hash = encode(sha256(convert_to($1, 'UTF8')), 'hex')
             "#,
             token,
         )
@@ -185,7 +195,6 @@ pub mod queries {
             rec.organization_id,
             rec.email,
             rec.role_name,
-            rec.token,
             rec.status,
             rec.invited_by,
             rec.expires_at,
@@ -202,7 +211,7 @@ pub mod queries {
     {
         let rows = sqlx::query!(
             r#"
-            SELECT id, organization_id, email, role_name, token, status, invited_by, expires_at, created_at
+            SELECT id, organization_id, email, role_name, status, invited_by, expires_at, created_at
             FROM organization_invites
             WHERE organization_id = $1 AND status = 'pending'
             ORDER BY created_at DESC
@@ -219,7 +228,6 @@ pub mod queries {
                     r.organization_id,
                     r.email,
                     r.role_name,
-                    r.token,
                     r.status,
                     r.invited_by,
                     r.expires_at,
@@ -229,31 +237,23 @@ pub mod queries {
             .collect()
     }
 
-    pub async fn revoke<'e, E>(executor: E, id: &InvitationId) -> DomainResult<()>
+    /// Moves a pending invitation to `status`; `false` when it is no longer pending.
+    pub async fn settle<'e, E>(
+        executor: E,
+        id: &InvitationId,
+        status: InvitationStatus,
+    ) -> DomainResult<bool>
     where
         E: PgExecutor<'e>,
     {
-        sqlx::query!(
-            "UPDATE organization_invites SET status = 'revoked' WHERE id = $1",
+        let res = sqlx::query!(
+            "UPDATE organization_invites SET status = $2 WHERE id = $1 AND status = 'pending'",
             id.as_str(),
+            status.as_str(),
         )
         .execute(executor)
         .await
         .to_domain()?;
-        Ok(())
-    }
-
-    pub async fn mark_accepted<'e, E>(executor: E, id: &InvitationId) -> DomainResult<()>
-    where
-        E: PgExecutor<'e>,
-    {
-        sqlx::query!(
-            "UPDATE organization_invites SET status = 'accepted' WHERE id = $1",
-            id.as_str(),
-        )
-        .execute(executor)
-        .await
-        .to_domain()?;
-        Ok(())
+        Ok(res.rows_affected() > 0)
     }
 }

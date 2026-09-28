@@ -1,4 +1,4 @@
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, UserId};
 use crate::domain::organization::Organization;
 use crate::domain::organization::{OrganizationDescription, OrganizationName};
@@ -12,6 +12,7 @@ use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
 use super::super::grants;
+use super::super::version::{from_db, to_db, written};
 
 #[derive(Clone)]
 pub struct PgOrganizationRepository {
@@ -74,14 +75,30 @@ impl OrganizationRepository for PgOrganizationRepository {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip_all, fields(org_id = %organization.id()))]
+    #[instrument(skip_all, fields(org_id = %organization.id(), version = organization.version()))]
     async fn update(&self, organization: &Organization) -> DomainResult<Organization> {
-        queries::update(&self.pool, organization).await
+        let updated = queries::update(&self.pool, organization).await?;
+        written(
+            updated,
+            "Organization",
+            organization.id(),
+            queries::find_by_id(&self.pool, organization.id()),
+        )
+        .await
     }
 
-    #[instrument(skip_all, fields(org_id = %id))]
-    async fn delete(&self, id: &OrganizationId) -> DomainResult<()> {
-        queries::delete(&self.pool, id).await
+    #[instrument(skip_all, fields(org_id = %organization.id(), version = organization.version()))]
+    async fn delete(&self, organization: &Organization) -> DomainResult<()> {
+        let deleted = queries::delete(&self.pool, organization)
+            .await?
+            .then_some(());
+        written(
+            deleted,
+            "Organization",
+            organization.id(),
+            queries::find_by_id(&self.pool, organization.id()),
+        )
+        .await
     }
 
     #[instrument(skip(self, pagination))]
@@ -93,11 +110,6 @@ impl OrganizationRepository for PgOrganizationRepository {
         let total = queries::count_all(&self.pool).await?;
         let items = queries::list_page(&self.pool, &params, false).await?;
         Ok(PaginatedResult::new(items, &params, total))
-    }
-
-    #[instrument(skip_all, fields(name = %name))]
-    async fn name_exists(&self, name: &OrganizationName) -> DomainResult<bool> {
-        queries::name_exists(&self.pool, name).await
     }
 }
 
@@ -199,7 +211,7 @@ pub mod queries {
         let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
         let rows = sqlx::query!(
             r#"
-            SELECT id, name, description, is_active, created_at, updated_at
+            SELECT id, name, description, is_active, created_at, updated_at, version
             FROM organizations o
             WHERE o.id IN (
                 SELECT g.scope_id FROM grants g
@@ -230,6 +242,7 @@ pub mod queries {
                     r.is_active,
                     r.created_at,
                     r.updated_at,
+                    r.version,
                 )
             })
             .collect()
@@ -242,6 +255,7 @@ pub mod queries {
         is_active: bool,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
+        version: i64,
     ) -> DomainResult<Organization> {
         let name = OrganizationName::new(name).db_field("org name")?;
         let description = description
@@ -255,6 +269,7 @@ pub mod queries {
             is_active,
             created_at,
             updated_at,
+            from_db(version),
         ))
     }
 
@@ -286,7 +301,7 @@ pub mod queries {
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, name, description, is_active, created_at, updated_at
+            SELECT id, name, description, is_active, created_at, updated_at, version
             FROM organizations
             WHERE id = $1
             "#,
@@ -294,7 +309,7 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        .not_found_as("Organization", id.to_string())?;
+        .not_found_as("Organization", id)?;
         row_into_org(
             rec.id,
             rec.name,
@@ -302,46 +317,67 @@ pub mod queries {
             rec.is_active,
             rec.created_at,
             rec.updated_at,
+            rec.version,
         )
     }
 
-    pub async fn update<'e, E>(executor: E, org: &Organization) -> DomainResult<Organization>
+    /// `None` when no row carries the staged version.
+    pub async fn update<'e, E>(
+        executor: E,
+        org: &Organization,
+    ) -> DomainResult<Option<Organization>>
     where
         E: PgExecutor<'e>,
     {
-        let res = sqlx::query!(
+        let rec = sqlx::query!(
             r#"
             UPDATE organizations
             SET name = $2,
                 description = $3,
                 is_active = $4,
-                updated_at = $5
-            WHERE id = $1
+                updated_at = $5,
+                version = version + 1
+            WHERE id = $1 AND version = $6
+            RETURNING id, name, description, is_active, created_at, updated_at, version
             "#,
             org.id().as_str(),
             org.name().as_str(),
             org.description().map(OrganizationDescription::as_str),
             org.is_active(),
             org.updated_at(),
+            to_db(org.version()),
+        )
+        .fetch_optional(executor)
+        .await
+        .to_domain()?;
+        rec.map(|r| {
+            row_into_org(
+                r.id,
+                r.name,
+                r.description,
+                r.is_active,
+                r.created_at,
+                r.updated_at,
+                r.version,
+            )
+        })
+        .transpose()
+    }
+
+    /// `false` when no row carries the staged version.
+    pub async fn delete<'e, E>(executor: E, org: &Organization) -> DomainResult<bool>
+    where
+        E: PgExecutor<'e>,
+    {
+        let res = sqlx::query!(
+            "DELETE FROM organizations WHERE id = $1 AND version = $2",
+            org.id().as_str(),
+            to_db(org.version()),
         )
         .execute(executor)
         .await
         .to_domain()?;
-        if res.rows_affected() == 0 {
-            return Err(DomainError::not_found("Organization", org.id().to_string()));
-        }
-        Ok(org.clone())
-    }
-
-    pub async fn delete<'e, E>(executor: E, id: &OrganizationId) -> DomainResult<()>
-    where
-        E: PgExecutor<'e>,
-    {
-        sqlx::query!("DELETE FROM organizations WHERE id = $1", id.as_str())
-            .execute(executor)
-            .await
-            .to_domain()?;
-        Ok(())
+        Ok(res.rows_affected() > 0)
     }
 
     pub async fn count_all<'e, E>(executor: E) -> DomainResult<u64>
@@ -367,7 +403,7 @@ pub mod queries {
         let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
         let rows = sqlx::query!(
             r#"
-            SELECT id, name, description, is_active, created_at, updated_at
+            SELECT id, name, description, is_active, created_at, updated_at, version
             FROM organizations
             WHERE NOT $3 OR is_active
             ORDER BY created_at DESC
@@ -389,22 +425,9 @@ pub mod queries {
                     r.is_active,
                     r.created_at,
                     r.updated_at,
+                    r.version,
                 )
             })
             .collect()
-    }
-
-    pub async fn name_exists<'e, E>(executor: E, name: &OrganizationName) -> DomainResult<bool>
-    where
-        E: PgExecutor<'e>,
-    {
-        let row = sqlx::query!(
-            r#"SELECT EXISTS(SELECT 1 FROM organizations WHERE name = $1) AS "exists!""#,
-            name.as_str(),
-        )
-        .fetch_one(executor)
-        .await
-        .to_domain()?;
-        Ok(row.exists)
     }
 }

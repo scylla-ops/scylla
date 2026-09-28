@@ -1,6 +1,7 @@
 //! The app's writes. One block per command, in the order it runs: the struct, its access,
 //! its payload types, what `Prepare` builds, what `Persist` writes. `DeleteApp` and
-//! `SetAppActive` stage the id alone: the row is not read before the write, as before.
+//! `SetAppActive` read the App to refuse the trigger runner, then stage its id; `CreateAppSecret`
+//! refuses it too, so the runner never holds a secret.
 
 use super::AppUseCases;
 use super::mint_app_secret;
@@ -49,9 +50,9 @@ impl Command for CreateApp {
 impl Run<Prepare<CreateApp>> for AppUseCases {
     async fn run(&self, input: Authorized<CreateApp>) -> DomainResult<Prepared<CreateApp>> {
         let cmd = input.command();
+        let app = App::create(cmd.organization_id.clone(), cmd.name.clone())?;
         let secret = mint_app_secret();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
-        let app = App::create(cmd.organization_id.clone(), cmd.name.clone());
         let credential = AppCredential::create(
             app.id().clone(),
             AppSecretLabel::new(DEFAULT_SECRET_LABEL)?,
@@ -102,8 +103,9 @@ impl Command for SetAppActive {
 #[async_trait]
 impl Run<Prepare<SetAppActive>> for AppUseCases {
     async fn run(&self, input: Authorized<SetAppActive>) -> DomainResult<Prepared<SetAppActive>> {
-        let id = input.command().id.clone();
-        Ok(input.prepared(id))
+        let app = self.app_repo.find_by_id(&input.command().id).await?;
+        app.ensure_user_managed()?;
+        Ok(input.prepared(app.id().clone()))
     }
 }
 
@@ -143,8 +145,9 @@ impl Command for DeleteApp {
 #[async_trait]
 impl Run<Prepare<DeleteApp>> for AppUseCases {
     async fn run(&self, input: Authorized<DeleteApp>) -> DomainResult<Prepared<DeleteApp>> {
-        let id = input.command().id.clone();
-        Ok(input.prepared(id))
+        let app = self.app_repo.find_by_id(&input.command().id).await?;
+        app.ensure_user_managed()?;
+        Ok(input.prepared(app.id().clone()))
     }
 }
 
@@ -156,6 +159,8 @@ impl Run<Persist<DeleteApp>> for AppUseCases {
                 // A DB trigger drops the app's grants with the row; reload so the live set stops carrying them.
                 self.app_repo.delete(&id).await?;
                 self.policy_control.reload().await?;
+                self.registry.disconnect(&id);
+                self.registry.wake(None);
                 Ok(Deleted::new(id))
             })
             .await
@@ -197,7 +202,10 @@ impl Run<Prepare<CreateAppSecret>> for AppUseCases {
         input: Authorized<CreateAppSecret>,
     ) -> DomainResult<Prepared<CreateAppSecret>> {
         let cmd = input.command();
-        self.app_repo.find_by_id(&cmd.app_id).await?;
+        self.app_repo
+            .find_by_id(&cmd.app_id)
+            .await?
+            .ensure_user_managed()?;
         let secret = mint_app_secret();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
         let credential = AppCredential::create(cmd.app_id.clone(), cmd.label.clone(), secret_hash);

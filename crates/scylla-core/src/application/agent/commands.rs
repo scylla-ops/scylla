@@ -1,8 +1,8 @@
 //! The agent's writes. One block per command, in the order it runs: the struct, its access,
-//! its payload types, what `Prepare` builds, what `Persist` writes. `DeleteAgent` stages the id
-//! alone: the row is not read before the write, as before. `TouchAgent` and `RecordAgentHost`
-//! come from the agent's own stream: no permission reaches the agent's own App, because its grant
-//! is on an organization or a project, so they are `Authenticated` and the target is the caller.
+//! its payload types, what `Prepare` builds, what `Persist` writes. `TouchAgent` and
+//! `RecordAgentHost` come from the agent's own stream: no permission reaches the agent's own
+//! App, because its grant is on an organization or a project, so they are `Authenticated` and
+//! the target is the caller.
 
 use super::AgentUseCases;
 use crate::application::actions::app_only;
@@ -18,8 +18,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use scylla_extension::{
-    Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
-    Run,
+    Access, Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 
 const DEFAULT_SECRET_LABEL: &str = "default";
@@ -59,9 +58,9 @@ impl Command for CreateAgent {
 impl Run<Prepare<CreateAgent>> for AgentUseCases {
     async fn run(&self, input: Authorized<CreateAgent>) -> DomainResult<Prepared<CreateAgent>> {
         let cmd = input.command();
+        let app = App::create(cmd.organization_id.clone(), cmd.name.clone())?;
         let secret = mint_app_secret();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
-        let app = App::create(cmd.organization_id.clone(), cmd.name.clone());
         let credential = AppCredential::create(
             app.id().clone(),
             AppSecretLabel::new(DEFAULT_SECRET_LABEL)?,
@@ -100,45 +99,6 @@ impl Run<Persist<CreateAgent>> for AgentUseCases {
                     .await?;
                 self.policy_control.reload().await?;
                 Ok(CreatedAgent { app, secret })
-            })
-            .await
-    }
-}
-
-#[derive(Debug)]
-pub struct DeleteAgent {
-    pub id: AppId,
-}
-
-impl Describe for DeleteAgent {
-    fn access(&self) -> Access {
-        Access::Requires(Permission::DeleteApp(self.id.clone()))
-    }
-}
-
-impl Command for DeleteAgent {
-    type Staged = AppId;
-    type Committed = Deleted<AppId>;
-}
-
-#[async_trait]
-impl Run<Prepare<DeleteAgent>> for AgentUseCases {
-    async fn run(&self, input: Authorized<DeleteAgent>) -> DomainResult<Prepared<DeleteAgent>> {
-        let id = input.command().id.clone();
-        Ok(input.prepared(id))
-    }
-}
-
-#[async_trait]
-impl Run<Persist<DeleteAgent>> for AgentUseCases {
-    async fn run(&self, input: Prepared<DeleteAgent>) -> DomainResult<Committed<DeleteAgent>> {
-        input
-            .commit(async |id| {
-                // Drop the stream first so a removed agent stops at once; the delete cascades the rest.
-                self.registry.disconnect(&id);
-                self.app_repo.delete(&id).await?;
-                self.policy_control.reload().await?;
-                Ok(Deleted::new(id))
             })
             .await
     }

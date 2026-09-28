@@ -102,7 +102,7 @@ fn proto_inputs_to_domain(inputs: Vec<ProtoTriggerInput>) -> Result<Vec<TriggerI
             let key = valid(input.key.as_str(), EnvKey::new)?;
             match input.source {
                 Some(trigger_input::Source::Literal(value)) => {
-                    Ok(TriggerInput::literal(key, value))
+                    valid(value, |v| TriggerInput::literal(key, v))
                 }
                 Some(trigger_input::Source::JsonPointer(pointer)) => {
                     valid(pointer, |p| TriggerInput::json_pointer(key, p))
@@ -173,9 +173,9 @@ fn source_to_proto(t: &Trigger, webhook_base_url: Option<&str>) -> proto_trigger
 
 fn input_to_proto(input: &TriggerInput) -> ProtoTriggerInput {
     let source = match input.source() {
-        TriggerInputSource::Literal(value) => trigger_input::Source::Literal(value.clone()),
+        TriggerInputSource::Literal(value) => trigger_input::Source::Literal(value.to_string()),
         TriggerInputSource::JsonPointer(pointer) => {
-            trigger_input::Source::JsonPointer(pointer.clone())
+            trigger_input::Source::JsonPointer(pointer.to_string())
         }
     };
     ProtoTriggerInput {

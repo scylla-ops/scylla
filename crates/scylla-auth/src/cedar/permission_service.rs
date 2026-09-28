@@ -137,20 +137,11 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             .map_err(|e| DomainError::Internal(format!("cedar link: {e}")))
     }
 
-    fn principal_entities(caller: &CallerContext) -> DomainResult<(EntityUid, Vec<Entity>)> {
+    fn principal_uid(caller: &CallerContext) -> DomainResult<EntityUid> {
         match caller {
-            CallerContext::User(id) => {
-                let uid = euid("Scylla::User", id.as_str())?;
-                Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
-            }
-            CallerContext::App(id) => {
-                let uid = euid("Scylla::App", id.as_str())?;
-                Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
-            }
-            CallerContext::Service(svc) => {
-                let uid = euid("Scylla::Service", svc.as_str())?;
-                Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
-            }
+            CallerContext::User(id) => euid("Scylla::User", id.as_str()),
+            CallerContext::App(id) => euid("Scylla::App", id.as_str()),
+            CallerContext::Service(svc) => euid("Scylla::Service", svc.as_str()),
             CallerContext::Anonymous => Err(DomainError::Forbidden(
                 "Anonymous caller is not permitted".to_string(),
             )),
@@ -161,78 +152,45 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         resource: &ResourceRef,
         ancestors: &ResourceAncestors,
     ) -> DomainResult<(EntityUid, Vec<Entity>)> {
+        fn uid_of(kind: &str, id: Option<&impl AsRef<str>>) -> DomainResult<Option<EntityUid>> {
+            id.map(|id| euid(kind, id.as_ref())).transpose()
+        }
         let uid = resource_uid(resource)?;
         let system_uid = euid("Scylla::System", "root")?;
+        let org_uid = uid_of("Scylla::Organization", ancestors.organization.as_ref())?;
+        let project_uid = uid_of("Scylla::Project", ancestors.project.as_ref())?;
+        let pipeline_uid = uid_of("Scylla::Pipeline", ancestors.pipeline.as_ref())?;
+        let app_uid = uid_of("Scylla::App", ancestors.app.as_ref())?;
 
-        let org_uid = ancestors
-            .organization
-            .as_ref()
-            .map(|o| euid("Scylla::Organization", o.as_str()))
-            .transpose()?;
-        let project_uid = ancestors
-            .project
-            .as_ref()
-            .map(|p| euid("Scylla::Project", p.as_str()))
-            .transpose()?;
-        let pipeline_uid = ancestors
-            .pipeline
-            .as_ref()
-            .map(|p| euid("Scylla::Pipeline", p.as_str()))
-            .transpose()?;
-        let app_uid = ancestors
-            .app
-            .as_ref()
-            .map(|a| euid("Scylla::App", a.as_str()))
-            .transpose()?;
-
-        let mut entities = Vec::new();
-        entities.push(Entity::new_no_attrs(system_uid.clone(), HashSet::new()));
-        if let Some(o) = &org_uid {
-            entities.push(Entity::new_no_attrs(
-                o.clone(),
-                parent_set(Some(&system_uid)),
-            ));
-        }
-        if let Some(p) = &project_uid {
-            entities.push(Entity::new_no_attrs(
-                p.clone(),
-                parent_set(org_uid.as_ref()),
-            ));
-        }
-        if let Some(pl) = &pipeline_uid {
-            entities.push(Entity::new_no_attrs(
-                pl.clone(),
-                parent_set(project_uid.as_ref()),
-            ));
-        }
-        if let Some(a) = &app_uid {
-            entities.push(Entity::new_no_attrs(
-                a.clone(),
-                parent_set(org_uid.as_ref()),
-            ));
+        let mut entities = vec![Entity::new_no_attrs(system_uid.clone(), HashSet::new())];
+        for (ancestor, parent) in [
+            (&org_uid, Some(&system_uid)),
+            (&project_uid, org_uid.as_ref()),
+            (&pipeline_uid, project_uid.as_ref()),
+            (&app_uid, org_uid.as_ref()),
+        ] {
+            if let Some(ancestor) = ancestor {
+                entities.push(Entity::new_no_attrs(ancestor.clone(), parent_set(parent)));
+            }
         }
 
-        let leaf_parent = match resource {
-            ResourceRef::Job(_) => pipeline_uid.as_ref(),
-            // An unknown secret, trigger, invitation or app secret sits under System: only a System grant reaches it, and the use case answers NotFound.
-            ResourceRef::Secret(_) => project_uid.as_ref().or(Some(&system_uid)),
-            ResourceRef::Trigger(_) => pipeline_uid.as_ref().or(Some(&system_uid)),
-            ResourceRef::Invitation(_) => org_uid.as_ref().or(Some(&system_uid)),
-            ResourceRef::AppSecret(_) => app_uid.as_ref().or(Some(&system_uid)),
-            // A grant sits under its scope, and a System or unknown grant under System.
-            ResourceRef::Grant(_) => project_uid
-                .as_ref()
-                .or(org_uid.as_ref())
-                .or(Some(&system_uid)),
-            ResourceRef::Pipeline(_) => project_uid.as_ref(),
-            ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
-            // A user's parent is System too: without it a System grant stops reaching user-targeted actions.
-            ResourceRef::Organization(_) | ResourceRef::User(_) => Some(&system_uid),
-            ResourceRef::System => None,
+        let nearest = match resource {
+            ResourceRef::Job(_) | ResourceRef::Trigger(_) => pipeline_uid.as_ref(),
+            ResourceRef::Pipeline(_) | ResourceRef::Secret(_) => project_uid.as_ref(),
+            ResourceRef::Project(_) | ResourceRef::App(_) | ResourceRef::Invitation(_) => {
+                org_uid.as_ref()
+            }
+            ResourceRef::AppSecret(_) => app_uid.as_ref(),
+            ResourceRef::Grant(_) => project_uid.as_ref().or(org_uid.as_ref()),
+            ResourceRef::Organization(_) | ResourceRef::User(_) | ResourceRef::System => None,
         };
-
-        let leaf = Entity::new_no_attrs(uid.clone(), parent_set(leaf_parent));
-        entities.push(leaf);
+        // An unknown resource sits under System: only a System grant reaches it, and the use case answers NotFound.
+        if !matches!(resource, ResourceRef::System) {
+            entities.push(Entity::new_no_attrs(
+                uid.clone(),
+                parent_set(Some(nearest.unwrap_or(&system_uid))),
+            ));
+        }
 
         Ok((uid, entities))
     }
@@ -297,18 +255,13 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
             }
         }
 
-        let (principal_uid, principal_entities) = Self::principal_entities(caller)?;
+        let principal_uid = Self::principal_uid(caller)?;
         let ancestors = self.entity_provider.resource_ancestors(&resource).await?;
         let (resource_uid, resource_entities) = Self::resource_entities(&resource, &ancestors)?;
         let action = action_key(&perm, &ancestors);
         let action_uid = euid("Scylla::Action", action)?;
 
-        // A user reading itself yields the same UID twice.
-        let mut by_uid: HashMap<String, Entity> = HashMap::new();
-        for e in resource_entities.into_iter().chain(principal_entities) {
-            by_uid.insert(e.uid().to_string(), e);
-        }
-        let entities = Entities::from_entities(by_uid.into_values(), None)
+        let entities = Entities::from_entities(resource_entities, None)
             .map_err(|e| DomainError::Internal(format!("cedar entities: {e}")))?;
 
         let request = Request::new(
@@ -411,86 +364,57 @@ mod tests {
     use crate::authz::role::FULL_CONTROL;
     use crate::domain::caller::ServiceIdentity;
     use crate::domain::ids::{
-        AppCredentialId, AppId, GrantId, InvitationId, OrganizationId, PipelineId, ProjectId,
-        SecretId, TriggerId, UserId,
+        AppCredentialId, AppId, GrantId, InvitationId, JobId, OrganizationId, PipelineId,
+        ProjectId, SecretId, TriggerId, UserId,
     };
-    use crate::domain::role::RoleName;
+    use crate::domain::role::{RoleDescription, RoleDisplayName, RoleName};
+
+    fn builtin(id: &str, scope: ScopeKind, permissions: &[&str]) -> Role {
+        Role {
+            id: id.to_string(),
+            key: Some(id.to_string()),
+            name: RoleDisplayName::new(id).unwrap(),
+            description: RoleDescription::new("").unwrap(),
+            scope,
+            owner_org: None,
+            builtin: true,
+            permissions: permissions.iter().map(ToString::to_string).collect(),
+        }
+    }
 
     /// Must match the seed migration: the templates are generated from these.
     fn builtin_roles() -> Vec<Role> {
-        let admin = |id: &str, scope: ScopeKind| Role {
-            id: id.to_string(),
-            key: Some(id.to_string()),
-            name: id.to_string(),
-            description: String::new(),
-            scope,
-            owner_org: None,
-            builtin: true,
-            permissions: vec![FULL_CONTROL.to_string()],
-        };
-        let agent = |id: &str, scope: ScopeKind| Role {
-            id: id.to_string(),
-            key: Some(id.to_string()),
-            name: id.to_string(),
-            description: String::new(),
-            scope,
-            owner_org: None,
-            builtin: true,
-            permissions: [
-                "readPipeline",
-                "executeJob",
-                "writeJobStatus",
-                "appendJobLog",
-            ]
-            .iter()
-            .map(ToString::to_string)
-            .collect(),
-        };
-        let runner = Role {
-            id: ORGANIZATION_TRIGGER_RUNNER_ROLE.to_string(),
-            key: Some(ORGANIZATION_TRIGGER_RUNNER_ROLE.to_string()),
-            name: ORGANIZATION_TRIGGER_RUNNER_ROLE.to_string(),
-            description: String::new(),
-            scope: ScopeKind::Organization,
-            owner_org: None,
-            builtin: true,
-            permissions: vec!["runPipeline".to_string()],
-        };
-        let developer = Role {
-            id: PROJECT_DEVELOPER_ROLE.to_string(),
-            key: Some(PROJECT_DEVELOPER_ROLE.to_string()),
-            name: PROJECT_DEVELOPER_ROLE.to_string(),
-            description: String::new(),
-            scope: ScopeKind::Project,
-            owner_org: None,
-            builtin: true,
-            permissions: ["readPipeline", "runPipeline", "createPipeline"]
-                .iter()
-                .map(ToString::to_string)
-                .collect(),
-        };
-        let org_viewer = Role {
-            id: ORGANIZATION_VIEWER_ROLE.to_string(),
-            key: Some(ORGANIZATION_VIEWER_ROLE.to_string()),
-            name: ORGANIZATION_VIEWER_ROLE.to_string(),
-            description: String::new(),
-            scope: ScopeKind::Organization,
-            owner_org: None,
-            builtin: true,
-            permissions: ["readOrganization", "listOrganizationMembers"]
-                .iter()
-                .map(ToString::to_string)
-                .collect(),
-        };
+        let agent = &[
+            "readPipeline",
+            "executeJob",
+            "writeJobStatus",
+            "appendJobLog",
+        ];
         vec![
-            admin(SYSTEM_ADMIN_ROLE, ScopeKind::System),
-            admin(ORGANIZATION_ADMIN_ROLE, ScopeKind::Organization),
-            admin(PROJECT_ADMIN_ROLE, ScopeKind::Project),
-            agent(ORGANIZATION_AGENT_ROLE, ScopeKind::Organization),
-            agent(PROJECT_AGENT_ROLE, ScopeKind::Project),
-            runner,
-            developer,
-            org_viewer,
+            builtin(SYSTEM_ADMIN_ROLE, ScopeKind::System, &[FULL_CONTROL]),
+            builtin(
+                ORGANIZATION_ADMIN_ROLE,
+                ScopeKind::Organization,
+                &[FULL_CONTROL],
+            ),
+            builtin(PROJECT_ADMIN_ROLE, ScopeKind::Project, &[FULL_CONTROL]),
+            builtin(ORGANIZATION_AGENT_ROLE, ScopeKind::Organization, agent),
+            builtin(PROJECT_AGENT_ROLE, ScopeKind::Project, agent),
+            builtin(
+                ORGANIZATION_TRIGGER_RUNNER_ROLE,
+                ScopeKind::Organization,
+                &["runPipeline"],
+            ),
+            builtin(
+                PROJECT_DEVELOPER_ROLE,
+                ScopeKind::Project,
+                &["readPipeline", "runPipeline", "createPipeline"],
+            ),
+            builtin(
+                ORGANIZATION_VIEWER_ROLE,
+                ScopeKind::Organization,
+                &["readOrganization", "listOrganizationMembers"],
+            ),
         ]
     }
 
@@ -543,8 +467,8 @@ mod tests {
         async fn revoke_all(&self, _p: &Principal, _s: &Scope) -> DomainResult<u64> {
             Ok(0)
         }
-        async fn create(&self, _grant: &Grant) -> DomainResult<()> {
-            Ok(())
+        async fn create(&self, grant: &Grant) -> DomainResult<Grant> {
+            Ok(grant.clone())
         }
         async fn delete(&self, _id: &str) -> DomainResult<()> {
             Ok(())
@@ -1297,35 +1221,6 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn an_unknown_secret_is_reached_only_by_a_system_grant() {
-        let delete = || Permission::DeleteSecret(SecretId::new("missing"));
-
-        let project = service(ResourceAncestors::default(), project_admin()).await;
-        assert!(
-            project
-                .check(&CallerContext::User(UserId::new("u1")), delete())
-                .await
-                .is_err()
-        );
-
-        let system = service(
-            ResourceAncestors::default(),
-            vec![Grant::new(
-                Principal::User(UserId::new("u-admin")),
-                role(SYSTEM_ADMIN_ROLE),
-                Scope::System,
-            )],
-        )
-        .await;
-        assert!(
-            system
-                .check(&CallerContext::User(UserId::new("u-admin")), delete())
-                .await
-                .is_ok()
-        );
-    }
-
     fn trigger_in(project: &str) -> ResourceAncestors {
         ResourceAncestors {
             organization: Some(OrganizationId::new("o1")),
@@ -1380,35 +1275,6 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn an_unknown_trigger_is_reached_only_by_a_system_grant() {
-        let manage = || Permission::ManageTrigger(TriggerId::new("missing"));
-
-        let project = service(ResourceAncestors::default(), project_admin()).await;
-        assert!(
-            project
-                .check(&CallerContext::User(UserId::new("u1")), manage())
-                .await
-                .is_err()
-        );
-
-        let system = service(
-            ResourceAncestors::default(),
-            vec![Grant::new(
-                Principal::User(UserId::new("u-admin")),
-                role(SYSTEM_ADMIN_ROLE),
-                Scope::System,
-            )],
-        )
-        .await;
-        assert!(
-            system
-                .check(&CallerContext::User(UserId::new("u-admin")), manage())
-                .await
-                .is_ok()
-        );
-    }
-
     fn invitation_in(organization: &str) -> ResourceAncestors {
         ResourceAncestors {
             organization: Some(OrganizationId::new(organization)),
@@ -1447,38 +1313,6 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn an_unknown_invitation_is_reached_only_by_a_system_grant() {
-        let revoke = || Permission::RevokeInvitation(InvitationId::new("missing"));
-
-        let org = service(
-            ResourceAncestors::default(),
-            org_grant(ORGANIZATION_ADMIN_ROLE),
-        )
-        .await;
-        assert!(
-            org.check(&CallerContext::User(UserId::new("u1")), revoke())
-                .await
-                .is_err()
-        );
-
-        let system = service(
-            ResourceAncestors::default(),
-            vec![Grant::new(
-                Principal::User(UserId::new("u-admin")),
-                role(SYSTEM_ADMIN_ROLE),
-                Scope::System,
-            )],
-        )
-        .await;
-        assert!(
-            system
-                .check(&CallerContext::User(UserId::new("u-admin")), revoke())
-                .await
-                .is_ok()
-        );
-    }
-
     fn app_secret_in(organization: &str) -> ResourceAncestors {
         ResourceAncestors {
             organization: Some(OrganizationId::new(organization)),
@@ -1509,48 +1343,89 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn an_unknown_app_secret_is_reached_only_by_a_system_grant() {
-        let manage = || Permission::ManageAppSecret(AppCredentialId::new("missing"));
+    fn system_admin() -> Vec<Grant> {
+        vec![Grant::new(
+            Principal::User(UserId::new("u-admin")),
+            role(SYSTEM_ADMIN_ROLE),
+            Scope::System,
+        )]
+    }
 
+    #[tokio::test]
+    async fn an_unknown_resource_is_reached_only_by_a_system_grant() {
+        let unknown = [
+            Permission::ReadProject(ProjectId::new("missing")),
+            Permission::ReadPipeline(PipelineId::new("missing")),
+            Permission::ReadJob(JobId::new("missing")),
+            Permission::ReadApp(AppId::new("missing")),
+            Permission::DeleteSecret(SecretId::new("missing")),
+            Permission::ManageTrigger(TriggerId::new("missing")),
+            Permission::RevokeInvitation(InvitationId::new("missing")),
+            Permission::ManageAppSecret(AppCredentialId::new("missing")),
+            Permission::RevokeGrant(GrantId::new("missing")),
+        ];
+        let system = service(ResourceAncestors::default(), system_admin()).await;
         let org = service(
             ResourceAncestors::default(),
             org_grant(ORGANIZATION_ADMIN_ROLE),
         )
         .await;
-        assert!(
-            org.check(&CallerContext::User(UserId::new("u1")), manage())
-                .await
-                .is_err()
-        );
+        for perm in unknown {
+            assert!(
+                system
+                    .check(&CallerContext::User(UserId::new("u-admin")), perm.clone())
+                    .await
+                    .is_ok(),
+                "a System grant reaches {perm:?}"
+            );
+            assert!(
+                org.check(&CallerContext::User(UserId::new("u1")), perm.clone())
+                    .await
+                    .is_err(),
+                "an organization grant does not reach {perm:?}"
+            );
+        }
+    }
 
-        let system = service(
-            ResourceAncestors::default(),
+    #[tokio::test]
+    async fn a_system_admin_may_delete_its_own_user() {
+        let svc = service(ResourceAncestors::default(), system_admin()).await;
+        assert!(
+            svc.check(
+                &CallerContext::User(UserId::new("u-admin")),
+                Permission::DeleteUser(UserId::new("u-admin"))
+            )
+            .await
+            .is_ok()
+        );
+    }
+
+    #[tokio::test]
+    async fn an_app_with_organization_admin_reads_itself() {
+        let svc = service(
+            invitation_in("o1"),
             vec![Grant::new(
-                Principal::User(UserId::new("u-admin")),
-                role(SYSTEM_ADMIN_ROLE),
-                Scope::System,
+                Principal::App(AppId::new("a1")),
+                role(ORGANIZATION_ADMIN_ROLE),
+                Scope::Organization(OrganizationId::new("o1")),
             )],
         )
         .await;
         assert!(
-            system
-                .check(&CallerContext::User(UserId::new("u-admin")), manage())
-                .await
-                .is_ok()
+            svc.check(
+                &CallerContext::App(AppId::new("a1")),
+                Permission::ReadApp(AppId::new("a1"))
+            )
+            .await
+            .is_ok()
         );
     }
 
     fn grant_manager_roles() -> Vec<Role> {
         let manager = |id: &str, scope: ScopeKind, key: &str| Role {
-            id: id.to_string(),
             key: None,
-            name: id.to_string(),
-            description: String::new(),
-            scope,
-            owner_org: None,
             builtin: false,
-            permissions: vec![key.to_string()],
+            ..builtin(id, scope, &[key])
         };
         let mut roles = builtin_roles();
         roles.extend([

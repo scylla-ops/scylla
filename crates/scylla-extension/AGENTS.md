@@ -260,17 +260,23 @@ no hooks. Use `actions_with(permissions, hooks)` when the test registers
 hooks. The stubs that more than one use case needs are in
 `test_support::stubs` (compiled for tests only): `CountingPolicy`,
 `StubHash`, `StubRegistry`, `StubRoles`, `StubGrants`, `StubJobs`,
-`StubSessions`, `StubSignups`, `NoUsers`, `OneUser`, `OneProject`,
-`OnePipeline`, `EchoResolver`, `empty_page` and `alice`. `StubRegistry`
-fails a test that dispatches a job; `StubRegistry::accepting()` records each
-dispatch with its payload. Keep a stub in the `tests.rs` of the use case when
+`StubTails`, `ScopesByAgent`, `StubSessions`, `StubSignups`, `NoUsers`,
+`OneUser`, `OneProject`, `OnePipeline`, `EchoResolver`, `dispatcher`,
+`empty_page` and `alice`. `StubRegistry` fails a test that sends a job to an
+agent; `StubRegistry::accepting()` records each order. `StubRegistry::connect`
+opens a stream of an agent. `StubJobs` checks and increments the version of a
+job, as the Postgres store does, and `StubJobs::place` stores a job placed on
+a stream. `dispatcher` makes a `DispatchUseCases` from these stubs. Keep a stub in the `tests.rs` of
+the use case when
 its behavior is specific to that use case, and give it a name that tells what
 it does (`RowJobs`, `CountingRoles`), not the name of a shared stub.
 
-A permission check that never refuses is not a gate. `ListOrganizationProjects`
-asks a second time for `ListProjectsByOrganization` only to choose between
-every project of the organization and the ones the caller's grants reach; that
-decision lives in the `Fetch` runner, next to the read it scopes.
+A permission check that never refuses is not a gate, and a use case does not
+ask the `PermissionService` a second time: each check writes an audit row. To
+choose what a caller sees, a `Fetch` runner reads `VisibilityResolver::visible_scopes`,
+which reads the grants and writes no audit row. `ListOrganizationProjects` uses
+it to choose between every project of the organization (`listProjectsByOrganization`
+there) and the projects that the caller can read (`readProject`).
 
 ## The hook positions
 
@@ -484,11 +490,32 @@ registers nothing.
 A row that `Prepare` reads and `Persist` writes carries a `version`. The store
 writes an update or a delete only if the stored version is the staged one and
 increments it on an update. If the row changed between the read and the
-write, the write fails with `DomainError::Conflict` and nothing is written.
+write, the write fails with `DomainError::Stale` (gRPC `ABORTED`) and nothing
+is written. `DomainError::Conflict` (gRPC `ALREADY_EXISTS`) is only for a value
+that already exists.
+A write that is not an edit writes only its own columns, and it does not
+check or change the version. For example, `RecordTriggerFire` writes only the
+last fire of a trigger, and the cron passes write only its next fire time.
+Thus a fire or a cron tick does not make an edit fail with `Stale`.
 The caller starts again with a new `Actions::run`; a `Wrap<Persist<C>>` cannot
 retry, because its input is the stale staged value. A `Gate<Persist<C>>` that
 decided on the staged value is therefore safe: the write goes through only if
 the row is still in the state the gate saw.
+
+Projects, pipelines, triggers, organizations, users and jobs carry a version.
+Each Postgres adapter gives the result of its write to `written`
+(`scylla-db/src/postgres/version.rs`) and does not add its own helper. When
+the write changed no row, `written` reads the row: if the row is there, the
+error is `Stale`, else `NotFound`. An invitation has no version: its revoke and
+its accept write only while the stored status is `pending`, and give `Stale`
+when it is not.
+
+The placement of a job is not an edit, but it changes the version:
+`JobRepository::claim_next` and `release` write only the agent and the stream
+of the job, and they increment the version. Thus a cancel that read the job
+before a placement gives `Stale`, and it cannot miss the agent that got the
+job. A pass over jobs (`ReapOrphanedJobs`, `ReconcileAgentJobs`) skips a job
+that gives `Stale`: a report of the agent came first.
 
 ## Limits and follow-ups
 
@@ -513,27 +540,44 @@ the row is still in the state the gate saw.
   `false`. `PurgeExpiredSessions` deletes the expired sessions: it is a pass
   that `SessionSweeper` (`session-sweeper`) sends one time each hour.
 - `IngestWebhook` gives `NotFound` for an unknown, disabled or non-webhook
-  trigger and `Unauthorized` for a missing or wrong signature. Every other
-  failure becomes `Internal`, so the route answers 404, 401 or 500 as before.
+  trigger and `Unauthorized` for a missing or wrong signature. A fire that
+  fails with `Validation` (a payload value that a run cannot use) stays
+  `Validation`. Every other failure becomes `Internal`. Thus the route answers
+  404, 401, 422 or 500.
 - The `AuthInterceptor` stays outside the pipeline. It is not an action: it
   makes the caller that the actions get. It only reads. It and
   `ValidateToken` use the same session rule, `auth::look_up_session`. A
   failed read is `INTERNAL` in the interceptor and `false` in
   `ValidateToken`. The interceptor also accepts an app token.
 - The agent stream sends each write through `Actions`, as the agent's own
-  token: `RecordJobStatus` and `AppendJobLog` for each report (the
-  `WriteJobStatus` and `AppendJobLog` checks are the authorize stage), and
-  `TouchAgent` and `RecordAgentHost` for the heartbeat and the host report. No
-  permission gets to the agent's own App, because its grant is on an
-  organization or a project. Thus these two are `Authenticated`, the target is
-  the caller, and `Prepare` refuses a caller that is not an App
+  token: `RecordJobStatus` for each status and `AppendJobLogs` for each batch
+  of lines (the `WriteJobStatus` and `AppendJobLog` checks are the authorize
+  stage), and `TouchAgent` and `RecordAgentHost` for the heartbeat and the host
+  report. No permission gets to the agent's own App, because its grant is on
+  an organization or a project. Thus `TouchAgent`, `RecordAgentHost`,
+  `ReleaseAgentJobs` and `ReconcileAgentJobs` are `Authenticated`, the target
+  is the caller, and `Prepare` refuses a caller that is not an App
   (`application::actions::app_only`). The stream sends `TouchAgent` before it
   registers the connection: if the action fails, the stream is refused with
-  its status and the agent is not registered. The stream opens and closes
-  the live log of a job, and frees the agent slot, only after
-  `RecordJobStatus` is written. The read loop, the live fan-out
-  (`InMemoryJobLogStream::publish`) and the registry stay outside the
-  pipeline.
+  its status and the agent is not registered. The registration gives the
+  stream its id and wakes the dispatcher for the agent. After each hello the
+  stream sends `ReconcileAgentJobs` with the jobs that the agent runs: a
+  running job of the agent that the list omits becomes orphaned, and a listed
+  job that does not run on the agent gets a cancel. The agent sends its hello
+  after the frames that the earlier stream did not take, so a job that ended
+  while the agent was away reports its end first. When the stream ends, it
+  sends `ReleaseAgentJobs` with its id.
+- A status or a line counts only from the agent that the job is placed on,
+  until the job ends (`Job::ensure_live_on`, a `BusinessRule`). The stream
+  logs a refused status or batch at `DEBUG` and reads on. The stream reads
+  the frames that are ready together (`ready_chunks`): the lines between two
+  other frames make one `AppendJobLogs` for each job, so one check and one
+  insert serve many lines, and a status never passes a line sent before it.
+  The `commit` closure of `RecordJobStatus` opens the live tail at
+  `JobStarted` and closes it when the job ends, and the `commit` closure of
+  `AppendJobLogs` pushes the stored lines to the tail. The time of a status
+  is the time of the agent, kept between the creation of the job and now.
+  The read loop and the registry stay outside the pipeline.
 - `TailJobLogs` is a query: its `Fetch` returns the stream, so hooks see the
   subscription open, not each line. `JobLogLiveStream` is `Sync` for that
   reason, because a query output is.
@@ -562,18 +606,67 @@ the row is still in the state the gate saw.
   on one row asks for the permission of that row, as the bootstrap does:
   `RecordTriggerFire` asks for `ManageTrigger`, and the `service` rule of the
   Cedar policies permits it. That check writes one audit row for each fire.
-- A run gives its job to an agent in its `commit` closure, after the job row
-  is written: `DispatchUseCases::place` sends the job to an agent and records
-  that agent. `RunPipeline`, `RunPipelineWithInputs` and `DispatchPendingJobs`
-  use it. A failed attribution is logged and does not fail the command: the job
-  exists and an agent has it. `place` asks for `ExecuteJob` for each agent only
-  to choose one, never to refuse.
-- `DeleteApp` and `SetAppActive` stage the id alone: the row is not read
-  before the write, so a missing app behaves as before.
+- A job runs the nodes it was created with (`Job::nodes`); a dispatch never
+  reads the pipeline again. `RunPipeline` and `RunPipelineWithInputs` build
+  the job in `Prepare` and assemble its dispatch there (`assemble_dispatch`):
+  a secret that does not resolve, or a job larger than `MAX_DISPATCH_BYTES`,
+  stores nothing. The `commit` closure stores the job and wakes the
+  dispatcher; a run does not place its job.
+- `DispatchPendingJobs` is the only action that places a job. A wake names the
+  agents of the pass, or all of them. For each connected agent that has no job
+  that has not ended, it reads the grants of the agent
+  (`VisibilityResolver::visible_scopes` with `executeJob`) and claims the
+  oldest pending job that they cover on the open stream of the agent
+  (`JobRepository::claim_next`, one statement). Thus a pass asks no permission
+  and writes no audit row, and one job goes to one agent. A job that no longer
+  assembles fails, and the agent gets the next one. A job that the stream does
+  not take goes back to the pool, and the registry closes that stream, so the
+  next pass does not try it again. A run, a released job, the end of a job, a
+  new stream, a deleted App and a grant to an App wake the dispatcher; the
+  pass also runs each 30 seconds.
+- A placed job names the agent stream that took it (`jobs.stream_id`, a ULID
+  for each registration, so a stream of an earlier process never matches a
+  new one). The dispatcher sends the job only on that stream. A release names
+  one stream and returns only the jobs of that stream that have not started
+  (`DispatchUseCases::release`, which wakes the dispatcher). Each release
+  names a stream that is gone: `ReleaseAgentJobs` when the stream ends, a pass
+  whose order the stream did not take, and `ReapOrphanedJobs`. Thus a release
+  cannot take a job from a newer stream of the same agent, and no release
+  depends on the order of the steps of two streams.
+- `CancelJob` asks for `UpdateJob` on the job. `CancelJob`, `DeleteJob`,
+  `ReapOrphanedJobs` and `ReconcileAgentJobs` end a job on the server, then
+  stop it on its agent with `DispatchUseCases::stop`: a `CancelJob` order and
+  the close of the live tail. After a `CancelJob` order, the reference agent
+  sends no more frames about the job. Thus a deleted job gets no report that
+  the access check refuses. `DeletePipeline`, `DeleteProject` and
+  `DeleteOrganization` put their delete in `DispatchUseCases::recall`: it
+  reads the live jobs of the scope, does the delete, and stops those jobs
+  only when the delete succeeded.
+- `ReapOrphanedJobs` looks at the running jobs whose agent is not connected
+  and was not seen for `ORPHAN_GRACE` (60 seconds): they become orphaned. It
+  also releases each stream that holds a job that has not started and is not
+  open, for example a stream of the process before a restart. It reads the
+  open streams after the jobs: a stream opens before it can hold a job, so a
+  stream that the pass finds closed is gone for good.
+- `DeleteApp`, `SetAppActive` and `CreateAppSecret` read the App in `Prepare`.
+  An unknown App gives `NotFound`, and the trigger-runner App gives
+  `BusinessRule` (`App::ensure_user_managed`). `App::create` refuses the name
+  `trigger-runner` with `Validation`, so `CreateApp` and `CreateAgent` cannot
+  make an App with that name. `AgentAdminService.DeleteAgent` sends
+  `DeleteApp`. Each close of an agent stream comes after its write:
+  `DeleteApp`, `SetAppActive`, `RevokeAppSecret`, `SetAppSecretEnabled`,
+  `RevokeGrant`, `RevokeAllAccess`, and `DeleteOrganization` for each App of
+  the organization. The delete of an App returns its jobs that have not
+  started to the pool (`ON DELETE SET NULL`), so `DeleteApp` wakes the
+  dispatcher.
 - `AcceptInvitation` is `Public`. The invitee has no account yet: the token
   is the credential, and no permission is asked. The invite mail is sent in
   the `commit` closure of `CreateInvitation`, after the write; a failed send
-  is logged and does not fail the call, as before.
+  is logged and does not fail the call, as before. An `Invitation` has no
+  token: `Prepare` stages the token next to it, the store keeps the SHA-256
+  of the token, and only the mail has the token. The invitation records the
+  user who sent it, so `Prepare` refuses a caller that is not a user
+  (`user_only`).
 - `ListGrantableRoles` and `GetMyPermissions` are `Authenticated` queries: the
   catalog is static data, and a caller reads its own grants. The gRPC
   interceptor refuses a call without a token, so `Anonymous` does not get to
@@ -581,8 +674,16 @@ the row is still in the state the gate saw.
   runner: a service holds no grants, and an empty list would read as "no
   permissions".
 - `CreateGrant` builds the grant in `Prepare` and checks there, in this order,
-  the role, the organization admission and the escalation rule. The bootstrap
+  the organization of the scope, `check_grantable` (the role, its scope kind,
+  an agent role for a user, the escalation rule) and the admission of the
+  grantee: an app only in its own organization, a user on a project only after
+  a grant on its organization. `CreateInvitation` calls the same
+  `check_grantable`. A repeated grant returns the stored grant. The bootstrap
   admin grant goes through `Actions` as the bootstrap service.
+- `RevokeGrant`, `RevokeAllAccess` and `DeleteUser` call `ensure_owner_remains`
+  in `Prepare` with the grants that they remove. `RevokeGrant` of the last
+  grant of a user on an organization stages `whole_organization`, and
+  `Persist` then calls `revoke_all`, as `RevokeAllAccess` does.
 - `RoleUseCases` lives in `scylla-core` (`application/role/`), not in
   `scylla-auth`: the `Run` impls need the struct in the crate that names the
   commands. `scylla-auth` keeps `Role`, `RoleRepository` and
@@ -590,8 +691,9 @@ the row is still in the state the gate saw.
 - `DeleteSecret` asks for its permission on the secret, not on the project.
   The access model finds the project of the secret in `Authorize`
   (`ResourceRef::Secret`, one join in `PgAuthzEntityProvider`). An unknown
-  secret is under System only: without a System grant the caller gets
-  `Forbidden`; with a System grant, `Prepare` gives `NotFound`. An action whose
+  resource of any kind is under System only: without a System grant the caller
+  gets `Forbidden`; with a System grant, the use case gives `NotFound`. Thus
+  each use case must read the row that an id names. An action whose
   permission is on a parent that only the loaded row knows can use the same
   method.
 - `GetTrigger`, `UpdateTrigger`, `SetTriggerEnabled`, `DeleteTrigger` and
@@ -626,10 +728,15 @@ the row is still in the state the gate saw.
   `RunTriggerPipeline` on the trigger: managing triggers must not give run
   rights. Both checks are in `Authorize`, so a `Policy` on `Prepare` runs
   after them. The runner app of the organization is provisioned in `Persist`,
-  next to the trigger write.
+  next to the trigger write. The store finds the runner by its kind
+  (`AppKind::TriggerRunner`), not by its name, and the runner has no secret.
 - `FireTriggerNow` fires in its `commit` closure through the `TriggerFiring`
   port, as a scheduled fire does. `IngestWebhook` records the delivery and
-  fires in its `commit` closure. `TriggerFirer` is that port for the cron
+  fires in its `commit` closure. If the fire fails, it removes the delivery
+  (`TriggerDeliveryRepository::forget`), so a retry with the same delivery id
+  fires. Without a delivery id, the dedupe key is the verified digest in
+  lowercase hex (`verified_digest`), so all the forms of one signature are one
+  delivery. `TriggerFirer` is that port for the cron
   scheduler, the webhook ingress and `FireTriggerNow`. It reads the trigger
   and the trigger-runner App of the organization with `ResolveTriggerRun`,
   which refuses a disabled trigger. Then it sends `RunPipelineWithInputs` as
@@ -640,9 +747,11 @@ the row is still in the state the gate saw.
   case: a use case gets to it through the port.
 - `RunPipelineWithInputs` is the fire path of a run: the origin is the trigger
   and the inputs come from the trigger, so no RPC sends it. `RunPipeline` is
-  the RPC path.
-- `RecordTriggerFire` carries the trigger row that `ResolveTriggerRun` read,
-  and writes it back with its observation, as before.
+  the RPC path. Each input is an `EnvKey` and an `EnvValue`. A payload value
+  that is not a valid `EnvValue` (it has a NUL, or it is more than 64 KiB)
+  stops the fire with a validation error before the job is stored.
+- `RecordTriggerFire` carries only the trigger id and the status, and writes
+  only the last fire (`TriggerRepository::record_fire`); see "Versions".
 - A `scylla_server::Feature` gets `actions` in its `Context`. An installed
   service authorizes through `Actions::run`, as the core does, so its
   actions go through the hooks. `permissions` stays in the `Context` until
@@ -651,7 +760,5 @@ the row is still in the state the gate saw.
 - The policy reload after a create or a delete sits inside the `commit`
   closure, so a failed reload still fails the call, as before. It is a
   `Listener<Persist<C>>` once a failed reload may only be logged.
-- `DomainError::Conflict` maps to gRPC `ALREADY_EXISTS`; a stale write wants
-  `ABORTED`, which needs a dedicated variant.
 - The Cedar entity provider loads the resource's ancestors during `Authorize`;
   a missing resource surfaces there, before the permission decision.

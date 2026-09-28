@@ -2,7 +2,9 @@
 
 use crate::application::secret::{CreateSecret, DeleteSecret, ListSecrets};
 use crate::grpc::convert::{Parse, id, ts, valid, wrap};
-use scylla_domain::domain::secret::{Secret as DomainSecret, SecretName};
+use scylla_domain::domain::secret::{
+    Secret as DomainSecret, SecretDescription, SecretName, SecretValue,
+};
 use scylla_proto::secret::v1::{
     CreateSecretRequest, DeleteSecretRequest, ListSecretsRequest, Secret,
 };
@@ -26,8 +28,8 @@ impl Parse for CreateSecretRequest {
         Ok(CreateSecret {
             project_id: id(self.project_id, "project_id")?,
             name: valid(self.name, SecretName::new)?,
-            description: self.description,
-            value: self.value,
+            description: valid(self.description, SecretDescription::new)?,
+            value: valid(self.value, SecretValue::new)?,
         })
     }
 }
@@ -55,8 +57,24 @@ mod tests {
 
         assert_eq!(command.project_id.as_str(), "proj-1");
         assert_eq!(command.name.as_str(), "DB_PASSWORD");
-        assert_eq!(command.value, "hunter2");
-        assert_eq!(command.description, "db");
+        assert_eq!(command.value.as_str(), "hunter2");
+        assert_eq!(command.description.as_str(), "db");
+        assert!(!format!("{command:?}").contains("hunter2"));
+    }
+
+    #[test]
+    fn an_oversized_value_is_an_invalid_argument() {
+        let Err(err) = CreateSecretRequest {
+            project_id: wrap("proj-1"),
+            name: "BIG".into(),
+            value: "a".repeat(65_537),
+            description: String::new(),
+        }
+        .parse() else {
+            panic!("an oversized value must not parse");
+        };
+
+        assert_eq!(err.code(), Code::InvalidArgument);
     }
 
     #[test]

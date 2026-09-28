@@ -5,11 +5,11 @@ use crate::grpc::streaming::spawn_log_forwarder;
 use derive_more::Constructor;
 use scylla_extension::Actions;
 use scylla_proto::job::v1::{
-    DeleteJobRequest, DeleteJobResponse, GetJobRequest, GetJobResponse, ListJobLogsRequest,
-    ListJobLogsResponse, ListJobsRequest, ListJobsResponse, ListOrganizationJobsRequest,
-    ListOrganizationJobsResponse, ListPipelineJobsRequest, ListPipelineJobsResponse,
-    ListProjectJobsRequest, ListProjectJobsResponse, TailJobLogsRequest, TailJobLogsResponse,
-    job_service_server::JobService,
+    CancelJobRequest, CancelJobResponse, DeleteJobRequest, DeleteJobResponse, GetJobRequest,
+    GetJobResponse, ListJobLogsRequest, ListJobLogsResponse, ListJobsRequest, ListJobsResponse,
+    ListOrganizationJobsRequest, ListOrganizationJobsResponse, ListPipelineJobsRequest,
+    ListPipelineJobsResponse, ListProjectJobsRequest, ListProjectJobsResponse, TailJobLogsRequest,
+    TailJobLogsResponse, job_service_server::JobService,
 };
 use std::pin::Pin;
 use std::sync::Arc;
@@ -30,6 +30,16 @@ impl JobService for JobHandler {
     ) -> Result<Response<GetJobResponse>, Status> {
         let job = run(&self.actions, &*self.jobs, request).await?;
         Ok(Response::new(GetJobResponse {
+            job: Some(job_to_proto(&job)),
+        }))
+    }
+
+    async fn cancel_job(
+        &self,
+        request: Request<CancelJobRequest>,
+    ) -> Result<Response<CancelJobResponse>, Status> {
+        let job = run(&self.actions, &*self.jobs, request).await?;
+        Ok(Response::new(CancelJobResponse {
             job: Some(job_to_proto(&job)),
         }))
     }

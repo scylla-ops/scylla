@@ -1,5 +1,6 @@
 use super::PgOrganizationRepository;
-use crate::domain::organization::OrganizationDescription;
+use crate::domain::errors::DomainError;
+use crate::domain::organization::{OrganizationDescription, OrganizationName};
 use crate::test_support::prelude::*;
 use scylla_core::application::OrganizationRepository;
 use sqlx::PgPool;
@@ -30,16 +31,6 @@ async fn round_trip_with_some_description(pool: PgPool) {
         found.description().map(OrganizationDescription::as_str),
         Some("Worldwide subsidiary"),
     );
-}
-
-#[sqlx::test(migrations = "../../migrations")]
-async fn name_exists_reflects_state(pool: PgPool) {
-    let repo = PgOrganizationRepository::new(pool);
-    let org = org("Hooli");
-
-    assert!(!repo.name_exists(org.name()).await.unwrap());
-    repo.create(&org).await.expect("create");
-    assert!(repo.name_exists(org.name()).await.unwrap());
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -154,4 +145,69 @@ async fn update_changes_description_to_none(pool: PgPool) {
             .description()
             .is_none()
     );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_update_from_a_stale_read_is_stale_and_the_first_write_wins(pool: PgPool) {
+    let org = seed_org(&pool, "acme").await;
+    let repo = PgOrganizationRepository::new(pool);
+
+    let mut first = repo.find_by_id(org.id()).await.expect("first read");
+    let mut second = repo.find_by_id(org.id()).await.expect("second read");
+    assert_eq!(first.version(), 0);
+
+    first
+        .update_name(OrganizationName::new("a").unwrap())
+        .unwrap();
+    let written = repo.update(&first).await.expect("first write");
+    assert_eq!(written.version(), 1);
+
+    second.set_active(false);
+    let err = repo.update(&second).await.expect_err("stale write");
+    assert!(matches!(err, DomainError::Stale(_)));
+
+    let stored = repo.find_by_id(org.id()).await.expect("find");
+    assert_eq!(stored.name().as_str(), "a");
+    assert!(stored.is_active());
+    assert_eq!(stored.version(), 1);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_delete_with_a_stale_version_is_stale(pool: PgPool) {
+    let org = seed_org(&pool, "acme").await;
+    let repo = PgOrganizationRepository::new(pool);
+
+    let stale = repo.find_by_id(org.id()).await.expect("read");
+    let mut fresh = stale.clone();
+    fresh
+        .update_name(OrganizationName::new("renamed").unwrap())
+        .unwrap();
+    let fresh = repo.update(&fresh).await.expect("write");
+
+    let err = repo.delete(&stale).await.expect_err("stale delete");
+    assert!(matches!(err, DomainError::Stale(_)));
+    assert!(repo.find_by_id(org.id()).await.is_ok());
+
+    repo.delete(&fresh)
+        .await
+        .expect("delete at the current version");
+    assert!(matches!(
+        repo.find_by_id(org.id()).await,
+        Err(DomainError::NotFound(_))
+    ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_write_on_a_missing_row_is_not_found(pool: PgPool) {
+    let repo = PgOrganizationRepository::new(pool);
+    let never_persisted = org("ghost");
+
+    assert!(matches!(
+        repo.update(&never_persisted).await,
+        Err(DomainError::NotFound(_))
+    ));
+    assert!(matches!(
+        repo.delete(&never_persisted).await,
+        Err(DomainError::NotFound(_))
+    ));
 }

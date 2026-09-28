@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::application::trigger::tests::{Lab, cron, lab, pipeline_id};
-use crate::application::trigger::{ResolveTriggerRun, SetTriggerEnabled};
+use crate::application::trigger::{RecordTriggerFire, ResolveTriggerRun, SetTriggerEnabled};
 use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::DomainError;
 use crate::domain::job::JobOrigin;
@@ -41,7 +41,7 @@ async fn a_fire_runs_as_the_runner_app_then_records_the_outcome_as_the_firer() {
         }
     );
     assert_eq!(lab.jobs.rows().len(), 1);
-    assert_eq!(lab.stored(trigger.id()).last_status(), Some("ok"));
+    assert_eq!(lab.last_fire(trigger.id()).as_deref(), Some("ok"));
 }
 
 #[tokio::test]
@@ -71,7 +71,7 @@ async fn a_disabled_trigger_does_not_fire_and_records_nothing() {
     assert!(matches!(err, DomainError::BusinessRule(_)));
     assert_eq!(permissions.checks().len(), before);
     assert!(lab.jobs.rows().is_empty());
-    assert_eq!(lab.stored(trigger.id()).last_status(), None);
+    assert_eq!(lab.last_fire(trigger.id()), None);
 }
 
 #[tokio::test]
@@ -86,7 +86,29 @@ async fn a_failed_run_is_recorded_as_an_error() {
         .unwrap_err();
 
     assert!(matches!(err, DomainError::Internal(_)), "no runner app");
-    assert_eq!(lab.stored(trigger.id()).last_status(), Some("error"));
+    assert_eq!(lab.last_fire(trigger.id()).as_deref(), Some("error"));
+}
+
+#[tokio::test]
+async fn a_fire_record_does_not_undo_a_disable_that_committed_during_the_run() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let id = lab.create(cron()).await.unwrap().trigger.id().clone();
+    let resolve = ResolveTriggerRun { id: id.clone() };
+    lab.actions.run(&*lab.uc, &firer(), resolve).await.unwrap();
+    let disable = SetTriggerEnabled {
+        id: id.clone(),
+        enabled: false,
+    };
+    lab.actions.run(&*lab.uc, &alice(), disable).await.unwrap();
+
+    let record = RecordTriggerFire {
+        id: id.clone(),
+        status: "ok",
+    };
+    lab.actions.run(&*lab.uc, &firer(), record).await.unwrap();
+
+    assert!(!lab.stored(&id).is_enabled());
+    assert_eq!(lab.last_fire(&id).as_deref(), Some("ok"));
 }
 
 #[tokio::test]

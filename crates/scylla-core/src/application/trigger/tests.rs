@@ -1,18 +1,22 @@
 //! The trigger's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::{DispatchUseCases, PipelineUseCases};
+use crate::application::PipelineUseCases;
 use crate::domain::agent::Agent;
+use crate::domain::app::{AppCredential, AppKind, AppName};
 use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::ids::{AppId, PipelineId, ProjectId, TriggerId};
 use crate::domain::job::Job;
 use crate::domain::permission::Permission;
-use crate::domain::trigger::{CronSpec, TriggerName, TriggerSource, WebhookSpec};
+use crate::domain::trigger::{
+    CronSpec, FireObservation, TriggerKind, TriggerName, TriggerSource, WebhookSpec,
+};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::pipelines::PipelineBuilder;
 use crate::test_support::projects::ProjectBuilder;
 use crate::test_support::stubs::{
-    CountingPolicy, EchoResolver, OnePipeline, OneProject, StubHash, StubJobs, StubRegistry, alice,
+    CountingPolicy, EchoResolver, OnePipeline, OneProject, StubJobs, StubRegistry, StubTails,
+    alice, dispatcher,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -21,9 +25,11 @@ use scylla_extension::{Actions, Deleted};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+/// The last fire is kept apart from the rows, as the store keeps it apart from the edits.
 #[derive(Default)]
 struct StubTriggers {
     rows: Mutex<HashMap<TriggerId, (Trigger, Option<Vec<u8>>)>>,
+    fires: Mutex<HashMap<TriggerId, FireObservation>>,
 }
 
 #[async_trait]
@@ -41,7 +47,7 @@ impl TriggerRepository for StubTriggers {
             .unwrap()
             .get(id)
             .map(|(t, _)| t.clone())
-            .ok_or_else(|| DomainError::not_found("Trigger", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("Trigger", id))
     }
     async fn webhook_secret(&self, id: &TriggerId) -> DomainResult<Option<Vec<u8>>> {
         Ok(self
@@ -53,12 +59,14 @@ impl TriggerRepository for StubTriggers {
     }
     async fn update(&self, trigger: &Trigger) -> DomainResult<Trigger> {
         let mut rows = self.rows.lock().unwrap();
-        let enc = rows.get(trigger.id()).and_then(|(_, enc)| enc.clone());
-        rows.insert(trigger.id().clone(), (trigger.clone(), enc));
+        let (stored, _) = rows
+            .get_mut(trigger.id())
+            .ok_or_else(|| DomainError::not_found("Trigger", trigger.id()))?;
+        *stored = trigger.clone();
         Ok(trigger.clone())
     }
-    async fn delete(&self, id: &TriggerId) -> DomainResult<()> {
-        self.rows.lock().unwrap().remove(id);
+    async fn delete(&self, trigger: &Trigger) -> DomainResult<()> {
+        self.rows.lock().unwrap().remove(trigger.id());
         Ok(())
     }
     async fn list_by_pipeline(&self, pipeline_id: &PipelineId) -> DomainResult<Vec<Trigger>> {
@@ -71,30 +79,49 @@ impl TriggerRepository for StubTriggers {
             .map(|(t, _)| t.clone())
             .collect())
     }
-    async fn list_unscheduled_cron(&self) -> DomainResult<Vec<Trigger>> {
-        Ok(self
-            .rows
-            .lock()
-            .unwrap()
-            .values()
-            .filter(|(t, _)| t.next_fire_at().is_none())
-            .map(|(t, _)| t.clone())
-            .collect())
+    async fn record_fire(&self, id: &TriggerId, observation: &FireObservation) -> DomainResult<()> {
+        if self.rows.lock().unwrap().contains_key(id) {
+            self.fires
+                .lock()
+                .unwrap()
+                .insert(id.clone(), observation.clone());
+        }
+        Ok(())
+    }
+    async fn seed_cron(&self, compute_next: &NextFire<'_>) -> DomainResult<Vec<Trigger>> {
+        self.advance(compute_next, |t| t.next_fire_at().is_none())
     }
     async fn claim_due_cron(
         &self,
         now: DateTime<Utc>,
         _: i64,
-        compute_next: &(dyn for<'a> Fn(&'a Trigger) -> DomainResult<DateTime<Utc>> + Sync),
+        compute_next: &NextFire<'_>,
     ) -> DomainResult<Vec<Trigger>> {
-        let mut claimed = Vec::new();
+        self.advance(compute_next, |t| {
+            t.next_fire_at().is_some_and(|at| at <= now)
+        })
+    }
+}
+
+impl StubTriggers {
+    fn advance(
+        &self,
+        compute_next: &NextFire<'_>,
+        selected: impl Fn(&Trigger) -> bool,
+    ) -> DomainResult<Vec<Trigger>> {
+        let mut advanced = Vec::new();
         for (trigger, _) in self.rows.lock().unwrap().values_mut() {
-            if trigger.is_enabled() && trigger.next_fire_at().is_some_and(|at| at <= now) {
-                trigger.set_next_fire_at(Some(compute_next(trigger)?));
-                claimed.push(trigger.clone());
+            let cron = trigger.source().kind() == TriggerKind::Cron;
+            if !(trigger.is_enabled() && cron && selected(trigger)) {
+                continue;
+            }
+            let read = trigger.clone();
+            if let Ok(next) = compute_next(&read) {
+                trigger.set_next_fire_at(Some(next));
+                advanced.push(read);
             }
         }
-        Ok(claimed)
+        Ok(advanced)
     }
 }
 
@@ -102,6 +129,17 @@ impl TriggerRepository for StubTriggers {
 pub(super) struct StubApps {
     pub(super) apps: Mutex<Vec<App>>,
     grants: Mutex<Vec<Grant>>,
+}
+
+impl StubApps {
+    fn runner_of(&self, organization_id: &OrganizationId) -> Option<AppId> {
+        self.apps
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|a| a.organization_id() == organization_id && a.is_trigger_runner())
+            .map(|a| a.id().clone())
+    }
 }
 
 #[async_trait]
@@ -118,13 +156,26 @@ impl AppRepository for StubApps {
     ) -> DomainResult<()> {
         unreachable!("no agent in a trigger action")
     }
-    async fn provision(&self, app: &App, _: &AppCredential, grant: &Grant) -> DomainResult<()> {
-        self.apps.lock().unwrap().push(app.clone());
+    async fn provision(&self, app: &App, grant: &Grant) -> DomainResult<()> {
+        let mut apps = self.apps.lock().unwrap();
+        if apps
+            .iter()
+            .any(|a| a.organization_id() == app.organization_id() && a.name() == app.name())
+        {
+            return Err(DomainError::conflict("App name already exists"));
+        }
+        apps.push(app.clone());
         self.grants.lock().unwrap().push(grant.clone());
         Ok(())
     }
     async fn find_by_id(&self, id: &AppId) -> DomainResult<App> {
-        Err(DomainError::not_found("App", id.to_string()))
+        Err(DomainError::not_found("App", id))
+    }
+    async fn find_trigger_runner(
+        &self,
+        organization_id: &OrganizationId,
+    ) -> DomainResult<Option<AppId>> {
+        Ok(self.runner_of(organization_id))
     }
     async fn list_by_organization(
         &self,
@@ -232,6 +283,15 @@ impl Lab {
         self.triggers.rows.lock().unwrap()[id].0.clone()
     }
 
+    pub(super) fn last_fire(&self, id: &TriggerId) -> Option<String> {
+        self.triggers
+            .fires
+            .lock()
+            .unwrap()
+            .get(id)
+            .map(|o| o.status.clone())
+    }
+
     pub(super) fn seed(&self) -> Trigger {
         let trigger = Trigger::create(
             pipeline_id(),
@@ -261,13 +321,11 @@ pub(super) fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let policy = Arc::new(CountingPolicy::default());
     let jobs = Arc::new(StubJobs::default());
     let pipeline_repo = Arc::new(OnePipeline(pipeline));
-    let dispatch = Arc::new(DispatchUseCases::new(
+    let dispatch = dispatcher(
         Arc::new(StubRegistry::default()),
-        permissions.clone(),
         jobs.clone(),
-        pipeline_repo.clone(),
-        Arc::new(EchoResolver),
-    ));
+        Arc::new(StubTails::default()),
+    );
     let project_repo = Arc::new(OneProject(project));
     Lab {
         actions: Arc::new(actions(permissions)),
@@ -276,7 +334,6 @@ pub(super) fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
             pipeline_repo.clone(),
             project_repo.clone(),
             apps.clone(),
-            Arc::new(StubHash::secrets()),
             policy.clone(),
             Arc::new(StubCipher),
             Arc::new(StubSchedule),
@@ -345,9 +402,32 @@ async fn a_create_checks_manage_then_run_and_provisions_the_runner_app_once() {
     assert_eq!(lab.triggers.rows.lock().unwrap().len(), 2);
     let apps = lab.apps.apps.lock().unwrap();
     assert_eq!(apps.len(), 1);
-    assert_eq!(apps[0].name().to_string(), TRIGGER_RUNNER_APP_NAME);
+    assert!(apps[0].is_trigger_runner());
+    assert_eq!(apps[0].name().as_str(), TRIGGER_RUNNER_APP_NAME);
     assert_eq!(apps[0].organization_id(), &organization_id());
     assert_eq!(lab.policy.reloads(), 1);
+}
+
+#[tokio::test]
+async fn a_legacy_app_holding_the_runner_name_fails_the_create_with_a_conflict() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let legacy = App::from_persistence(
+        AppId::new("legacy"),
+        organization_id(),
+        AppName::new(TRIGGER_RUNNER_APP_NAME).unwrap(),
+        AppKind::Standard,
+        true,
+        clock::now(),
+        clock::now(),
+    );
+    lab.apps.apps.lock().unwrap().push(legacy);
+
+    let err = lab.create(cron()).await.err().unwrap();
+
+    assert!(matches!(err, DomainError::Conflict(_)), "{err:?}");
+    assert!(lab.triggers.rows.lock().unwrap().is_empty());
+    assert_eq!(lab.apps.apps.lock().unwrap().len(), 1);
+    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -416,7 +496,7 @@ async fn a_create_on_an_unknown_pipeline_is_not_found_and_writes_nothing() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
     assert!(lab.triggers.rows.lock().unwrap().is_empty());
     assert!(lab.apps.apps.lock().unwrap().is_empty());
 }
@@ -552,7 +632,7 @@ async fn an_allowed_action_on_an_unknown_trigger_is_not_found() {
 
     let err = lab.delete(&TriggerId::new("missing")).await.unwrap_err();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
 }
 
 fn cron_scheduler() -> CallerContext {

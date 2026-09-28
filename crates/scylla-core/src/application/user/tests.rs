@@ -4,12 +4,18 @@ use super::*;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::UserId;
+use crate::domain::ids::{OrganizationId, ProjectId};
 use crate::domain::permission::Permission;
+use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, User, Username};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, StubHash, alice};
+use crate::test_support::stubs::{CountingPolicy, StubGrants, StubHash, alice};
+use crate::test_support::users::user;
 use async_trait::async_trait;
-use scylla_auth::authz::PermissionService;
+use scylla_auth::authz::{
+    Grant, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, PermissionService, Principal,
+    SYSTEM_ADMIN_ROLE, Scope,
+};
 use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -22,10 +28,14 @@ struct StubUsers {
 #[async_trait]
 impl UserRepository for StubUsers {
     async fn create(&self, user: &User) -> DomainResult<User> {
-        self.rows
-            .lock()
-            .unwrap()
-            .insert(user.id().clone(), user.clone());
+        let mut rows = self.rows.lock().unwrap();
+        if rows
+            .values()
+            .any(|u| u.username() == user.username() && u.id() != user.id())
+        {
+            return Err(DomainError::conflict("Username already exists"));
+        }
+        rows.insert(user.id().clone(), user.clone());
         Ok(user.clone())
     }
     async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
@@ -34,7 +44,7 @@ impl UserRepository for StubUsers {
             .unwrap()
             .get(id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("User", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("User", id))
     }
     async fn find_by_ids(&self, ids: &[UserId]) -> DomainResult<Vec<User>> {
         let rows = self.rows.lock().unwrap();
@@ -51,16 +61,16 @@ impl UserRepository for StubUsers {
             .values()
             .find(|u| u.username() == username)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("User", username.to_string()))
+            .ok_or_else(|| DomainError::not_found("User", username))
     }
     async fn find_by_email(&self, email: &Email) -> DomainResult<User> {
-        Err(DomainError::not_found("User", email.to_string()))
+        Err(DomainError::not_found("User", email))
     }
     async fn update(&self, user: &User) -> DomainResult<User> {
         self.create(user).await
     }
-    async fn delete(&self, id: &UserId) -> DomainResult<()> {
-        self.rows.lock().unwrap().remove(id);
+    async fn delete(&self, user: &User) -> DomainResult<()> {
+        self.rows.lock().unwrap().remove(user.id());
         Ok(())
     }
     async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> {
@@ -69,14 +79,6 @@ impl UserRepository for StubUsers {
             &PaginationParams::default(),
             0,
         ))
-    }
-    async fn username_exists(&self, username: &Username) -> DomainResult<bool> {
-        Ok(self
-            .rows
-            .lock()
-            .unwrap()
-            .values()
-            .any(|u| u.username() == username))
     }
 }
 
@@ -94,12 +96,17 @@ impl Lab {
 }
 
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
+    lab_with(permissions, Vec::new())
+}
+
+fn lab_with(permissions: Arc<dyn PermissionService>, grants: Vec<Grant>) -> Lab {
     let users = Arc::new(StubUsers::default());
     let policy = Arc::new(CountingPolicy::default());
     Lab {
         actions: actions(permissions),
         uc: UserUseCases::new(
             users.clone(),
+            Arc::new(StubGrants::new(grants)),
             Arc::new(StubHash::passwords()),
             policy.clone(),
         ),
@@ -264,7 +271,7 @@ async fn a_delete_of_a_missing_user_is_not_found_and_does_not_reload() {
         .await
         .unwrap_err();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
     assert_eq!(lab.policy.reloads(), 0);
 }
 
@@ -328,4 +335,80 @@ async fn users_in_order_keeps_the_page_order_and_metadata_and_drops_unknown_ids(
     let got: Vec<&UserId> = users.items().iter().map(User::id).collect();
     assert_eq!(got, vec![bob.id(), carol.id()]);
     assert_eq!(users.metadata().total_count(), 7);
+}
+
+fn held(user: &User, role: &str, scope: Scope) -> Grant {
+    Grant::new(
+        Principal::User(user.id().clone()),
+        RoleName::new(role).unwrap(),
+        scope,
+    )
+}
+
+async fn delete_with(grants: impl Fn(&User, &User) -> Vec<Grant>) -> DomainResult<()> {
+    let doomed = user("doomed");
+    let other = user("other");
+    let lab = lab_with(
+        Arc::new(RecordingPermissionService::new()),
+        grants(&doomed, &other),
+    );
+    lab.users
+        .rows
+        .lock()
+        .unwrap()
+        .insert(doomed.id().clone(), doomed.clone());
+    lab.actions
+        .run(
+            &lab.uc,
+            &alice(),
+            DeleteUser {
+                id: doomed.id().clone(),
+            },
+        )
+        .await
+        .map(|_| ())
+}
+
+fn o1() -> Scope {
+    Scope::Organization(OrganizationId::new("o1"))
+}
+
+#[tokio::test]
+async fn the_last_admin_of_an_organization_or_of_the_system_cannot_be_deleted() {
+    for scope in [o1(), Scope::System] {
+        let role = if scope == Scope::System {
+            SYSTEM_ADMIN_ROLE
+        } else {
+            ORGANIZATION_ADMIN_ROLE
+        };
+        let err = delete_with(|doomed, _| vec![held(doomed, role, scope.clone())])
+            .await
+            .unwrap_err();
+        assert!(matches!(err, DomainError::BusinessRule(_)), "{scope}");
+    }
+}
+
+#[tokio::test]
+async fn an_admin_is_deleted_when_another_human_admin_remains() {
+    delete_with(|doomed, other| {
+        vec![
+            held(doomed, ORGANIZATION_ADMIN_ROLE, o1()),
+            held(other, ORGANIZATION_ADMIN_ROLE, o1()),
+        ]
+    })
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn the_last_project_admin_is_deleted() {
+    delete_with(|doomed, _| {
+        vec![held(
+            doomed,
+            PROJECT_ADMIN_ROLE,
+            Scope::Project(ProjectId::new("p1")),
+        )]
+    })
+    .await
+    .unwrap();
 }

@@ -1,11 +1,11 @@
 use crate::application::job::{JobUseCases, ReapOrphanedJobs};
 use crate::domain::caller::{CallerContext, ServiceIdentity};
-use crate::domain::ids::AppId;
 use scylla_extension::Actions;
 use std::sync::Arc;
 use tracing::{instrument, warn};
 
-/// Level-triggered: compares "running" against the connected set, so restarts and reconnect races need no special path.
+/// Level-triggered: compares the live jobs with the open streams and the last contact of each
+/// agent, so a restart or a reconnect needs no special path.
 pub struct JobReaper {
     actions: Arc<Actions>,
     job_uc: Arc<JobUseCases>,
@@ -17,19 +17,17 @@ impl JobReaper {
         Self { actions, job_uc }
     }
 
-    #[instrument(skip_all, fields(connected = connected.len()))]
-    pub async fn reap(&self, connected: &[AppId]) -> u64 {
+    #[instrument(skip_all)]
+    pub async fn reap(&self) -> u64 {
         let caller = CallerContext::Service(ServiceIdentity::job_reaper());
-        let reap = ReapOrphanedJobs {
-            connected: connected.to_vec(),
-        };
-        match self.actions.run(&*self.job_uc, &caller, reap).await {
+        match self
+            .actions
+            .run(&*self.job_uc, &caller, ReapOrphanedJobs)
+            .await
+        {
             Ok(0) => 0,
             Ok(n) => {
-                warn!(
-                    orphaned = n,
-                    "reaped running jobs whose agent is no longer connected"
-                );
+                warn!(jobs = n, "reaped the jobs of agents that are gone");
                 n
             }
             Err(e) => {
@@ -43,35 +41,40 @@ impl JobReaper {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::ids::AppId;
+    use crate::domain::job::JobStatus;
     use crate::test_support::authz::{RecordingPermissionService, actions};
-    use crate::test_support::stubs::StubJobs;
+    use crate::test_support::jobs::JobBuilder;
+    use crate::test_support::organizations::org;
+    use crate::test_support::pipelines::pipeline;
+    use crate::test_support::projects::project;
+    use crate::test_support::stubs::{StubJobs, StubRegistry, StubTails, dispatcher};
 
     fn reaper(jobs: Arc<StubJobs>) -> JobReaper {
+        let registry = Arc::new(StubRegistry::default());
+        let tails = Arc::new(StubTails::default());
         JobReaper::new(
             Arc::new(actions(Arc::new(RecordingPermissionService::new()))),
-            Arc::new(JobUseCases::new(jobs)),
+            Arc::new(JobUseCases::new(
+                jobs.clone(),
+                tails.clone(),
+                dispatcher(registry, jobs, tails),
+            )),
         )
     }
 
     #[tokio::test]
-    async fn reap_forwards_the_connected_set_and_returns_the_count() {
-        let jobs = Arc::new(StubJobs::orphaning(3));
+    async fn a_reap_returns_the_number_of_jobs_it_changed() {
+        let pl = pipeline(&project(&org("o"), "p"));
+        let running = JobBuilder::new(&pl)
+            .running(true)
+            .agent(AppId::new("agent-gone"))
+            .build();
+        let jobs = Arc::new(StubJobs::with(vec![running]));
         let reaper = reaper(jobs.clone());
 
-        assert_eq!(reaper.reap(&[]).await, 3);
-        assert_eq!(reaper.reap(&[AppId::new("agent-1")]).await, 3);
-
-        let swept = jobs.swept();
-        assert_eq!(swept.len(), 2);
-        assert!(
-            swept[0].is_empty(),
-            "boot pass reaps with an empty connected set"
-        );
-        assert_eq!(swept[1], vec![AppId::new("agent-1")]);
-    }
-
-    #[tokio::test]
-    async fn reap_reports_zero_when_nothing_is_stranded() {
-        assert_eq!(reaper(Arc::new(StubJobs::orphaning(0))).reap(&[]).await, 0);
+        assert_eq!(reaper.reap().await, 1);
+        assert_eq!(reaper.reap().await, 0);
+        assert_eq!(jobs.rows()[0].status(), JobStatus::Orphaned);
     }
 }

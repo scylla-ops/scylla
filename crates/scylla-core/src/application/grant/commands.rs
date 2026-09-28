@@ -3,13 +3,13 @@
 //! sits next to the write that changes the grant set.
 
 use super::GrantUseCases;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::GrantId;
 use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{
-    Grant, Principal, Scope, is_owner_role, removal_orphans_scope, validate_role_in_db,
+    Grant, Principal, PrincipalKind, Scope, check_grantable, ensure_owner_remains,
 };
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
@@ -38,11 +38,20 @@ impl Command for CreateGrant {
 impl Run<Prepare<CreateGrant>> for GrantUseCases {
     async fn run(&self, input: Authorized<CreateGrant>) -> DomainResult<Prepared<CreateGrant>> {
         let cmd = input.command();
+        let organization = self.scope_organization(&cmd.scope).await?;
+        let grants = self.grant_repo.list_all().await?;
+        check_grantable(
+            &self.role_repo.list_all().await?,
+            &grants,
+            input.caller(),
+            cmd.principal.kind(),
+            &cmd.role,
+            &cmd.scope,
+            organization.as_ref(),
+        )?;
+        self.require_grantee_in(&grants, &cmd.principal, &cmd.scope, organization.as_ref())
+            .await?;
         let grant = Grant::new(cmd.principal.clone(), cmd.role.clone(), cmd.scope.clone());
-        // A stored grant must always be emittable into Cedar.
-        validate_role_in_db(&*self.role_repo, &grant.role, &grant.scope).await?;
-        self.require_grantee_in_organization(&grant).await?;
-        self.check_no_escalation(input.caller(), &grant).await?;
         Ok(input.prepared(Draft::new(grant)))
     }
 }
@@ -52,9 +61,11 @@ impl Run<Persist<CreateGrant>> for GrantUseCases {
     async fn run(&self, input: Prepared<CreateGrant>) -> DomainResult<Committed<CreateGrant>> {
         input
             .commit(async |draft| {
-                let grant = draft.into_inner();
-                self.grant_repo.create(&grant).await?;
+                let grant = self.grant_repo.create(&draft.into_inner()).await?;
                 self.policy_control.reload().await?;
+                if let Principal::App(app_id) = &grant.principal {
+                    self.registry.wake(Some(app_id));
+                }
                 Ok(grant)
             })
             .await
@@ -88,11 +99,13 @@ impl Run<Prepare<RevokeAllAccess>> for GrantUseCases {
     ) -> DomainResult<Prepared<RevokeAllAccess>> {
         let cmd = input.command();
         let grants = self.grant_repo.list_all().await?;
-        if removal_orphans_scope(&grants, &cmd.scope, &cmd.principal) {
-            return Err(DomainError::business_rule(
-                "cannot remove the last owner of this scope",
-            ));
-        }
+        ensure_owner_remains(&grants, |g| {
+            g.principal == cmd.principal
+                && match &cmd.scope {
+                    Scope::System => g.scope != Scope::System,
+                    scope => &g.scope == scope,
+                }
+        })?;
         let principal = cmd.principal.clone();
         Ok(input.prepared(principal))
     }
@@ -110,7 +123,7 @@ impl Run<Persist<RevokeAllAccess>> for GrantUseCases {
                 let removed = self.grant_repo.revoke_all(&principal, &scope).await?;
                 self.policy_control.reload().await?;
                 if let Principal::App(app_id) = &principal {
-                    self.agent_registry.disconnect(app_id);
+                    self.registry.disconnect(app_id);
                 }
                 Ok(removed)
             })
@@ -129,9 +142,17 @@ impl Describe for RevokeGrant {
     }
 }
 
+/// The last grant of a user on an organization is its membership: revoking it strips the user's
+/// grants beneath the organization too, as `RevokeAllAccess` does.
+#[derive(Debug)]
+pub struct Revocation {
+    pub grant: Grant,
+    pub whole_organization: bool,
+}
+
 /// An unknown id stages `None` and commits nothing: the call succeeds without change.
 impl Command for RevokeGrant {
-    type Staged = Option<Grant>;
+    type Staged = Option<Revocation>;
     type Committed = Option<Deleted<Grant>>;
 }
 
@@ -140,24 +161,19 @@ impl Run<Prepare<RevokeGrant>> for GrantUseCases {
     async fn run(&self, input: Authorized<RevokeGrant>) -> DomainResult<Prepared<RevokeGrant>> {
         let grants = self.grant_repo.list_all().await?;
         let id = input.command().id.as_str();
-        let grant = grants.iter().find(|g| g.id == id).cloned();
-
-        // Only a User owner grant is guarded; an App never counts as the retained owner.
-        if let Some(g) = &grant
-            && is_owner_role(&g.role)
-            && matches!(g.principal, Principal::User(_))
-            && !grants.iter().any(|o| {
-                o.id != g.id
-                    && o.role == g.role
-                    && o.scope == g.scope
-                    && matches!(o.principal, Principal::User(_))
-            })
-        {
-            return Err(DomainError::business_rule(
-                "cannot revoke the last owner of this scope",
-            ));
-        }
-        Ok(input.prepared(grant))
+        let Some(grant) = grants.iter().find(|g| g.id == id).cloned() else {
+            return Ok(input.prepared(None));
+        };
+        ensure_owner_remains(&grants, |g| g.id == id)?;
+        let whole_organization = grant.principal.kind() == PrincipalKind::User
+            && matches!(grant.scope, Scope::Organization(_))
+            && !grants
+                .iter()
+                .any(|g| g.id != id && g.principal == grant.principal && g.scope == grant.scope);
+        Ok(input.prepared(Some(Revocation {
+            grant,
+            whole_organization,
+        })))
     }
 }
 
@@ -165,14 +181,24 @@ impl Run<Prepare<RevokeGrant>> for GrantUseCases {
 impl Run<Persist<RevokeGrant>> for GrantUseCases {
     async fn run(&self, input: Prepared<RevokeGrant>) -> DomainResult<Committed<RevokeGrant>> {
         input
-            .commit(async |grant| {
-                let Some(grant) = grant else {
+            .commit(async |revocation| {
+                let Some(Revocation {
+                    grant,
+                    whole_organization,
+                }) = revocation
+                else {
                     return Ok(None);
                 };
-                self.grant_repo.delete(&grant.id).await?;
+                if whole_organization {
+                    self.grant_repo
+                        .revoke_all(&grant.principal, &grant.scope)
+                        .await?;
+                } else {
+                    self.grant_repo.delete(&grant.id).await?;
+                }
                 self.policy_control.reload().await?;
                 if let Principal::App(app_id) = &grant.principal {
-                    self.agent_registry.disconnect(app_id);
+                    self.registry.disconnect(app_id);
                 }
                 Ok(Some(Deleted::new(grant)))
             })

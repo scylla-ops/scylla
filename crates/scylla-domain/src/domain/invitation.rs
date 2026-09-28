@@ -16,7 +16,6 @@ pub struct Invitation {
     organization_id: OrganizationId,
     email: Email,
     role: Option<RoleName>,
-    token: String,
     status: InvitationStatus,
     invited_by: UserId,
     expires_at: DateTime<Utc>,
@@ -24,14 +23,12 @@ pub struct Invitation {
 }
 
 impl Invitation {
-    /// `token` comes from the caller: the kernel carries no random source.
     #[must_use]
     pub fn create(
         organization_id: OrganizationId,
         email: Email,
         role: Option<RoleName>,
         invited_by: UserId,
-        token: String,
     ) -> Self {
         let now = clock::now();
         Self {
@@ -39,7 +36,6 @@ impl Invitation {
             organization_id,
             email,
             role,
-            token,
             status: InvitationStatus::Pending,
             invited_by,
             expires_at: now + Duration::days(INVITE_TTL_DAYS),
@@ -54,7 +50,6 @@ impl Invitation {
         organization_id: OrganizationId,
         email: Email,
         role: Option<RoleName>,
-        token: String,
         status: InvitationStatus,
         invited_by: UserId,
         expires_at: DateTime<Utc>,
@@ -65,7 +60,6 @@ impl Invitation {
             organization_id,
             email,
             role,
-            token,
             status,
             invited_by,
             expires_at,
@@ -104,11 +98,6 @@ impl Invitation {
     #[must_use]
     pub fn role(&self) -> Option<&RoleName> {
         self.role.as_ref()
-    }
-
-    #[must_use]
-    pub fn token(&self) -> &str {
-        &self.token
     }
 
     #[must_use]

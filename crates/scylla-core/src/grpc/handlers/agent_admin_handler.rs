@@ -1,4 +1,4 @@
-use crate::application::AgentUseCases;
+use crate::application::{AgentUseCases, AppUseCases};
 use crate::grpc::adapter::run;
 use crate::grpc::mappers::{agent_stats_to_proto, agent_to_proto, agent_view_to_proto};
 use derive_more::Constructor;
@@ -15,6 +15,7 @@ use tonic::{Request, Response, Status};
 pub struct AgentAdminHandler {
     actions: Arc<Actions>,
     agents: Arc<AgentUseCases>,
+    apps: Arc<AppUseCases>,
 }
 
 #[async_trait::async_trait]
@@ -64,7 +65,7 @@ impl AgentAdminService for AgentAdminHandler {
         &self,
         request: Request<DeleteAgentRequest>,
     ) -> Result<Response<DeleteAgentResponse>, Status> {
-        run(&self.actions, &*self.agents, request).await?;
+        run(&self.actions, &*self.apps, request).await?;
         Ok(Response::new(DeleteAgentResponse {}))
     }
 }

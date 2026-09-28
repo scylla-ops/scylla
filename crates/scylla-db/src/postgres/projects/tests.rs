@@ -58,12 +58,16 @@ async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
     use crate::domain::caller::{CallerContext, ServiceIdentity};
     use crate::domain::project::ProjectName;
     use crate::postgres::{
-        PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository, PgUserRepository,
+        PgAuthzEntityProvider, PgGrantRepository, PgJobRepository, PgRoleRepository,
+        PgSecretRepository, PgUserRepository,
     };
     use scylla_auth::audit::NoopAuditLog;
     use scylla_auth::cedar::CedarPermissionService;
-    use scylla_core::application::ProjectUseCases;
     use scylla_core::application::project::CreateProject;
+    use scylla_core::application::{DispatchSecretResolver, DispatchUseCases, ProjectUseCases};
+    use scylla_core::infrastructure::{
+        ChaChaSecretCipher, InMemoryAgentRegistry, InMemoryJobLogStream,
+    };
     use scylla_extension::{Hooks, StageKind};
     use std::sync::Arc;
 
@@ -87,12 +91,24 @@ async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
         }),
     );
     let actions = actions_with(permission.clone(), hooks);
+    let dispatch = Arc::new(DispatchUseCases::new(
+        Arc::new(InMemoryAgentRegistry::new(
+            tokio::sync::mpsc::unbounded_channel().0,
+        )),
+        permission.clone(),
+        Arc::new(PgJobRepository::new(pool.clone())),
+        Arc::new(DispatchSecretResolver::new(
+            Arc::new(PgSecretRepository::new(pool.clone())),
+            Arc::new(ChaChaSecretCipher::from_hex_key(None).unwrap()),
+        )),
+        Arc::new(InMemoryJobLogStream::new()),
+    ));
     let uc = ProjectUseCases::new(
         Arc::new(PgProjectRepository::new(pool.clone())),
         Arc::new(PgUserRepository::new(pool.clone())),
         permission.clone(),
-        permission.clone(),
         permission,
+        dispatch,
     );
     let caller = CallerContext::Service(ServiceIdentity::recorder());
     let create = |name: &str| CreateProject {
@@ -121,14 +137,14 @@ async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn fk_violation_on_unknown_organization_maps_to_conflict(pool: PgPool) {
+async fn fk_violation_on_unknown_organization_is_a_business_rule(pool: PgPool) {
     let phantom = org("never-persisted");
     let project = project(&phantom, "orphan");
     let repo = PgProjectRepository::new(pool);
 
     assert!(matches!(
         repo.create(&project).await,
-        Err(DomainError::Conflict(_)),
+        Err(DomainError::BusinessRule(_)),
     ));
 }
 
@@ -168,13 +184,13 @@ async fn cascade_organization_delete_removes_projects(pool: PgPool) {
     project_repo.create(&project).await.unwrap();
 
     PgOrganizationRepository::new(pool)
-        .delete(org.id())
+        .delete(&org)
         .await
         .unwrap();
 
     assert!(matches!(
         project_repo.find_by_id(project.id()).await,
-        Err(DomainError::NotFound { .. }),
+        Err(DomainError::NotFound(_)),
     ));
 }
 
@@ -304,7 +320,7 @@ async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn an_update_from_a_stale_read_is_a_conflict_and_the_first_write_wins(pool: PgPool) {
+async fn an_update_from_a_stale_read_is_stale_and_the_first_write_wins(pool: PgPool) {
     use crate::domain::project::ProjectName;
 
     let org = seed_org(&pool, "acme").await;
@@ -322,7 +338,7 @@ async fn an_update_from_a_stale_read_is_a_conflict_and_the_first_write_wins(pool
 
     second.update_name(ProjectName::new("b").unwrap()).unwrap();
     let err = repo.update(&second).await.expect_err("stale write");
-    assert!(matches!(err, DomainError::Conflict(_)));
+    assert!(matches!(err, DomainError::Stale(_)));
 
     let stored = repo.find_by_id(project.id()).await.expect("find");
     assert_eq!(stored.name().as_str(), "a");
@@ -330,7 +346,7 @@ async fn an_update_from_a_stale_read_is_a_conflict_and_the_first_write_wins(pool
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn a_delete_with_a_stale_version_is_a_conflict(pool: PgPool) {
+async fn a_delete_with_a_stale_version_is_stale(pool: PgPool) {
     use crate::domain::project::ProjectName;
 
     let org = seed_org(&pool, "acme").await;
@@ -346,7 +362,7 @@ async fn a_delete_with_a_stale_version_is_a_conflict(pool: PgPool) {
     let fresh = repo.update(&fresh).await.expect("write");
 
     let err = repo.delete(&stale).await.expect_err("stale delete");
-    assert!(matches!(err, DomainError::Conflict(_)));
+    assert!(matches!(err, DomainError::Stale(_)));
     assert!(repo.find_by_id(project.id()).await.is_ok());
 
     repo.delete(&fresh)
@@ -354,7 +370,7 @@ async fn a_delete_with_a_stale_version_is_a_conflict(pool: PgPool) {
         .expect("delete at the current version");
     assert!(matches!(
         repo.find_by_id(project.id()).await,
-        Err(DomainError::NotFound { .. })
+        Err(DomainError::NotFound(_))
     ));
 }
 
@@ -366,10 +382,74 @@ async fn a_write_on_a_missing_row_is_not_found(pool: PgPool) {
 
     assert!(matches!(
         repo.update(&never_persisted).await,
-        Err(DomainError::NotFound { .. })
+        Err(DomainError::NotFound(_))
     ));
     assert!(matches!(
         repo.delete(&never_persisted).await,
-        Err(DomainError::NotFound { .. })
+        Err(DomainError::NotFound(_))
     ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn the_projects_of_a_user_are_the_ones_its_grants_let_it_read(pool: PgPool) {
+    use crate::domain::role::RoleName;
+    use crate::postgres::PgGrantRepository;
+    use scylla_auth::authz::{
+        Grant, GrantRepository, ORGANIZATION_MEMBER_ROLE, ORGANIZATION_VIEWER_ROLE,
+        PROJECT_VIEWER_ROLE, Principal, Scope,
+    };
+
+    let org = seed_org(&pool, "acme").await;
+    let apollo = seed_project(&pool, &org, "apollo").await;
+    let zeus = seed_project(&pool, &org, "zeus").await;
+    let grants = PgGrantRepository::new(pool.clone());
+    let repo = PgProjectRepository::new(pool.clone());
+    let holding = async |name: &str, role: &str, scope: Scope| {
+        let user = seed_user(&pool, name).await;
+        grants
+            .create(&Grant::new(
+                Principal::User(user.id().clone()),
+                RoleName::new(role).unwrap(),
+                scope,
+            ))
+            .await
+            .unwrap();
+        let page = repo
+            .list_for_user(user.id(), "readProject", None)
+            .await
+            .unwrap();
+        assert_eq!(page.metadata().total_count(), page.items().len() as u64);
+        let mut ids: Vec<_> = page.items().iter().map(|p| p.id().clone()).collect();
+        ids.sort_by(|a, b| a.as_str().cmp(b.as_str()));
+        ids
+    };
+
+    let member = holding(
+        "member",
+        ORGANIZATION_MEMBER_ROLE,
+        Scope::Organization(org.id().clone()),
+    )
+    .await;
+    assert!(
+        member.is_empty(),
+        "a member sees that the organization exists"
+    );
+
+    let viewer = holding(
+        "viewer",
+        ORGANIZATION_VIEWER_ROLE,
+        Scope::Organization(org.id().clone()),
+    )
+    .await;
+    let mut every = vec![apollo.id().clone(), zeus.id().clone()];
+    every.sort_by(|a, b| a.as_str().cmp(b.as_str()));
+    assert_eq!(viewer, every);
+
+    let reader = holding(
+        "reader",
+        PROJECT_VIEWER_ROLE,
+        Scope::Project(apollo.id().clone()),
+    )
+    .await;
+    assert_eq!(reader, vec![apollo.id().clone()]);
 }

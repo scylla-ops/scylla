@@ -3,11 +3,12 @@
 
 use super::PipelineUseCases;
 use crate::application::actions::user_or_app;
+use crate::application::job::JobScope;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{PipelineId, ProjectId};
 use crate::domain::job::{Job, JobOrigin};
 use crate::domain::permission::Permission;
-use crate::domain::pipeline::{Pipeline, PipelineName, PipelineNode};
+use crate::domain::pipeline::{EnvKey, EnvValue, Pipeline, PipelineName, PipelineNode};
 use async_trait::async_trait;
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
@@ -141,7 +142,12 @@ impl Run<Persist<DeletePipeline>> for PipelineUseCases {
     ) -> DomainResult<Committed<DeletePipeline>> {
         input
             .commit(async |pipeline| {
-                self.pipeline_repo.delete(pipeline.id()).await?;
+                self.dispatch
+                    .recall(
+                        JobScope::Pipeline(pipeline.id()),
+                        self.pipeline_repo.delete(&pipeline),
+                    )
+                    .await?;
                 Ok(Deleted::new(pipeline))
             })
             .await
@@ -149,7 +155,8 @@ impl Run<Persist<DeletePipeline>> for PipelineUseCases {
 }
 
 /// The repo reads bypass Cedar, so "run" does not also require "get". The job's origin is the
-/// caller. The `commit` closure stores the job and hands it to an agent, best-effort.
+/// caller. `Prepare` builds the job and checks that it dispatches; the `commit` closure stores
+/// it and wakes the dispatcher.
 #[derive(Debug)]
 pub struct RunPipeline {
     pub id: PipelineId,
@@ -170,8 +177,9 @@ impl Command for RunPipeline {
 impl Run<Prepare<RunPipeline>> for PipelineUseCases {
     async fn run(&self, input: Authorized<RunPipeline>) -> DomainResult<Prepared<RunPipeline>> {
         let origin = user_or_app(input.caller())?;
-        let pipeline = self.pipeline_repo.find_by_id(&input.command().id).await?;
-        let job = Job::create_from_pipeline(&pipeline, origin).with_inputs(Vec::new());
+        let job = self
+            .new_job(&input.command().id, origin, Vec::new())
+            .await?;
         Ok(input.prepared(Draft::new(job)))
     }
 }
@@ -190,7 +198,7 @@ impl Run<Persist<RunPipeline>> for PipelineUseCases {
 #[derive(Debug)]
 pub struct RunPipelineWithInputs {
     pub id: PipelineId,
-    pub inputs: Vec<(String, String)>,
+    pub inputs: Vec<(EnvKey, EnvValue)>,
     pub origin: JobOrigin,
 }
 
@@ -212,9 +220,9 @@ impl Run<Prepare<RunPipelineWithInputs>> for PipelineUseCases {
         input: Authorized<RunPipelineWithInputs>,
     ) -> DomainResult<Prepared<RunPipelineWithInputs>> {
         let cmd = input.command();
-        let pipeline = self.pipeline_repo.find_by_id(&cmd.id).await?;
-        let job = Job::create_from_pipeline(&pipeline, cmd.origin.clone())
-            .with_inputs(cmd.inputs.clone());
+        let job = self
+            .new_job(&cmd.id, cmd.origin.clone(), cmd.inputs.clone())
+            .await?;
         Ok(input.prepared(Draft::new(job)))
     }
 }

@@ -5,19 +5,19 @@ use super::SecretUseCases;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{ProjectId, SecretId};
 use crate::domain::permission::Permission;
-use crate::domain::secret::{Secret, SecretName};
+use crate::domain::secret::{Secret, SecretDescription, SecretName, SecretValue};
 use async_trait::async_trait;
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
     Run,
 };
 
-/// No `Debug`: `value` is the plaintext. `Prepare` encrypts it, so only the ciphertext is staged.
+#[derive(Debug)]
 pub struct CreateSecret {
     pub project_id: ProjectId,
     pub name: SecretName,
-    pub description: String,
-    pub value: String,
+    pub description: SecretDescription,
+    pub value: SecretValue,
 }
 
 impl Describe for CreateSecret {
@@ -35,7 +35,7 @@ impl Command for CreateSecret {
 impl Run<Prepare<CreateSecret>> for SecretUseCases {
     async fn run(&self, input: Authorized<CreateSecret>) -> DomainResult<Prepared<CreateSecret>> {
         let cmd = input.command();
-        let encrypted = self.cipher.encrypt(&cmd.value)?;
+        let encrypted = self.cipher.encrypt(cmd.value.as_str())?;
         let secret = Secret::create(
             cmd.project_id.clone(),
             cmd.name.clone(),

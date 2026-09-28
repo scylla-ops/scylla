@@ -7,7 +7,8 @@ use scylla_auth::authz::Grant;
 
 #[async_trait]
 pub trait InvitationRepository: Send + Sync {
-    async fn create(&self, invite: &Invitation) -> DomainResult<()>;
+    /// The store keeps the SHA-256 of `token`, never `token`.
+    async fn create(&self, invite: &Invitation, token: &str) -> DomainResult<()>;
     async fn find_by_id(&self, id: &InvitationId) -> DomainResult<Invitation>;
     async fn find_by_token(&self, token: &str) -> DomainResult<Invitation>;
     async fn list_pending(&self, org_id: &OrganizationId) -> DomainResult<Vec<Invitation>>;

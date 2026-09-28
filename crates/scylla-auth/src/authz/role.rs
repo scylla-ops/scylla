@@ -2,6 +2,7 @@ use crate::authz::grant::{Scope, ScopeKind};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::OrganizationId;
 use crate::domain::permission::permission_resource_type;
+use crate::domain::role::{RoleDescription, RoleDisplayName};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -12,8 +13,8 @@ pub const FULL_CONTROL: &str = "*";
 pub struct Role {
     pub id: String,
     pub key: Option<String>,
-    pub name: String,
-    pub description: String,
+    pub name: RoleDisplayName,
+    pub description: RoleDescription,
     pub scope: ScopeKind,
     pub owner_org: Option<OrganizationId>,
     pub builtin: bool,
@@ -28,8 +29,8 @@ impl Role {
 
     #[must_use]
     pub fn new_custom(
-        name: String,
-        description: String,
+        name: RoleDisplayName,
+        description: RoleDescription,
         scope: ScopeKind,
         permissions: Vec<String>,
     ) -> Self {

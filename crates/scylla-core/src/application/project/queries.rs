@@ -63,7 +63,8 @@ impl Run<Fetch<ListProjects>> for ProjectUseCases {
 }
 
 /// Gated on `readOrganization`, not on `listProjectsByOrganization`: a project-only role must
-/// see its own project, not be refused. The wider permission only widens the visible set.
+/// see its own project, not be refused. The wider permission only widens the visible set, read
+/// from the grants and not asked of the access model, so it writes no audit row.
 #[derive(Debug)]
 pub struct ListOrganizationProjects {
     pub organization_id: OrganizationId,
@@ -82,30 +83,20 @@ impl Query for ListOrganizationProjects {
 
 #[async_trait]
 impl Run<Fetch<ListOrganizationProjects>> for ProjectUseCases {
-    // The second check is a scoping decision, not a gate: it never refuses, it picks between
-    // every project of the organization and the ones the caller's grants reach.
     async fn run(
         &self,
         input: Authorized<ListOrganizationProjects>,
     ) -> DomainResult<Fetched<ListOrganizationProjects>> {
         let query = input.command();
-        let visible = if self
-            .permission_service
-            .check(
-                input.caller(),
-                Permission::ListProjectsByOrganization(query.organization_id.clone()),
-            )
-            .await
-            .is_ok()
-        {
-            Visibility::All
-        } else {
-            self.visibility
-                .visible_scopes(
-                    input.caller(),
-                    Permission::ReadProject(ProjectId::new("_")).key(),
-                )
-                .await?
+        let caller = input.caller();
+        let wide = Permission::ListProjectsByOrganization(query.organization_id.clone());
+        let visible = match self.visibility.visible_scopes(caller, wide.key()).await? {
+            Visibility::Scoped { orgs, .. } if !orgs.contains(&query.organization_id) => {
+                self.visibility
+                    .visible_scopes(caller, Permission::ReadProject(ProjectId::new("_")).key())
+                    .await?
+            }
+            wide => wide,
         };
         let page = self
             .project_repo
@@ -172,7 +163,11 @@ impl Run<Fetch<ListUserProjects>> for ProjectUseCases {
         let query = input.command();
         let page = self
             .project_repo
-            .list_for_user(&query.user_id, query.pagination.as_ref())
+            .list_for_user(
+                &query.user_id,
+                Permission::ReadProject(ProjectId::new("_")).key(),
+                query.pagination.as_ref(),
+            )
             .await?;
         Ok(input.fetched(page))
     }

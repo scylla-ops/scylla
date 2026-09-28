@@ -11,4 +11,7 @@ pub trait TriggerDeliveryRepository: Send + Sync {
         delivery_id: &str,
         received_at: DateTime<Utc>,
     ) -> DomainResult<bool>;
+
+    /// Removes a recorded delivery whose fire failed, so that a retry fires.
+    async fn forget(&self, trigger_id: &TriggerId, delivery_id: &str) -> DomainResult<()>;
 }

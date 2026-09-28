@@ -7,7 +7,7 @@ use async_trait::async_trait;
 
 #[async_trait]
 pub trait JobLogRepository: Send + Sync {
-    async fn create(&self, log: &JobLog) -> DomainResult<JobLog>;
+    async fn create_many(&self, logs: &[JobLog]) -> DomainResult<()>;
 
     async fn list_by_job(
         &self,

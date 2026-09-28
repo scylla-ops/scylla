@@ -1,10 +1,10 @@
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::project::Project;
 use crate::domain::project::{ProjectDescription, ProjectName};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla_auth::authz::{Grant, Visibility};
+use scylla_auth::authz::{FULL_CONTROL, Grant, Visibility};
 use scylla_core::application::ProjectRepository;
 use scylla_core::application::pagination::{PaginatedResult, PaginationParams};
 use sqlx::{PgExecutor, PgPool};
@@ -12,6 +12,8 @@ use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
 use super::super::grants;
+use super::super::version::{from_db, to_db, written};
+use super::super::visibility::VisibilityFilter;
 
 #[derive(Clone)]
 pub struct PgProjectRepository {
@@ -22,18 +24,6 @@ impl PgProjectRepository {
     #[must_use]
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
-    }
-
-    // A write that matched no row is a stale read if the row still exists, else a missing row.
-    async fn stale(&self, project: &Project) -> DomainError {
-        match queries::exists(&self.pool, project.id()).await {
-            Ok(true) => DomainError::conflict(format!(
-                "project {} changed since it was read",
-                project.id()
-            )),
-            Ok(false) => DomainError::not_found("Project", project.id().to_string()),
-            Err(e) => e,
-        }
     }
 }
 
@@ -69,11 +59,13 @@ impl ProjectRepository for PgProjectRepository {
     async fn list_for_user(
         &self,
         user_id: &UserId,
+        permission: &str,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
         let params = pagination.copied().unwrap_or_default();
-        let total = queries::count_for_user(&self.pool, user_id).await?;
-        let items = queries::list_for_user_page(&self.pool, user_id, &params).await?;
+        let conferring = [FULL_CONTROL.to_string(), permission.to_string()];
+        let total = queries::count_for_user(&self.pool, user_id, &conferring).await?;
+        let items = queries::list_for_user_page(&self.pool, user_id, &conferring, &params).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
 
@@ -84,19 +76,26 @@ impl ProjectRepository for PgProjectRepository {
 
     #[instrument(skip_all, fields(project_id = %project.id(), version = project.version()))]
     async fn update(&self, project: &Project) -> DomainResult<Project> {
-        match queries::update(&self.pool, project).await? {
-            Some(updated) => Ok(updated),
-            None => Err(self.stale(project).await),
-        }
+        let updated = queries::update(&self.pool, project).await?;
+        written(
+            updated,
+            "Project",
+            project.id(),
+            queries::find_by_id(&self.pool, project.id()),
+        )
+        .await
     }
 
     #[instrument(skip_all, fields(project_id = %project.id(), version = project.version()))]
     async fn delete(&self, project: &Project) -> DomainResult<()> {
-        if queries::delete(&self.pool, project).await? {
-            Ok(())
-        } else {
-            Err(self.stale(project).await)
-        }
+        let deleted = queries::delete(&self.pool, project).await?.then_some(());
+        written(
+            deleted,
+            "Project",
+            project.id(),
+            queries::find_by_id(&self.pool, project.id()),
+        )
+        .await
     }
 
     #[instrument(skip(self, pagination))]
@@ -105,7 +104,7 @@ impl ProjectRepository for PgProjectRepository {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
         let params = pagination.copied().unwrap_or_default();
-        let unrestricted = queries::VisibilityFilter::unrestricted();
+        let unrestricted = VisibilityFilter::new(&Visibility::All);
         let total = queries::count(&self.pool, false, None, &unrestricted).await?;
         let items = queries::list_page(&self.pool, &params, false, None, &unrestricted).await?;
         Ok(PaginatedResult::new(items, &params, total))
@@ -122,7 +121,7 @@ impl ProjectRepository for PgProjectRepository {
         if visible.is_empty() {
             return Ok(PaginatedResult::new(Vec::new(), &params, 0));
         }
-        let filter = queries::VisibilityFilter::new(visible);
+        let filter = VisibilityFilter::new(visible);
         let total = queries::count(&self.pool, false, Some(organization_id), &filter).await?;
         let items =
             queries::list_page(&self.pool, &params, false, Some(organization_id), &filter).await?;
@@ -182,24 +181,27 @@ pub mod queries {
             .collect())
     }
 
-    // ponytail: the org arm re-reads `grants` per call; fold into `Visibility` if listings get hot.
-    pub async fn count_for_user<'e, E>(executor: E, user_id: &UserId) -> DomainResult<u64>
+    pub async fn count_for_user<'e, E>(
+        executor: E,
+        user_id: &UserId,
+        conferring: &[String],
+    ) -> DomainResult<u64>
     where
         E: PgExecutor<'e>,
     {
         let row = sqlx::query!(
             r#"
             SELECT COUNT(*) AS "count!" FROM projects p
-            WHERE p.id IN (
-                SELECT scope_id FROM grants
-                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'project'
-              )
-              OR p.organization_id IN (
-                SELECT scope_id FROM grants
-                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'organization'
-              )
+            WHERE EXISTS (
+                SELECT 1 FROM grants g
+                JOIN role_permissions rp ON rp.role_id = g.role_id AND rp.permission = ANY($2)
+                WHERE g.principal_kind = 'user' AND g.principal_id = $1
+                  AND ((g.scope_kind = 'project' AND g.scope_id = p.id)
+                    OR (g.scope_kind = 'organization' AND g.scope_id = p.organization_id))
+            )
             "#,
             user_id.as_str(),
+            conferring,
         )
         .fetch_one(executor)
         .await
@@ -210,6 +212,7 @@ pub mod queries {
     pub async fn list_for_user_page<'e, E>(
         executor: E,
         user_id: &UserId,
+        conferring: &[String],
         params: &PaginationParams,
     ) -> DomainResult<Vec<Project>>
     where
@@ -221,18 +224,18 @@ pub mod queries {
             r#"
             SELECT id, name, description, organization_id, is_active, created_at, updated_at, version
             FROM projects p
-            WHERE p.id IN (
-                SELECT scope_id FROM grants
-                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'project'
-              )
-              OR p.organization_id IN (
-                SELECT scope_id FROM grants
-                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'organization'
-              )
+            WHERE EXISTS (
+                SELECT 1 FROM grants g
+                JOIN role_permissions rp ON rp.role_id = g.role_id AND rp.permission = ANY($2)
+                WHERE g.principal_kind = 'user' AND g.principal_id = $1
+                  AND ((g.scope_kind = 'project' AND g.scope_id = p.id)
+                    OR (g.scope_kind = 'organization' AND g.scope_id = p.organization_id))
+            )
             ORDER BY created_at DESC
-            LIMIT $2 OFFSET $3
+            LIMIT $3 OFFSET $4
             "#,
             user_id.as_str(),
+            conferring,
             limit,
             offset,
         )
@@ -279,7 +282,7 @@ pub mod queries {
             is_active,
             created_at,
             updated_at,
-            u64::try_from(version).unwrap_or(0),
+            from_db(version),
         ))
     }
 
@@ -289,8 +292,8 @@ pub mod queries {
     {
         sqlx::query!(
             r#"
-            INSERT INTO projects (id, name, description, organization_id, is_active, created_at, updated_at, version)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO projects (id, name, description, organization_id, is_active, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
             project.id().as_str(),
             project.name().as_str(),
@@ -299,7 +302,6 @@ pub mod queries {
             project.is_active(),
             project.created_at(),
             project.updated_at(),
-            version_column(project),
         )
         .execute(executor)
         .await
@@ -321,7 +323,7 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        .not_found_as("Project", id.to_string())?;
+        .not_found_as("Project", id)?;
         row_into_project(
             rec.id,
             rec.name,
@@ -334,8 +336,7 @@ pub mod queries {
         )
     }
 
-    /// `None` when no row carries the staged version: the caller tells a stale read from a
-    /// missing row with `exists`, on its own statement.
+    /// `None` when no row carries the staged version.
     pub async fn update<'e, E>(executor: E, project: &Project) -> DomainResult<Option<Project>>
     where
         E: PgExecutor<'e>,
@@ -358,7 +359,7 @@ pub mod queries {
             project.organization_id().as_str(),
             project.is_active(),
             project.updated_at(),
-            version_column(project),
+            to_db(project.version()),
         )
         .fetch_optional(executor)
         .await
@@ -386,63 +387,12 @@ pub mod queries {
         let res = sqlx::query!(
             "DELETE FROM projects WHERE id = $1 AND version = $2",
             project.id().as_str(),
-            version_column(project),
+            to_db(project.version()),
         )
         .execute(executor)
         .await
         .to_domain()?;
         Ok(res.rows_affected() > 0)
-    }
-
-    pub async fn exists<'e, E>(executor: E, id: &ProjectId) -> DomainResult<bool>
-    where
-        E: PgExecutor<'e>,
-    {
-        let rec = sqlx::query!(
-            r#"SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1) AS "exists!""#,
-            id.as_str(),
-        )
-        .fetch_one(executor)
-        .await
-        .to_domain()?;
-        Ok(rec.exists)
-    }
-
-    fn version_column(project: &Project) -> i64 {
-        i64::try_from(project.version()).unwrap_or(i64::MAX)
-    }
-
-    pub struct VisibilityFilter {
-        all: bool,
-        orgs: Vec<String>,
-        projects: Vec<String>,
-    }
-
-    impl VisibilityFilter {
-        #[must_use]
-        pub fn new(visible: &Visibility) -> Self {
-            match visible {
-                Visibility::All => Self {
-                    all: true,
-                    orgs: Vec::new(),
-                    projects: Vec::new(),
-                },
-                Visibility::Scoped { orgs, projects } => Self {
-                    all: false,
-                    orgs: orgs.iter().map(|o| o.as_str().to_owned()).collect(),
-                    projects: projects.iter().map(|p| p.as_str().to_owned()).collect(),
-                },
-            }
-        }
-
-        #[must_use]
-        pub fn unrestricted() -> Self {
-            Self {
-                all: true,
-                orgs: Vec::new(),
-                projects: Vec::new(),
-            }
-        }
     }
 
     pub async fn count<'e, E>(

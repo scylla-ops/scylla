@@ -69,7 +69,7 @@ pub fn pipeline_node_to_proto(node: &DomainPipelineNode) -> PipelineNode {
 
 fn env_to_proto(ev: &DomainEnvVar) -> EnvVar {
     let source = match ev.source() {
-        EnvSource::Literal(v) => env_var::Source::Value(v.clone()),
+        EnvSource::Literal(v) => env_var::Source::Value(v.to_string()),
         EnvSource::Secret(name) => env_var::Source::SecretRef(name.as_str().to_string()),
     };
     EnvVar {
@@ -81,66 +81,72 @@ fn env_to_proto(ev: &DomainEnvVar) -> EnvVar {
 fn step_to_proto(step: &Step) -> pipeline_node::Step {
     match step {
         Step::Exec { command, args } => pipeline_node::Step::Exec(exec::ExecStep {
-            command: command.clone(),
-            args: args.clone(),
+            command: command.to_string(),
+            args: args.iter().map(ToString::to_string).collect(),
         }),
         Step::Script { script, shell } => pipeline_node::Step::Script(exec::ScriptStep {
-            script: script.clone(),
+            script: script.to_string(),
             shell: scylla_proto::convert::shell_to_proto(*shell) as i32,
         }),
     }
 }
 
+fn within(context: String) -> impl FnOnce(Status) -> Status {
+    move |s| Status::new(s.code(), format!("{context}: {}", s.message()))
+}
+
 fn proto_node_to_domain(n: PipelineNode) -> Result<DomainPipelineNode, Status> {
     let node_id = valid(required(n.node_id, "node_id")?, NodeId::new)?;
-    let deps = n
-        .deps
-        .into_iter()
-        .map(|d| valid(d.value, NodeId::new))
-        .collect::<Result<_, _>>()?;
-    let working_dir = match n.working_dir.trim() {
-        "" => None,
-        s => Some(valid(s, WorkingDir::new)?),
+    let context = format!("node '{node_id}'");
+    let node = move || {
+        let deps = n
+            .deps
+            .into_iter()
+            .map(|d| valid(d.value, NodeId::new))
+            .collect::<Result<_, _>>()?;
+        let working_dir = match n.working_dir.trim() {
+            "" => None,
+            s => Some(valid(s, WorkingDir::new)?),
+        };
+        let env = n
+            .env
+            .into_iter()
+            .map(|e| {
+                let key = e.key.clone();
+                proto_env_to_domain(e).map_err(within(format!("env '{key}'")))
+            })
+            .collect::<Result<_, _>>()?;
+        let step = match n.step {
+            Some(pipeline_node::Step::Exec(e)) => {
+                Step::exec(e.command, e.args).map_err(domain_error_to_status)?
+            }
+            Some(pipeline_node::Step::Script(s)) => {
+                Step::script(s.script, scylla_proto::convert::shell_from_proto(s.shell))
+                    .map_err(domain_error_to_status)?
+            }
+            None => {
+                return Err(Status::invalid_argument("missing step (exec or script)"));
+            }
+        };
+        Ok(DomainPipelineNode::new(
+            node_id,
+            deps,
+            step,
+            working_dir,
+            env,
+        ))
     };
-    let env = n
-        .env
-        .into_iter()
-        .map(proto_env_to_domain)
-        .collect::<Result<_, _>>()?;
-    let step = match n.step {
-        Some(pipeline_node::Step::Exec(e)) => {
-            Step::exec(e.command, e.args).map_err(domain_error_to_status)?
-        }
-        Some(pipeline_node::Step::Script(s)) => {
-            Step::script(s.script, scylla_proto::convert::shell_from_proto(s.shell))
-                .map_err(domain_error_to_status)?
-        }
-        None => {
-            return Err(Status::invalid_argument(
-                "pipeline node is missing its step (exec or script)",
-            ));
-        }
-    };
-    Ok(DomainPipelineNode::new(
-        node_id,
-        deps,
-        step,
-        working_dir,
-        env,
-    ))
+    node().map_err(within(context))
 }
 
 fn proto_env_to_domain(e: EnvVar) -> Result<DomainEnvVar, Status> {
-    let key = valid(e.key.as_str(), EnvKey::new)?;
+    let key = valid(e.key, EnvKey::new)?;
     match e.source {
-        Some(env_var::Source::Value(v)) => Ok(DomainEnvVar::literal(key, v)),
+        Some(env_var::Source::Value(v)) => valid(v, |v| DomainEnvVar::literal(key, v)),
         Some(env_var::Source::SecretRef(name)) => {
             Ok(DomainEnvVar::secret(key, valid(name, SecretName::new)?))
         }
-        None => Err(Status::invalid_argument(format!(
-            "env var `{}` has no value",
-            e.key
-        ))),
+        None => Err(Status::invalid_argument("missing value or secret_ref")),
     }
 }
 
@@ -269,10 +275,7 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(err.code(), Code::InvalidArgument);
-        assert_eq!(
-            err.message(),
-            "pipeline node is missing its step (exec or script)"
-        );
+        assert_eq!(err.message(), "node 'a': missing step (exec or script)");
     }
 
     #[test]
@@ -288,7 +291,33 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(err.code(), Code::InvalidArgument);
-        assert_eq!(err.message(), "env var `TOKEN` has no value");
+        assert_eq!(
+            err.message(),
+            "node 'a': env 'TOKEN': missing value or secret_ref"
+        );
+    }
+
+    #[test]
+    fn a_bad_secret_ref_names_its_node_and_env_key() {
+        let mut node = exec_node("n1");
+        node.env[0] = EnvVar {
+            key: "X".into(),
+            source: Some(env_var::Source::SecretRef("bad name".into())),
+        };
+        let err = CreatePipelineRequest {
+            project_id: wrap("proj-1"),
+            name: "build".into(),
+            nodes: vec![node],
+        }
+        .parse()
+        .unwrap_err();
+
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert!(
+            err.message().starts_with("node 'n1': env 'X': "),
+            "{}",
+            err.message()
+        );
     }
 
     #[test]

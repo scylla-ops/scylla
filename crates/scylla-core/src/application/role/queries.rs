@@ -52,7 +52,7 @@ impl Run<Fetch<GetRole>> for RoleUseCases {
             .role_repo
             .get(id)
             .await?
-            .ok_or_else(|| DomainError::not_found("role", id))?;
+            .ok_or_else(|| DomainError::not_found("Role", id))?;
         Ok(input.fetched(role))
     }
 }

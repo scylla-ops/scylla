@@ -11,7 +11,6 @@ use derive_more::Constructor;
 use hmac::{Hmac, KeyInit, Mac};
 use sha2::Sha256;
 use std::sync::Arc;
-use subtle::ConstantTimeEq;
 
 pub const DEFAULT_SIGNATURE_HEADER: &str = "X-Scylla-Signature-256";
 pub const PING_EVENT: &str = "ping";
@@ -34,19 +33,20 @@ pub struct WebhookIngressUseCases {
     pub(super) firing: Arc<dyn TriggerFiring>,
 }
 
+/// The lowercase hex digest when `signature`, "sha256=<hex>" or "<hex>" with the prefix and the
+/// hex in any case, is the HMAC-SHA256 of `raw_body` under `secret`. The compare is constant-time.
 #[must_use]
-pub fn verify_signature(secret: &str, raw_body: &[u8], signature: &str) -> bool {
-    let expected = signature
-        .strip_prefix("sha256=")
-        .unwrap_or(signature)
-        .trim();
-    let Ok(mut mac) = Hmac::<Sha256>::new_from_slice(secret.as_bytes()) else {
-        return false;
+pub fn verified_digest(secret: &str, raw_body: &[u8], signature: &str) -> Option<String> {
+    let signature = signature.trim();
+    let hex_digest = match signature.get(..7) {
+        Some(prefix) if prefix.eq_ignore_ascii_case("sha256=") => &signature[7..],
+        _ => signature,
     };
+    let digest = hex::decode(hex_digest.trim()).ok()?;
+    let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).ok()?;
     mac.update(raw_body);
-    let computed = hex::encode(mac.finalize().into_bytes());
-    // ct_eq is length-aware: no early return on length mismatch.
-    bool::from(computed.as_bytes().ct_eq(expected.as_bytes()))
+    mac.verify_slice(&digest).ok()?;
+    Some(hex::encode(digest))
 }
 
 #[cfg(test)]

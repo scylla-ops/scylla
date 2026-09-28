@@ -1,6 +1,7 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
-use crate::application::agent::{CreateAgent, DeleteAgent, GetAgent, GetAgentStats, ListAgents};
+use crate::application::agent::{CreateAgent, GetAgent, GetAgentStats, ListAgents};
+use crate::application::app::DeleteApp;
 use crate::application::{AgentStats, AgentView};
 use crate::grpc::convert::{Parse, id, ts, valid, wrap};
 use scylla_domain::domain::agent::AgentHost;
@@ -91,7 +92,7 @@ impl Parse for CreateAgentRequest {
 parse!(ListAgentsRequest => ListAgents { organization_id: id(organization_id) });
 parse!(GetAgentRequest => GetAgent { id: id(agent_id) });
 parse!(GetAgentStatsRequest => GetAgentStats { id: id(agent_id) });
-parse!(DeleteAgentRequest => DeleteAgent { id: id(agent_id) });
+parse!(DeleteAgentRequest => DeleteApp { id: id(agent_id) });
 
 #[cfg(test)]
 mod tests {
@@ -110,6 +111,17 @@ mod tests {
 
         assert_eq!(command.organization_id.as_str(), "acme");
         assert_eq!(command.name.as_str(), "runner-1");
+    }
+
+    #[test]
+    fn an_agent_is_deleted_as_its_app() {
+        let command: DeleteApp = DeleteAgentRequest {
+            agent_id: wrap("agent-1"),
+        }
+        .parse()
+        .unwrap();
+
+        assert_eq!(command.id.as_str(), "agent-1");
     }
 
     #[test]

@@ -2,11 +2,12 @@
 //! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::UserUseCases;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::UserId;
 use crate::domain::permission::Permission;
 use crate::domain::user::{Email, Password, User, Username};
 use async_trait::async_trait;
+use scylla_auth::authz::{Principal, ensure_owner_remains};
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
     Run,
@@ -34,9 +35,6 @@ impl Command for CreateUser {
 impl Run<Prepare<CreateUser>> for UserUseCases {
     async fn run(&self, input: Authorized<CreateUser>) -> DomainResult<Prepared<CreateUser>> {
         let cmd = input.command();
-        if self.user_repo.username_exists(&cmd.username).await? {
-            return Err(DomainError::conflict("Username already exists"));
-        }
         let password_hash = self.hash_service.hash(&cmd.password).await?;
         let user = User::create(cmd.username.clone(), cmd.email.clone(), password_hash);
         Ok(input.prepared(Draft::new(user)))
@@ -75,9 +73,6 @@ impl Run<Prepare<UpdateUser>> for UserUseCases {
         let cmd = input.command();
         let mut user = self.user_repo.find_by_id(&cmd.id).await?;
         if let Some(username) = &cmd.username {
-            if self.user_repo.username_exists(username).await? && user.username() != username {
-                return Err(DomainError::conflict("Username already exists"));
-            }
             user.update_username(username.clone())?;
         }
         Ok(input.prepared(Draft::new(user)))
@@ -113,6 +108,9 @@ impl Command for DeleteUser {
 impl Run<Prepare<DeleteUser>> for UserUseCases {
     async fn run(&self, input: Authorized<DeleteUser>) -> DomainResult<Prepared<DeleteUser>> {
         let user = self.user_repo.find_by_id(&input.command().id).await?;
+        let principal = Principal::User(user.id().clone());
+        let grants = self.grant_repo.list_all().await?;
+        ensure_owner_remains(&grants, |g| g.principal == principal)?;
         Ok(input.prepared(user))
     }
 }
@@ -123,7 +121,7 @@ impl Run<Persist<DeleteUser>> for UserUseCases {
     async fn run(&self, input: Prepared<DeleteUser>) -> DomainResult<Committed<DeleteUser>> {
         input
             .commit(async |user| {
-                self.user_repo.delete(user.id()).await?;
+                self.user_repo.delete(&user).await?;
                 self.policy_control.reload().await?;
                 Ok(Deleted::new(user))
             })

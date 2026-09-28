@@ -80,6 +80,7 @@ croner = "4"
 ulid = "3"
 uuid = { version = "1", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
+derive-where = "1.6"
 nutype = { version = "0.7", features = ["serde"] }
 bon = "3.9"
 argon2 = "0.6"
@@ -87,11 +88,10 @@ argon2 = "0.6"
 # = 24-byte random nonce, so encrypting many secrets under one key is safe.
 # (0.11 dropped the `std` feature; default alloc + getrandom is all we use.)
 chacha20poly1305 = "0.11"
-# Webhook HMAC-SHA256 signature verification (constant-time compare via subtle).
+# Webhook HMAC-SHA256 signature verification (constant-time compare via Mac::verify_slice).
 # hmac 0.13 + sha2 0.11 share digest 0.11.
 hmac = "0.13"
 sha2 = "0.11"
-subtle = "2.6"
 hex = "0.4"
 cedar-policy = "4"
 lettre = { version = "0.11", default-features = false, features = [

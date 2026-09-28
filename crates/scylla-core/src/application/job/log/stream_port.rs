@@ -8,8 +8,16 @@ use std::pin::Pin;
 
 pub type JobLogLiveStream = Pin<Box<dyn Stream<Item = DomainResult<JobLog>> + Send + Sync>>;
 
+/// The live tail of a job: `open` when it starts, `publish` each stored line, `close` when it
+/// ends. `subscribe` never opens a tail.
 #[async_trait]
 pub trait JobLogStreamPort: Send + Sync {
+    fn open(&self, job_id: &JobId);
+
+    fn publish(&self, log: &JobLog);
+
+    fn close(&self, job_id: &JobId);
+
     async fn subscribe(
         &self,
         job_id: &JobId,

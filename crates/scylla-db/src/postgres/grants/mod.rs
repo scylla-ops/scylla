@@ -16,7 +16,8 @@ const SYSTEM_SCOPE_ID: &str = "system";
 const PRINCIPAL_USER: &str = "user";
 const PRINCIPAL_APP: &str = "app";
 
-pub async fn insert<'e, E>(executor: E, grant: &Grant) -> DomainResult<()>
+/// Returns the stored id: the existing one when the same grant is already there.
+pub async fn insert<'e, E>(executor: E, grant: &Grant) -> DomainResult<String>
 where
     E: PgExecutor<'e>,
 {
@@ -25,21 +26,22 @@ where
         Scope::Organization(id) => (SCOPE_ORGANIZATION, id.as_str()),
         Scope::Project(id) => (SCOPE_PROJECT, id.as_str()),
     };
-    sqlx::query!(
+    sqlx::query_scalar!(
         "INSERT INTO grants (id, principal_kind, principal_id, role_id, scope_kind, scope_id) \
          VALUES ($1, $2, $3, $4, $5, $6) \
-         ON CONFLICT (principal_kind, principal_id, role_id, scope_kind, scope_id) DO NOTHING",
+         ON CONFLICT (principal_kind, principal_id, role_id, scope_kind, scope_id) \
+         DO UPDATE SET id = grants.id \
+         RETURNING id",
         grant.id.as_str(),
-        grant.principal.kind(),
+        grant.principal.kind().as_str(),
         grant.principal.id(),
         grant.role.as_str(),
         scope_kind,
         scope_id,
     )
-    .execute(executor)
+    .fetch_one(executor)
     .await
-    .to_domain()?;
-    Ok(())
+    .to_domain()
 }
 
 /// System-scoped grants stay out of reach: an org admin must not strip a platform operator.
@@ -56,7 +58,7 @@ where
             sqlx::query!(
                 "DELETE FROM grants \
                  WHERE principal_kind = $1 AND principal_id = $2 AND scope_kind <> $3",
-                principal.kind(),
+                principal.kind().as_str(),
                 principal.id(),
                 SCOPE_SYSTEM,
             )
@@ -70,7 +72,7 @@ where
                    AND ((scope_kind = $3 AND scope_id = $4) \
                      OR (scope_kind = $5 AND scope_id IN \
                            (SELECT id FROM projects WHERE organization_id = $4)))",
-                principal.kind(),
+                principal.kind().as_str(),
                 principal.id(),
                 SCOPE_ORGANIZATION,
                 org_id.as_str(),
@@ -84,7 +86,7 @@ where
                 "DELETE FROM grants \
                  WHERE principal_kind = $1 AND principal_id = $2 \
                    AND scope_kind = $3 AND scope_id = $4",
-                principal.kind(),
+                principal.kind().as_str(),
                 principal.id(),
                 SCOPE_PROJECT,
                 project_id.as_str(),
@@ -151,8 +153,12 @@ impl GrantRepository for PgGrantRepository {
     }
 
     #[instrument(skip_all, fields(grant_id = %grant.id))]
-    async fn create(&self, grant: &Grant) -> DomainResult<()> {
-        insert(&self.pool, grant).await
+    async fn create(&self, grant: &Grant) -> DomainResult<Grant> {
+        let id = insert(&self.pool, grant).await?;
+        Ok(Grant {
+            id,
+            ..grant.clone()
+        })
     }
 
     #[instrument(skip_all, fields(principal = %principal, scope = %scope))]
@@ -173,7 +179,8 @@ impl GrantRepository for PgGrantRepository {
 #[cfg(test)]
 mod tests {
     use super::PgGrantRepository;
-    use crate::domain::ids::AppId;
+    use crate::domain::errors::DomainError;
+    use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
     use crate::domain::role::RoleName;
     use crate::test_support::prelude::*;
     use scylla_auth::authz::{
@@ -303,5 +310,68 @@ mod tests {
             "only the other user's grant should be left",
         );
         assert_eq!(remaining[0].id, others.id);
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn a_repeated_grant_returns_the_stored_one(pool: PgPool) {
+        let org = seed_org(&pool, "acme").await;
+        let user = seed_user(&pool, "alice").await;
+        let repo = PgGrantRepository::new(pool.clone());
+        let grant = || {
+            Grant::new(
+                Principal::User(user.id().clone()),
+                role(ORGANIZATION_ADMIN_ROLE),
+                Scope::Organization(org.id().clone()),
+            )
+        };
+
+        let first = repo.create(&grant()).await.unwrap();
+        let again = repo.create(&grant()).await.unwrap();
+
+        assert_eq!(again.id, first.id);
+        let stored = repo.list_all().await.unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].id, first.id);
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn a_grant_that_names_a_missing_principal_or_scope_is_refused(pool: PgPool) {
+        let org = seed_org(&pool, "acme").await;
+        let project = seed_project(&pool, &org, "apollo").await;
+        let user = Principal::User(seed_user(&pool, "alice").await.id().clone());
+        let repo = PgGrantRepository::new(pool.clone());
+        let ghost_org = Scope::Organization(OrganizationId::new("ghost"));
+        let ghost_project = Scope::Project(ProjectId::new("ghost"));
+
+        for (principal, role_name, scope) in [
+            (
+                Principal::User(UserId::new("ghost")),
+                ORGANIZATION_ADMIN_ROLE,
+                Scope::Organization(org.id().clone()),
+            ),
+            (
+                Principal::App(AppId::new("ghost")),
+                ORGANIZATION_AGENT_ROLE,
+                Scope::Organization(org.id().clone()),
+            ),
+            (user.clone(), ORGANIZATION_ADMIN_ROLE, ghost_org),
+            (user.clone(), PROJECT_ADMIN_ROLE, ghost_project),
+        ] {
+            let err = repo
+                .create(&Grant::new(principal, role(role_name), scope))
+                .await
+                .unwrap_err();
+            assert!(matches!(err, DomainError::BusinessRule(_)), "{err:?}");
+        }
+        assert!(
+            repo.create(&Grant::new(
+                user,
+                role(PROJECT_ADMIN_ROLE),
+                Scope::Project(project.id().clone()),
+            ))
+            .await
+            .is_ok()
+        );
+        assert_eq!(repo.list_all().await.unwrap().len(), 1);
     }
 }
