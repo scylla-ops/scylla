@@ -1,37 +1,13 @@
-use crate::domain::errors::{DomainError, DomainResult};
-use nutype::nutype;
+use crate::domain::text::{Rule, Text};
 
-const MAX_LABEL_LENGTH: usize = 64;
+pub enum AppSecretLabelRule {}
 
-fn validate(s: &str) -> Result<(), DomainError> {
-    if s.is_empty() {
-        return Err(DomainError::validation("App secret label cannot be empty"));
-    }
-    if s.len() > MAX_LABEL_LENGTH {
-        return Err(DomainError::validation(format!(
-            "App secret label cannot exceed {MAX_LABEL_LENGTH} characters"
-        )));
-    }
-    Ok(())
+impl Rule for AppSecretLabelRule {
+    const LABEL: &'static str = "App secret label";
+    const MAX: usize = 64;
 }
 
-#[nutype(
-    sanitize(trim),
-    validate(with = validate, error = DomainError),
-    derive(Debug, Clone, PartialEq, Eq, Hash, AsRef, Borrow, Display, Into),
-)]
-pub struct AppSecretLabel(String);
-
-impl AppSecretLabel {
-    pub fn new(value: impl Into<String>) -> DomainResult<Self> {
-        Self::try_new(value.into())
-    }
-
-    #[must_use]
-    pub fn as_str(&self) -> &str {
-        <Self as AsRef<str>>::as_ref(self)
-    }
-}
+pub type AppSecretLabel = Text<AppSecretLabelRule>;
 
 #[cfg(test)]
 mod tests {
@@ -50,7 +26,7 @@ mod tests {
 
     #[test]
     fn enforces_length_bound() {
-        assert!(AppSecretLabel::new("a".repeat(MAX_LABEL_LENGTH)).is_ok());
-        assert!(AppSecretLabel::new("a".repeat(MAX_LABEL_LENGTH + 1)).is_err());
+        assert!(AppSecretLabel::new("a".repeat(AppSecretLabelRule::MAX)).is_ok());
+        assert!(AppSecretLabel::new("a".repeat(AppSecretLabelRule::MAX + 1)).is_err());
     }
 }

@@ -17,7 +17,7 @@ Worker binary installed on each pipeline-executing machine. Authenticates as its
 ### `scylla-domain`
 The shared kernel, and the only Rust code both binaries run. Holds the domain model (entities, value objects, `DomainError`, the DAG planner) plus [`JobEvent`](#jobevent), the command vocabulary the agent reports and the control plane applies.
 
-Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
+Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `derive-where`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
 
 ### `scylla-proto`
 Library crate with the Rust bindings of the `.proto` files and the conversions to the domain types. The `.proto` files are in `crates/scylla-proto/proto/`, a git submodule of [`scylla-ops/scylla-protos`](https://github.com/scylla-ops/scylla-protos). The web UI pins the same repository with its own submodule.

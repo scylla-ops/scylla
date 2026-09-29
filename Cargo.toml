@@ -80,6 +80,7 @@ croner = "4"
 ulid = "3"
 uuid = { version = "1", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
+derive-where = "1.6"
 nutype = { version = "0.7", features = ["serde"] }
 bon = "3.9"
 argon2 = "0.6"

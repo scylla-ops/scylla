@@ -1,37 +1,13 @@
-use crate::domain::errors::{DomainError, DomainResult};
-use nutype::nutype;
+use crate::domain::text::{Rule, Text};
 
-const MAX_USERNAME_LENGTH: usize = 255;
+pub enum UsernameRule {}
 
-fn validate(s: &str) -> Result<(), DomainError> {
-    if s.is_empty() {
-        return Err(DomainError::validation("Username cannot be empty"));
-    }
-    if s.len() > MAX_USERNAME_LENGTH {
-        return Err(DomainError::validation(format!(
-            "Username cannot exceed {MAX_USERNAME_LENGTH} characters"
-        )));
-    }
-    Ok(())
+impl Rule for UsernameRule {
+    const LABEL: &'static str = "Username";
+    const MAX: usize = 255;
 }
 
-#[nutype(
-    sanitize(trim),
-    validate(with = validate, error = DomainError),
-    derive(Debug, Clone, PartialEq, Eq, Hash, AsRef, Borrow, Display, Into),
-)]
-pub struct Username(String);
-
-impl Username {
-    pub fn new(value: impl Into<String>) -> DomainResult<Self> {
-        Self::try_new(value.into())
-    }
-
-    #[must_use]
-    pub fn as_str(&self) -> &str {
-        <Self as AsRef<str>>::as_ref(self)
-    }
-}
+pub type Username = Text<UsernameRule>;
 
 #[cfg(test)]
 mod tests {
@@ -49,7 +25,7 @@ mod tests {
     #[test]
     fn length_bounds() {
         assert!(Username::new("A").is_ok());
-        assert!(Username::new("a".repeat(MAX_USERNAME_LENGTH)).is_ok());
-        assert!(Username::new("a".repeat(MAX_USERNAME_LENGTH + 1)).is_err());
+        assert!(Username::new("a".repeat(UsernameRule::MAX)).is_ok());
+        assert!(Username::new("a".repeat(UsernameRule::MAX + 1)).is_err());
     }
 }
