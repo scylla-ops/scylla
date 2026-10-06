@@ -159,7 +159,9 @@ permission through full control. Such a role:
 - is seen, listed and granted only in its organization. For another
   organization, it is the same as a role that does not exist;
 - does not take the name of a platform role. Two organizations may each have a
-  role with the same name.
+  role with the same name. Names are compared without regard to case. A system
+  administrator may still create a platform role with the name of an
+  organization role: that organization then sees both, each in its group.
 
 A change to one role is checked on the role: the access model applies
 `manageOrgRoles` for a role that an organization owns, and `manageRoles` for a

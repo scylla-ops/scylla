@@ -284,7 +284,7 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "../../migrations")]
-    async fn a_role_name_is_unique_in_an_organization_and_never_a_platform_name(pool: PgPool) {
+    async fn a_role_name_is_unique_per_owner_without_case_and_never_a_platform_name(pool: PgPool) {
         use crate::test_support::prelude::*;
         let o1 = seed_org(&pool, "o1").await;
         let o2 = seed_org(&pool, "o2").await;
@@ -299,8 +299,9 @@ mod tests {
         repo.create(&owned("Deployer", &o1)).await.unwrap();
         repo.create(&owned("Deployer", &o2)).await.unwrap();
         conflict(repo.create(&owned("Deployer", &o1)).await.unwrap_err());
+        conflict(repo.create(&owned("deployer", &o1)).await.unwrap_err());
         conflict(
-            repo.create(&owned("Project Viewer", &o1))
+            repo.create(&owned("project VIEWER", &o1))
                 .await
                 .unwrap_err(),
         );
@@ -312,7 +313,59 @@ mod tests {
             None,
             vec!["runPipeline".into()],
         );
-        conflict(repo.create(&platform).await.unwrap_err());
+        repo.create(&platform)
+            .await
+            .expect("an organization does not block a platform name");
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn a_statement_that_changes_a_given_role_or_grant_is_checked(pool: PgPool) {
+        use crate::postgres::PgGrantRepository;
+        use crate::test_support::prelude::*;
+        use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
+        let (o1, project, _) = seed_org_project_pipeline(&pool, "bound").await;
+        let o2 = seed_org(&pool, "other").await;
+        let user = seed_user(&pool, "erin").await;
+        let repo = PgRoleRepository::new(pool.clone());
+        let mine = owned("Deployer", &o1);
+        let theirs = owned("Deployer", &o2);
+        repo.create(&mine).await.unwrap();
+        repo.create(&theirs).await.unwrap();
+        PgGrantRepository::new(pool.clone())
+            .create(&Grant::new(
+                Principal::User(user.id().clone()),
+                RoleName::new(&mine.id).unwrap(),
+                Scope::Project(project.id().clone()),
+            ))
+            .await
+            .unwrap();
+        let refused = |sql: &'static str, bind: String| {
+            let pool = pool.clone();
+            async move {
+                sqlx::query(sql)
+                    .bind(bind)
+                    .execute(&pool)
+                    .await
+                    .expect_err(sql)
+            }
+        };
+
+        refused("UPDATE grants SET role_id = $1", theirs.id.clone()).await;
+        refused(
+            "UPDATE roles SET kind = 'agent' WHERE id = $1",
+            mine.id.clone(),
+        )
+        .await;
+        refused(
+            "UPDATE roles SET scope_kind = 'organization' WHERE id = $1",
+            mine.id.clone(),
+        )
+        .await;
+        sqlx::query("UPDATE roles SET description = 'still fine' WHERE id = $1")
+            .bind(&mine.id)
+            .execute(&pool)
+            .await
+            .unwrap();
     }
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -396,6 +449,18 @@ mod tests {
             matches!(&err, DomainError::Conflict(m) if m == "Role name already exists"),
             "{err}"
         );
+        let lower = Role::new_custom(
+            RoleDisplayName::new("system admin").unwrap(),
+            RoleDescription::new("").unwrap(),
+            ScopeKind::Project,
+            RoleKind::Member,
+            None,
+            vec!["readPipeline".into()],
+        );
+        assert!(matches!(
+            repo.create(&lower).await.unwrap_err(),
+            DomainError::Conflict(_)
+        ));
     }
 
     #[sqlx::test(migrations = "../../migrations")]
