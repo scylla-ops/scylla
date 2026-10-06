@@ -58,7 +58,6 @@ impl Run<Persist<Signup>> for SignupUseCases {
                 self.signup_repo
                     .provision_account(&account.user, &account.organization, &account.grant)
                     .await?;
-                self.policy_control.reload().await?;
                 self.session_repo.create(&session).await?;
                 Ok(SignupOutcome {
                     token: session.token().to_string(),

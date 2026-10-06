@@ -30,9 +30,7 @@ use crate::domain::role::RoleName;
 use crate::domain::trigger::Trigger;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
-use scylla_auth::authz::{
-    Grant, ORGANIZATION_TRIGGER_RUNNER_ROLE, PolicyControl, Principal, Scope,
-};
+use scylla_auth::authz::{Grant, ORGANIZATION_TRIGGER_RUNNER_ROLE, Principal, Scope};
 use std::sync::Arc;
 use tracing::warn;
 
@@ -45,7 +43,6 @@ pub struct TriggerUseCases {
     pub(super) pipeline_repo: Arc<dyn PipelineRepository>,
     pub(super) project_repo: Arc<dyn ProjectRepository>,
     pub(super) app_repo: Arc<dyn AppRepository>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
     /// Reversible: HMAC verification needs the plaintext back.
     pub(super) cipher: Arc<dyn SecretCipher>,
     pub(super) schedule: Arc<dyn CronSchedule>,
@@ -101,7 +98,7 @@ impl TriggerUseCases {
         );
 
         match self.app_repo.provision(&app, &grant).await {
-            Ok(()) => self.policy_control.reload().await,
+            Ok(()) => Ok(()),
             Err(DomainError::Conflict(_)) => {
                 match self.app_repo.find_trigger_runner(organization_id).await? {
                     // Lost the race to a concurrent first-create.

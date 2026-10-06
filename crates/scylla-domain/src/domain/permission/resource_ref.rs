@@ -2,6 +2,7 @@ use crate::domain::ids::{
     AppCredentialId, AppId, GrantId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId,
     SecretId, TriggerId, UserId,
 };
+use crate::domain::role::RoleName;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResourceRef {
@@ -17,6 +18,7 @@ pub enum ResourceRef {
     App(AppId),
     AppSecret(AppCredentialId),
     Grant(GrantId),
+    Role(RoleName),
 }
 
 impl ResourceRef {
@@ -35,6 +37,7 @@ impl ResourceRef {
             Self::App(_) => "app",
             Self::AppSecret(_) => "app_secret",
             Self::Grant(_) => "grant",
+            Self::Role(_) => "role",
         }
     }
 }
@@ -54,6 +57,7 @@ impl std::fmt::Display for ResourceRef {
             Self::App(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::AppSecret(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
             Self::Grant(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Role(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
         }
     }
 }

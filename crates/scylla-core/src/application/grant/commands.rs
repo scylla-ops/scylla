@@ -1,6 +1,5 @@
 //! The grant's writes. One block per command, in the order it runs: the struct, its access,
-//! its payload types, what `Prepare` checks and builds, what `Persist` writes. The policy reload
-//! sits next to the write that changes the grant set.
+//! its payload types, what `Prepare` checks and builds, what `Persist` writes.
 
 use super::GrantUseCases;
 use crate::domain::errors::DomainResult;
@@ -62,7 +61,6 @@ impl Run<Persist<CreateGrant>> for GrantUseCases {
         input
             .commit(async |draft| {
                 let grant = self.grant_repo.create(&draft.into_inner()).await?;
-                self.policy_control.reload().await?;
                 if let Principal::App(app_id) = &grant.principal {
                     self.registry.wake(Some(app_id));
                 }
@@ -121,7 +119,6 @@ impl Run<Persist<RevokeAllAccess>> for GrantUseCases {
         input
             .commit(async |principal| {
                 let removed = self.grant_repo.revoke_all(&principal, &scope).await?;
-                self.policy_control.reload().await?;
                 if let Principal::App(app_id) = &principal {
                     self.registry.disconnect(app_id);
                 }
@@ -196,7 +193,6 @@ impl Run<Persist<RevokeGrant>> for GrantUseCases {
                 } else {
                     self.grant_repo.delete(&grant.id).await?;
                 }
-                self.policy_control.reload().await?;
                 if let Principal::App(app_id) = &grant.principal {
                     self.registry.disconnect(app_id);
                 }

@@ -130,7 +130,6 @@ impl Run<Persist<OAuthCallback>> for OAuthUseCases {
                                 &provider_user_id,
                             )
                             .await?;
-                        self.policy_control.reload().await?;
                         AccountOutcome::New {
                             organization_id: account.organization.id().clone(),
                         }

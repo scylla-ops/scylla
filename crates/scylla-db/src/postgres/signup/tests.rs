@@ -174,7 +174,6 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
         Arc::new(PgSignupRepository::new(pool.clone())),
         Arc::new(PgSessionRepository::new(pool.clone())),
         Arc::new(Argon2HashService::new()),
-        permission.clone(),
     );
 
     let outcome = actions(permission.clone())

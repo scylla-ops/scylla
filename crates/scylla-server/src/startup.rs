@@ -127,13 +127,11 @@ pub(crate) async fn init_services(
         signup_repo.clone(),
         session_repo.clone(),
         hash_service.clone(),
-        permission_checker.clone(),
     ));
     let user_uc = Arc::new(UserUseCases::new(
         user_repo.clone(),
         grant_repo.clone(),
         hash_service.clone(),
-        permission_checker.clone(),
     ));
     // The registry and the live tail come first: the dispatcher sends through the one and
     // closes the other, and every use case that starts or ends a job goes through the dispatcher.
@@ -151,13 +149,11 @@ pub(crate) async fn init_services(
         org_repo.clone(),
         user_repo.clone(),
         app_repo.clone(),
-        permission_checker.clone(),
         dispatch_uc.clone(),
     ));
     let project_uc = Arc::new(ProjectUseCases::new(
         project_repo.clone(),
         user_repo.clone(),
-        permission_checker.clone(),
         permission_checker.clone(),
         dispatch_uc.clone(),
     ));
@@ -182,7 +178,6 @@ pub(crate) async fn init_services(
         app_credential_repo.clone(),
         hash_service.clone(),
         agent_registry.clone(),
-        permission_checker.clone(),
     ));
     let app_token_uc = Arc::new(AppTokenUseCases::new(
         app_repo.clone(),
@@ -195,21 +190,15 @@ pub(crate) async fn init_services(
         agent_repo.clone(),
         job_repo.clone(),
         hash_service.clone(),
-        permission_checker.clone(),
         agent_registry.clone(),
     ));
     let grant_uc = Arc::new(GrantUseCases::new(
         grant_repo.clone(),
         role_repo.clone(),
-        permission_checker.clone(),
         agent_registry.clone(),
         authz_provider.clone(),
     ));
-    let role_uc = Arc::new(RoleUseCases::new(
-        role_repo.clone(),
-        grant_repo.clone(),
-        permission_checker.clone(),
-    ));
+    let role_uc = Arc::new(RoleUseCases::new(role_repo.clone(), grant_repo.clone()));
     if let Some(cfg) = &config.bootstrap {
         let bootstrap_uc =
             BootstrapUseCases::new(actions.clone(), user_uc.clone(), grant_uc.clone());
@@ -242,7 +231,6 @@ pub(crate) async fn init_services(
         user_repo.clone(),
         hash_service.clone(),
         session_repo.clone(),
-        permission_checker.clone(),
     ));
 
     let oauth_uc = match &config.oauth.github {
@@ -260,7 +248,6 @@ pub(crate) async fn init_services(
                 user_repo.clone(),
                 session_repo.clone(),
                 hash_service.clone(),
-                permission_checker.clone(),
             )))
         }
         None => None,
@@ -279,7 +266,6 @@ pub(crate) async fn init_services(
         pipeline_repo.clone(),
         project_repo.clone(),
         app_repo.clone(),
-        permission_checker.clone(),
         secret_cipher.clone(),
         cron_schedule.clone(),
     ));

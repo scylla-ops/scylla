@@ -22,8 +22,7 @@ use crate::test_support::jobs::stored;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use scylla_auth::authz::{
-    Grant, GrantRepository, PolicyControl, Principal, Role, RoleRepository, Scope, Visibility,
-    VisibilityResolver,
+    Grant, GrantRepository, Principal, Role, RoleRepository, Scope, Visibility, VisibilityResolver,
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -40,25 +39,6 @@ pub fn empty_page<T>() -> DomainResult<PaginatedResult<T>> {
         &PaginationParams::default(),
         0,
     ))
-}
-
-#[derive(Default)]
-pub struct CountingPolicy {
-    reloads: Mutex<usize>,
-}
-
-impl CountingPolicy {
-    pub fn reloads(&self) -> usize {
-        *self.reloads.lock().unwrap()
-    }
-}
-
-#[async_trait]
-impl PolicyControl for CountingPolicy {
-    async fn reload(&self) -> DomainResult<()> {
-        *self.reloads.lock().unwrap() += 1;
-        Ok(())
-    }
 }
 
 enum Hashes {
@@ -685,16 +665,25 @@ impl PipelineRepository for OnePipeline {
     }
 }
 
+/// `used` holds the roles that a grant or a pending invitation still names.
 #[derive(Default)]
 pub struct StubRoles {
     rows: Mutex<Vec<Role>>,
+    used: Vec<String>,
 }
 
 impl StubRoles {
     pub fn new(rows: Vec<Role>) -> Self {
         Self {
             rows: Mutex::new(rows),
+            used: Vec::new(),
         }
+    }
+
+    #[must_use]
+    pub fn used(mut self, id: &str) -> Self {
+        self.used.push(id.to_string());
+        self
     }
 
     pub fn rows(&self) -> Vec<Role> {
@@ -727,9 +716,12 @@ impl RoleRepository for StubRoles {
         }
         Ok(())
     }
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        self.rows.lock().unwrap().retain(|r| r.id != id);
+    async fn delete(&self, role: &Role) -> DomainResult<()> {
+        self.rows.lock().unwrap().retain(|r| r.id != role.id);
         Ok(())
+    }
+    async fn in_use(&self, id: &str) -> DomainResult<bool> {
+        Ok(self.used.iter().any(|u| u == id))
     }
 }
 

@@ -15,8 +15,7 @@ use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionSe
 use crate::test_support::pipelines::PipelineBuilder;
 use crate::test_support::projects::ProjectBuilder;
 use crate::test_support::stubs::{
-    CountingPolicy, EchoResolver, OnePipeline, OneProject, StubJobs, StubRegistry, StubTails,
-    alice, dispatcher,
+    EchoResolver, OnePipeline, OneProject, StubJobs, StubRegistry, StubTails, alice, dispatcher,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -240,7 +239,6 @@ pub(super) struct Lab {
     pub(super) uc: Arc<TriggerUseCases>,
     triggers: Arc<StubTriggers>,
     pub(super) apps: Arc<StubApps>,
-    policy: Arc<CountingPolicy>,
     pipelines: Arc<PipelineUseCases>,
     pub(super) jobs: Arc<StubJobs>,
 }
@@ -318,7 +316,6 @@ pub(super) fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         .build();
     let triggers = Arc::new(StubTriggers::default());
     let apps = Arc::new(StubApps::default());
-    let policy = Arc::new(CountingPolicy::default());
     let jobs = Arc::new(StubJobs::default());
     let pipeline_repo = Arc::new(OnePipeline(pipeline));
     let dispatch = dispatcher(
@@ -334,13 +331,11 @@ pub(super) fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
             pipeline_repo.clone(),
             project_repo.clone(),
             apps.clone(),
-            policy.clone(),
             Arc::new(StubCipher),
             Arc::new(StubSchedule),
         )),
         triggers,
         apps,
-        policy,
         pipelines: Arc::new(PipelineUseCases::new(
             pipeline_repo,
             project_repo,
@@ -405,7 +400,6 @@ async fn a_create_checks_manage_then_run_and_provisions_the_runner_app_once() {
     assert!(apps[0].is_trigger_runner());
     assert_eq!(apps[0].name().as_str(), TRIGGER_RUNNER_APP_NAME);
     assert_eq!(apps[0].organization_id(), &organization_id());
-    assert_eq!(lab.policy.reloads(), 1);
 }
 
 #[tokio::test]
@@ -427,7 +421,6 @@ async fn a_legacy_app_holding_the_runner_name_fails_the_create_with_a_conflict()
     assert!(matches!(err, DomainError::Conflict(_)), "{err:?}");
     assert!(lab.triggers.rows.lock().unwrap().is_empty());
     assert_eq!(lab.apps.apps.lock().unwrap().len(), 1);
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]

@@ -97,7 +97,6 @@ impl Run<Persist<CreateAgent>> for AgentUseCases {
                 self.app_repo
                     .provision_agent(&app, &credential, &agent, &grant)
                     .await?;
-                self.policy_control.reload().await?;
                 Ok(CreatedAgent { app, secret })
             })
             .await

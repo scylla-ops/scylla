@@ -4,21 +4,15 @@ use super::*;
 use crate::domain::caller::CallerContext;
 use crate::domain::user::{Email, Password, Username};
 use crate::test_support::authz::{DenyingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, StubHash, StubSessions, StubSignups};
+use crate::test_support::stubs::{StubHash, StubSessions, StubSignups};
 use scylla_auth::authz::Principal;
 
 #[tokio::test]
-async fn a_signup_provisions_the_account_reloads_and_signs_in_without_asking_a_permission() {
+async fn a_signup_provisions_the_account_and_signs_in_without_asking_a_permission() {
     let signups = Arc::new(StubSignups::default());
     let sessions = Arc::new(StubSessions::default());
     let hash = Arc::new(StubHash::passwords());
-    let policy = Arc::new(CountingPolicy::default());
-    let uc = SignupUseCases::new(
-        signups.clone(),
-        sessions.clone(),
-        hash.clone(),
-        policy.clone(),
-    );
+    let uc = SignupUseCases::new(signups.clone(), sessions.clone(), hash.clone());
 
     let outcome = actions(Arc::new(DenyingPermissionService::new()))
         .run(
@@ -44,6 +38,5 @@ async fn a_signup_provisions_the_account_reloads_and_signs_in_without_asking_a_p
     assert_eq!(grant.role.as_str(), ORGANIZATION_ADMIN_ROLE);
     assert!(identity.is_none());
     assert_eq!(hash.hashed(), 1);
-    assert_eq!(policy.reloads(), 1);
     assert_eq!(sessions.rows()[0].token(), outcome.token);
 }

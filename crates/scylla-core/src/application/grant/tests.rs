@@ -10,7 +10,7 @@ use crate::domain::permission::ResourceRef;
 use crate::domain::role::RoleName;
 use crate::domain::role::{RoleDescription, RoleDisplayName};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, StubGrants, StubRegistry, StubRoles};
+use crate::test_support::stubs::{StubGrants, StubRegistry, StubRoles};
 use async_trait::async_trait;
 use scylla_auth::authz::*;
 use scylla_auth::authz::{ResourceAncestors, Role};
@@ -38,6 +38,9 @@ impl AuthzEntityProvider for StubAncestry {
     async fn app_is_active(&self, _app: &AppId) -> DomainResult<bool> {
         Ok(true)
     }
+    async fn policy_version(&self) -> DomainResult<i64> {
+        Ok(0)
+    }
 }
 
 fn test_role(id: &str, scope: ScopeKind, permissions: &[&str]) -> Role {
@@ -47,9 +50,27 @@ fn test_role(id: &str, scope: ScopeKind, permissions: &[&str]) -> Role {
         name: RoleDisplayName::new(id).unwrap(),
         description: RoleDescription::new("").unwrap(),
         scope,
+        kind: if matches!(
+            id,
+            ORGANIZATION_AGENT_ROLE | PROJECT_AGENT_ROLE | ORGANIZATION_TRIGGER_RUNNER_ROLE
+        ) {
+            RoleKind::Agent
+        } else {
+            RoleKind::Member
+        },
         owner_org: None,
         builtin: true,
         permissions: permissions.iter().map(ToString::to_string).collect(),
+        version: 0,
+    }
+}
+
+fn owned_role(id: &str, organization: &str, permissions: &[&str]) -> Role {
+    Role {
+        owner_org: Some(OrganizationId::new(organization)),
+        builtin: false,
+        key: None,
+        ..test_role(id, ScopeKind::Project, permissions)
     }
 }
 
@@ -118,7 +139,6 @@ fn lab_in(
         uc: GrantUseCases::new(
             grants.clone(),
             Arc::new(StubRoles::new(roles)),
-            Arc::new(CountingPolicy::default()),
             registry.clone(),
             Arc::new(ancestry),
         ),
@@ -147,40 +167,107 @@ fn owner_grant(principal: Principal, scope: Scope) -> Grant {
     )
 }
 
-#[test]
-fn grantable_roles_filter_by_scope_kind() {
-    assert_eq!(grantable_roles(None).len(), GRANTABLE_ROLES.len());
-    let project = grantable_roles(Some(ScopeKind::Project));
-    assert_eq!(project.len(), 4);
-    assert!(
-        project
-            .iter()
-            .all(|r| r.scope == ScopeKind::Project && r.name.starts_with("project-"))
-    );
-    let system = grantable_roles(Some(ScopeKind::System));
-    assert_eq!(system.len(), 1);
-    assert_eq!(system[0].name, SYSTEM_ADMIN_ROLE);
+fn list_grantable(scope_kind: Option<ScopeKind>, organization: Option<&str>) -> ListGrantableRoles {
+    ListGrantableRoles {
+        scope_kind,
+        organization_id: organization.map(OrganizationId::new),
+    }
 }
 
 #[tokio::test]
-async fn the_grantable_roles_ask_for_no_permission_and_refuse_anonymous() {
-    let lab = lab_with(vec![], vec![], Arc::new(DenyingPermissionService::new()));
-    let list = |scope_kind| ListGrantableRoles { scope_kind };
+async fn the_grantable_roles_are_the_platform_roles_and_those_of_the_organization() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab_with(
+        vec![],
+        vec![
+            test_role(SYSTEM_ADMIN_ROLE, ScopeKind::System, &["*"]),
+            test_role(PROJECT_VIEWER_ROLE, ScopeKind::Project, &["readProject"]),
+            owned_role("deployer-o1", "o1", &["runPipeline"]),
+            owned_role("deployer-o2", "o2", &["runPipeline"]),
+        ],
+        permissions.clone(),
+    );
+    let ids = |roles: Vec<Role>| roles.into_iter().map(|r| r.id).collect::<Vec<_>>();
 
-    let roles = lab
+    let platform = lab
         .actions
-        .run(&lab.uc, &admin(), list(Some(ScopeKind::System)))
+        .run(&lab.uc, &admin(), list_grantable(None, None))
         .await
         .unwrap();
-    assert_eq!(roles.len(), 1);
-    assert_eq!(roles[0].name, SYSTEM_ADMIN_ROLE);
+    assert_eq!(ids(platform), [SYSTEM_ADMIN_ROLE, PROJECT_VIEWER_ROLE]);
+    assert!(permissions.permissions().is_empty());
+
+    let in_o1 = lab
+        .actions
+        .run(
+            &lab.uc,
+            &admin(),
+            list_grantable(Some(ScopeKind::Project), Some("o1")),
+        )
+        .await
+        .unwrap();
+    assert_eq!(ids(in_o1), [PROJECT_VIEWER_ROLE, "deployer-o1"]);
+    assert_eq!(
+        permissions.permissions(),
+        vec![Permission::ReadOrganization(OrganizationId::new("o1"))]
+    );
+}
+
+#[tokio::test]
+async fn the_grantable_roles_refuse_anonymous() {
+    let lab = lab_with(vec![], vec![], Arc::new(DenyingPermissionService::new()));
 
     let err = lab
         .actions
-        .run(&lab.uc, &CallerContext::Anonymous, list(None))
+        .run(
+            &lab.uc,
+            &CallerContext::Anonymous,
+            list_grantable(None, None),
+        )
         .await
         .unwrap_err();
     assert!(matches!(err, DomainError::Forbidden(_)));
+}
+
+#[tokio::test]
+async fn a_role_of_another_organization_is_an_unknown_role() {
+    let lab = lab_with(
+        vec![Grant::new(
+            Principal::User(UserId::new("carol")),
+            RoleName::new(ORGANIZATION_MEMBER_ROLE).unwrap(),
+            org(),
+        )],
+        vec![
+            test_role(
+                ORGANIZATION_MEMBER_ROLE,
+                ScopeKind::Organization,
+                &["readOrganization"],
+            ),
+            owned_role("deployer-o1", "o1", &["runPipeline"]),
+            owned_role("deployer-o2", "o2", &["runPipeline"]),
+        ],
+        Arc::new(RecordingPermissionService::new()),
+    );
+    let give = |role: &str| {
+        Grant::new(
+            Principal::User(UserId::new("carol")),
+            RoleName::new(role).unwrap(),
+            Scope::Project(ProjectId::new("p1")),
+        )
+    };
+
+    let foreign = lab
+        .grant(&service(), &give("deployer-o2"))
+        .await
+        .unwrap_err();
+    let unknown = lab.grant(&service(), &give("ghost")).await.unwrap_err();
+    assert_eq!(
+        foreign.to_string(),
+        unknown.to_string().replace("ghost", "deployer-o2")
+    );
+    assert!(matches!(foreign, DomainError::Validation(_)));
+
+    lab.grant(&service(), &give("deployer-o1")).await.unwrap();
 }
 
 #[test]

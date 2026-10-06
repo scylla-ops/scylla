@@ -1,7 +1,5 @@
 //! The project's writes. One block per command, in the order it runs: the struct, its
-//! access and path, its payload types, what `Prepare` builds, what `Persist` writes. The
-//! policy reload sits next to the write that changes the grant set; a `Listener` on `Persist`
-//! would be its next home once a failed reload no longer needs to fail the call.
+//! access and path, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::ProjectUseCases;
 use crate::application::job::JobScope;
@@ -76,7 +74,6 @@ impl Run<Persist<CreateProject>> for ProjectUseCases {
                         self.project_repo
                             .provision_with_owner(&project, &grant)
                             .await?;
-                        self.policy_control.reload().await?;
                         Ok(project)
                     }
                     None => self.project_repo.create(&project).await,
@@ -205,7 +202,6 @@ impl Run<Persist<DeleteProject>> for ProjectUseCases {
                         self.project_repo.delete(&project),
                     )
                     .await?;
-                self.policy_control.reload().await?;
                 Ok(Deleted::new(project))
             })
             .await

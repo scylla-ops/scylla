@@ -8,7 +8,7 @@ pub use repository::{UserRepository, users_in_order};
 
 use crate::application::HashService;
 use derive_more::Constructor;
-use scylla_auth::authz::{GrantRepository, PolicyControl};
+use scylla_auth::authz::GrantRepository;
 use std::sync::Arc;
 
 /// The user aggregate's stage runners, one block per action in `commands.rs` and
@@ -18,7 +18,6 @@ pub struct UserUseCases {
     pub(super) user_repo: Arc<dyn UserRepository>,
     pub(super) grant_repo: Arc<dyn GrantRepository>,
     pub(super) hash_service: Arc<dyn HashService>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 #[cfg(test)]

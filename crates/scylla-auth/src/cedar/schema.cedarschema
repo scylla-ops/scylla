@@ -2,7 +2,7 @@
 //
 // Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization,
 // Job ∈ Pipeline, Trigger ∈ Pipeline, Secret ∈ Project,
-// Invitation ∈ Organization, AppSecret ∈ App and Grant ∈ its scope. Principals carry no attributes: what someone may
+// Invitation ∈ Organization, AppSecret ∈ App, Grant ∈ its scope and Role ∈ its owner. Principals carry no attributes: what someone may
 // do comes entirely from the grants linked into the policy set. Actions are
 // fine-grained (one per use-case operation) so `appliesTo` pins the resource
 // type and policies stay readable.
@@ -32,6 +32,8 @@ namespace Scylla {
     entity Invitation in [Organization, System];
     entity AppSecret in [App, System];
     entity Grant in [Project, Organization, System];
+    // A role with no owner is a platform role and sits under System.
+    entity Role in [Organization, System];
 
     // Users are also `in [System]` so a System-scoped grant (system-admin)
     // reaches User-targeted actions (read/update/delete user) — without it,
@@ -45,9 +47,16 @@ namespace Scylla {
     action "createUser", "listUsers",
            "createOrganization", "listOrganizations",
            "listProjects", "listPipelines",
-           "createJob", "listJobs",
-           "manageRoles"
+           "createJob", "listJobs"
         appliesTo { principal: [User, Service], resource: [System] };
+
+    // A platform role is managed on System, a role of an organization on that
+    // organization. A change to one role is checked on the role, with the action
+    // of its owner, so an organization admin reaches only its own roles.
+    action "manageRoles"
+        appliesTo { principal: [User, Service], resource: [System, Role] };
+    action "manageOrgRoles"
+        appliesTo { principal: [User, Service], resource: [Organization, Role] };
 
     // Grant management is scope-aware, one action per scope so `appliesTo` pins
     // the resource type: a system admin manages any grant (`manageSystemGrants`

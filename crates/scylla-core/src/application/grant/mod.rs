@@ -10,7 +10,7 @@ use crate::domain::ids::OrganizationId;
 use crate::domain::permission::ResourceRef;
 use derive_more::Constructor;
 use scylla_auth::authz::{
-    AuthzEntityProvider, Grant, GrantRepository, PolicyControl, Principal, RoleRepository, Scope,
+    AuthzEntityProvider, Grant, GrantRepository, Principal, RoleRepository, Scope,
 };
 use std::sync::Arc;
 
@@ -20,7 +20,6 @@ use std::sync::Arc;
 pub struct GrantUseCases {
     pub(super) grant_repo: Arc<dyn GrantRepository>,
     pub(super) role_repo: Arc<dyn RoleRepository>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
     pub(super) registry: Arc<dyn AgentDispatch>,
     pub(super) entity_provider: Arc<dyn AuthzEntityProvider>,
 }

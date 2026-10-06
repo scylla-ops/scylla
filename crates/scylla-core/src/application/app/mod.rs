@@ -18,7 +18,6 @@ pub use token::{AppTokenRepository, AppTokenUseCases, IssueAppToken};
 use crate::application::HashService;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use std::sync::Arc;
 
 /// The app aggregate's stage runners, one block per action in `commands.rs` and `queries.rs`.
@@ -29,7 +28,6 @@ pub struct AppUseCases {
     pub(super) credential_repo: Arc<dyn AppCredentialRepository>,
     pub(super) hash_service: Arc<dyn HashService>,
     pub(super) registry: Arc<dyn AgentDispatch>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 #[cfg(test)]

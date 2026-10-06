@@ -4,11 +4,13 @@ use crate::application::role::{
     CreateRole, DeleteRole, GetEffectivePermissions, GetMyPermissions, GetRole,
     ListAuthzVocabulary, ListRoles, UpdateRole,
 };
-use crate::domain::role::{RoleDescription, RoleDisplayName};
+use crate::domain::ids::OrganizationId;
+use crate::domain::role::{RoleDescription, RoleDisplayName, RoleName};
 use crate::grpc::convert::{
-    Parse, permission_from_key, permission_key, principal_ref_from_proto, required,
+    Parse, optional, permission_from_key, permission_key, principal_ref_from_proto, required,
     scope_kind_from_proto, scope_kind_to_proto, scope_ref_to_proto, valid, wrap,
 };
+use crate::grpc::mappers::grant_mapper::{role_kind_from_proto, role_kind_to_proto};
 use scylla_auth::authz::{EffectiveScope, FULL_CONTROL, Role, resource_home_scope};
 use scylla_proto::authz::v1::{
     Access, AuthzAction, CreateRoleRequest, DeleteRoleRequest,
@@ -32,6 +34,7 @@ pub fn role_to_proto(role: &Role) -> ProtoRole {
         scope_kind: scope_kind_to_proto(role.scope) as i32,
         access: Some(access_from_keys(role.is_full_control(), &role.permissions)),
         origin: Some(origin),
+        kind: role_kind_to_proto(role.kind) as i32,
     }
 }
 
@@ -91,6 +94,8 @@ impl Parse for CreateRoleRequest {
 
     fn parse(self) -> Result<CreateRole, Status> {
         Ok(CreateRole {
+            organization_id: optional(self.organization_id).map(OrganizationId::new),
+            kind: role_kind_from_proto(self.kind)?,
             scope: scope_kind_from_proto(self.scope_kind)?,
             permissions: permissions_from_proto(self.access)?,
             name: valid(self.name, RoleDisplayName::new)?,
@@ -104,7 +109,7 @@ impl Parse for UpdateRoleRequest {
 
     fn parse(self) -> Result<UpdateRole, Status> {
         Ok(UpdateRole {
-            id: required(self.role_id, "role_id")?,
+            id: role_id(self.role_id)?,
             permissions: permissions_from_proto(self.access)?,
             name: valid(self.name, RoleDisplayName::new)?,
             description: valid(self.description, RoleDescription::new)?,
@@ -112,9 +117,39 @@ impl Parse for UpdateRoleRequest {
     }
 }
 
-parse!(DeleteRoleRequest => DeleteRole { id: id(role_id) });
-parse!(ListRolesRequest => ListRoles);
-parse!(GetRoleRequest => GetRole { id: id(role_id) });
+fn role_id(field: Option<scylla_proto::common::v1::RoleId>) -> Result<RoleName, Status> {
+    valid(required(field, "role_id")?, RoleName::new)
+}
+
+impl Parse for DeleteRoleRequest {
+    type Into = DeleteRole;
+
+    fn parse(self) -> Result<DeleteRole, Status> {
+        Ok(DeleteRole {
+            id: role_id(self.role_id)?,
+        })
+    }
+}
+
+impl Parse for GetRoleRequest {
+    type Into = GetRole;
+
+    fn parse(self) -> Result<GetRole, Status> {
+        Ok(GetRole {
+            id: role_id(self.role_id)?,
+        })
+    }
+}
+
+impl Parse for ListRolesRequest {
+    type Into = ListRoles;
+
+    fn parse(self) -> Result<ListRoles, Status> {
+        Ok(ListRoles {
+            organization_id: optional(self.organization_id).map(OrganizationId::new),
+        })
+    }
+}
 
 impl Parse for GetEffectivePermissionsRequest {
     type Into = GetEffectivePermissions;
@@ -147,6 +182,8 @@ mod tests {
     #[test]
     fn a_create_request_becomes_a_command_with_permission_keys() {
         let command = CreateRoleRequest {
+            organization_id: None,
+            kind: 0,
             name: "CI".to_string(),
             description: "runs the builds".to_string(),
             scope_kind: ProtoScopeKind::Project as i32,
@@ -166,6 +203,8 @@ mod tests {
     #[test]
     fn full_control_becomes_the_wildcard() {
         let command = CreateRoleRequest {
+            organization_id: None,
+            kind: 0,
             name: "Admin".to_string(),
             description: String::new(),
             scope_kind: ProtoScopeKind::Organization as i32,
@@ -182,6 +221,8 @@ mod tests {
     #[test]
     fn an_unspecified_scope_kind_is_an_invalid_argument() {
         let Err(err) = CreateRoleRequest {
+            organization_id: None,
+            kind: 0,
             name: "CI".to_string(),
             description: String::new(),
             scope_kind: ProtoScopeKind::Unspecified as i32,
@@ -213,6 +254,8 @@ mod tests {
     fn a_blank_name_is_an_invalid_argument() {
         for name in ["", "   "] {
             let Err(err) = CreateRoleRequest {
+                organization_id: None,
+                kind: 0,
                 name: name.to_string(),
                 description: String::new(),
                 scope_kind: ProtoScopeKind::Project as i32,
@@ -244,7 +287,8 @@ mod tests {
             }
             .parse()
             .unwrap()
-            .id,
+            .id
+            .as_str(),
             "ci"
         );
         let Err(err) = GetRoleRequest { role_id: None }.parse() else {

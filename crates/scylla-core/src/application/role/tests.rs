@@ -7,30 +7,58 @@ use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::role::{RoleDescription, RoleDisplayName, RoleName};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, StubGrants, StubRoles, alice};
-use scylla_auth::authz::{Grant, PermissionService, Role, ScopeKind};
+use crate::test_support::stubs::{StubGrants, StubRoles, alice};
+use scylla_auth::authz::{Grant, PermissionService, Role, RoleKind, ScopeKind};
 use scylla_extension::Actions;
 
 struct Lab {
     actions: Actions,
     uc: RoleUseCases,
     roles: Arc<StubRoles>,
-    policy: Arc<CountingPolicy>,
 }
 
+/// Every lab holds `root`, a system admin, so a write by `root` never escalates.
 fn lab(permissions: Arc<dyn PermissionService>, roles: Vec<Role>, grants: Vec<Grant>) -> Lab {
-    let roles = Arc::new(StubRoles::new(roles));
-    let policy = Arc::new(CountingPolicy::default());
+    lab_using(permissions, roles, grants, &[])
+}
+
+fn lab_using(
+    permissions: Arc<dyn PermissionService>,
+    mut roles: Vec<Role>,
+    mut grants: Vec<Grant>,
+    used: &[&str],
+) -> Lab {
+    roles.push(role("system-admin", ScopeKind::System, true, &["*"]));
+    grants.push(Grant::new(
+        Principal::User(UserId::new("root")),
+        RoleName::new("system-admin").unwrap(),
+        Scope::System,
+    ));
+    let roles = Arc::new(
+        used.iter()
+            .fold(StubRoles::new(roles), |stub, id| stub.used(id)),
+    );
     Lab {
         actions: actions(permissions),
-        uc: RoleUseCases::new(
-            roles.clone(),
-            Arc::new(StubGrants::new(grants)),
-            policy.clone(),
-        ),
+        uc: RoleUseCases::new(roles.clone(), Arc::new(StubGrants::new(grants))),
         roles,
-        policy,
     }
+}
+
+fn root() -> CallerContext {
+    CallerContext::User(UserId::new("root"))
+}
+
+fn id(id: &str) -> RoleName {
+    RoleName::new(id).unwrap()
+}
+
+fn custom(lab: &Lab) -> Vec<Role> {
+    lab.roles
+        .rows()
+        .into_iter()
+        .filter(|r| !r.builtin)
+        .collect()
 }
 
 fn role(id: &str, scope: ScopeKind, builtin: bool, permissions: &[&str]) -> Role {
@@ -40,36 +68,54 @@ fn role(id: &str, scope: ScopeKind, builtin: bool, permissions: &[&str]) -> Role
         name: RoleDisplayName::new(id).unwrap(),
         description: RoleDescription::new("").unwrap(),
         scope,
+        kind: RoleKind::Member,
         owner_org: None,
         builtin,
         permissions: permissions.iter().map(ToString::to_string).collect(),
+        version: 0,
+    }
+}
+
+fn owned(id: &str, organization: &str, permissions: &[&str]) -> Role {
+    Role {
+        owner_org: Some(OrganizationId::new(organization)),
+        ..role(id, ScopeKind::Project, false, permissions)
     }
 }
 
 fn create(permissions: &[&str]) -> CreateRole {
     CreateRole {
+        organization_id: None,
         name: RoleDisplayName::new("CI Runner").unwrap(),
         description: RoleDescription::new("").unwrap(),
         scope: ScopeKind::Project,
+        kind: RoleKind::Member,
         permissions: permissions.iter().map(ToString::to_string).collect(),
     }
 }
 
+fn create_in(organization: &str, permissions: &[&str]) -> CreateRole {
+    CreateRole {
+        organization_id: Some(OrganizationId::new(organization)),
+        ..create(permissions)
+    }
+}
+
 #[tokio::test]
-async fn a_create_checks_manage_roles_then_stores_and_reloads() {
+async fn a_create_checks_manage_roles_then_stores() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone(), vec![], vec![]);
 
     let created = lab
         .actions
-        .run(&lab.uc, &alice(), create(&["readPipeline"]))
+        .run(&lab.uc, &root(), create(&["readPipeline"]))
         .await
         .unwrap();
 
     assert_eq!(permissions.permissions(), vec![Permission::ManageRoles]);
     assert!(!created.builtin);
-    assert_eq!(lab.roles.rows().as_slice(), [created]);
-    assert_eq!(lab.policy.reloads(), 1);
+    assert!(created.owner_org.is_none());
+    assert_eq!(custom(&lab), [created]);
 }
 
 #[tokio::test]
@@ -83,8 +129,7 @@ async fn a_denied_create_never_stores() {
         .unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert!(lab.roles.rows().is_empty());
-    assert_eq!(lab.policy.reloads(), 0);
+    assert!(custom(&lab).is_empty());
 }
 
 #[tokio::test]
@@ -98,7 +143,7 @@ async fn a_permission_out_of_the_role_scope_is_refused_before_anything_is_stored
         .unwrap_err();
 
     assert!(matches!(err, DomainError::Validation(_)));
-    assert!(lab.roles.rows().is_empty());
+    assert!(custom(&lab).is_empty());
 }
 
 #[tokio::test]
@@ -109,7 +154,7 @@ async fn an_update_validates_against_the_stored_scope_and_rewrites_the_role() {
         vec![],
     );
     let update = |permissions: &[&str]| UpdateRole {
-        id: "ci".to_string(),
+        id: id("ci"),
         name: RoleDisplayName::new("CI").unwrap(),
         description: RoleDescription::new("runs the builds").unwrap(),
         permissions: permissions.iter().map(ToString::to_string).collect(),
@@ -117,19 +162,19 @@ async fn an_update_validates_against_the_stored_scope_and_rewrites_the_role() {
 
     let err = lab
         .actions
-        .run(&lab.uc, &alice(), update(&["createProject"]))
+        .run(&lab.uc, &root(), update(&["createProject"]))
         .await
         .unwrap_err();
     assert!(matches!(err, DomainError::Validation(_)));
 
     let updated = lab
         .actions
-        .run(&lab.uc, &alice(), update(&["runPipeline"]))
+        .run(&lab.uc, &root(), update(&["runPipeline"]))
         .await
         .unwrap();
     assert_eq!(updated.name.as_str(), "CI");
     assert_eq!(updated.permissions, vec!["runPipeline".to_string()]);
-    assert_eq!(lab.roles.rows().as_slice(), [updated]);
+    assert_eq!(custom(&lab), [updated]);
 }
 
 #[tokio::test]
@@ -138,13 +183,7 @@ async fn a_missing_role_is_not_found() {
 
     let err = lab
         .actions
-        .run(
-            &lab.uc,
-            &alice(),
-            GetRole {
-                id: "ghost".to_string(),
-            },
-        )
+        .run(&lab.uc, &alice(), GetRole { id: id("ghost") })
         .await
         .unwrap_err();
 
@@ -152,40 +191,158 @@ async fn a_missing_role_is_not_found() {
 }
 
 #[tokio::test]
-async fn a_builtin_or_granted_role_cannot_be_deleted() {
-    let granted = Grant::new(
-        Principal::User(UserId::new("bob")),
-        RoleName::new("ci").unwrap(),
-        Scope::Project(ProjectId::new("p1")),
-    );
-    let lab = lab(
-        Arc::new(RecordingPermissionService::new()),
+async fn a_builtin_role_or_a_role_in_use_cannot_be_deleted() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab_using(
+        permissions.clone(),
         vec![
             role("organization-admin", ScopeKind::Organization, true, &["*"]),
             role("ci", ScopeKind::Project, false, &["readPipeline"]),
             role("unused", ScopeKind::Project, false, &["readPipeline"]),
         ],
-        vec![granted],
+        vec![],
+        &["ci"],
     );
-    let delete = |id: &str| DeleteRole { id: id.to_string() };
+    let delete = |role: &str| DeleteRole { id: id(role) };
 
-    for id in ["organization-admin", "ci"] {
+    for role in ["organization-admin", "ci"] {
         let err = lab
             .actions
-            .run(&lab.uc, &alice(), delete(id))
+            .run(&lab.uc, &root(), delete(role))
             .await
             .unwrap_err();
-        assert!(matches!(err, DomainError::BusinessRule(_)), "{id}");
+        assert!(matches!(err, DomainError::BusinessRule(_)), "{role}");
     }
 
     let deleted = lab
         .actions
-        .run(&lab.uc, &alice(), delete("unused"))
+        .run(&lab.uc, &root(), delete("unused"))
         .await
         .unwrap();
     assert_eq!(deleted.last_state().id, "unused");
-    assert_eq!(lab.roles.rows().len(), 2);
-    assert_eq!(lab.policy.reloads(), 1);
+    assert!(!lab.roles.rows().iter().any(|r| r.id == "unused"));
+    assert_eq!(
+        permissions.permissions().last(),
+        Some(&Permission::ManageRole(id("unused"))),
+        "a command on one role is checked on that role"
+    );
+}
+
+#[tokio::test]
+async fn a_role_of_an_organization_is_created_there_with_its_permission() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(permissions.clone(), vec![], vec![]);
+
+    let created = lab
+        .actions
+        .run(&lab.uc, &root(), create_in("o1", &["readPipeline"]))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        permissions.permissions(),
+        vec![Permission::ManageOrgRoles(OrganizationId::new("o1"))]
+    );
+    assert_eq!(created.owner_org, Some(OrganizationId::new("o1")));
+    assert_eq!(custom(&lab), [created]);
+}
+
+#[tokio::test]
+async fn a_role_of_an_organization_is_never_system_scoped_nor_an_admin_role() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()), vec![], vec![]);
+    let system = CreateRole {
+        scope: ScopeKind::System,
+        ..create_in("o1", &["readOrganization"])
+    };
+    let admin = CreateRole {
+        kind: RoleKind::Admin,
+        ..create(&["readPipeline"])
+    };
+
+    for command in [system, admin] {
+        let err = lab
+            .actions
+            .run(&lab.uc, &root(), command)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, DomainError::Validation(_)));
+    }
+    assert!(custom(&lab).is_empty());
+}
+
+#[tokio::test]
+async fn a_role_holds_only_permissions_its_author_holds() {
+    let dave = Principal::User(UserId::new("dave"));
+    let lab = lab(
+        Arc::new(RecordingPermissionService::new()),
+        vec![role(
+            "role-manager",
+            ScopeKind::Organization,
+            false,
+            &["manageOrgRoles", "readProject"],
+        )],
+        vec![Grant::new(
+            dave,
+            id("role-manager"),
+            Scope::Organization(OrganizationId::new("o1")),
+        )],
+    );
+    let dave = CallerContext::User(UserId::new("dave"));
+
+    let err = lab
+        .actions
+        .run(&lab.uc, &dave, create_in("o1", &["deleteProject"]))
+        .await
+        .unwrap_err();
+    assert!(matches!(err, DomainError::BusinessRule(_)));
+    let err = lab
+        .actions
+        .run(&lab.uc, &dave, create_in("o2", &["readProject"]))
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err, DomainError::BusinessRule(_)),
+        "a grant on o1 confers nothing on o2"
+    );
+
+    let created = lab
+        .actions
+        .run(&lab.uc, &dave, create_in("o1", &["readProject"]))
+        .await
+        .unwrap();
+    assert_eq!(created.owner_org, Some(OrganizationId::new("o1")));
+}
+
+#[tokio::test]
+async fn an_organization_lists_the_platform_roles_and_its_own() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(
+        permissions.clone(),
+        vec![
+            owned("deployer-o1", "o1", &["runPipeline"]),
+            owned("deployer-o2", "o2", &["runPipeline"]),
+        ],
+        vec![],
+    );
+
+    let roles = lab
+        .actions
+        .run(
+            &lab.uc,
+            &root(),
+            ListRoles {
+                organization_id: Some(OrganizationId::new("o1")),
+            },
+        )
+        .await
+        .unwrap();
+
+    let ids: Vec<&str> = roles.iter().map(|r| r.id.as_str()).collect();
+    assert_eq!(ids, ["deployer-o1", "system-admin"]);
+    assert_eq!(
+        permissions.permissions(),
+        vec![Permission::ManageOrgRoles(OrganizationId::new("o1"))]
+    );
 }
 
 #[tokio::test]
@@ -301,7 +458,7 @@ async fn my_permissions_asks_for_no_permission_and_refuses_a_non_principal() {
 }
 
 #[tokio::test]
-async fn the_vocabulary_is_the_permission_catalog_behind_manage_roles() {
+async fn the_vocabulary_is_the_permission_catalog_and_asks_no_permission() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone(), vec![], vec![]);
 
@@ -315,5 +472,5 @@ async fn the_vocabulary_is_the_permission_catalog_behind_manage_roles() {
         vocabulary.len(),
         crate::domain::permission::PERMISSION_CATALOG.len()
     );
-    assert_eq!(permissions.permissions(), vec![Permission::ManageRoles]);
+    assert!(permissions.permissions().is_empty());
 }

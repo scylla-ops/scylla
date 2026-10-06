@@ -194,6 +194,20 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                     _ => ResourceAncestors::default(),
                 })
             }
+            ResourceRef::Role(id) => {
+                let owner = sqlx::query_scalar!(
+                    "SELECT owner_org_id FROM roles WHERE id = $1",
+                    id.as_str(),
+                )
+                .fetch_optional(&self.pool)
+                .await
+                .to_domain()?
+                .flatten();
+                Ok(ResourceAncestors {
+                    organization: owner.map(OrganizationId::new),
+                    ..Default::default()
+                })
+            }
             _ => Ok(ResourceAncestors::default()),
         }
     }
@@ -206,6 +220,13 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
             .to_domain()?;
         // No row: the App was deleted; inactive, so an in-flight stream is denied.
         Ok(row.is_some_and(|r| r.is_active))
+    }
+
+    async fn policy_version(&self) -> DomainResult<i64> {
+        sqlx::query_scalar!("SELECT version FROM authz_version")
+            .fetch_one(&self.pool)
+            .await
+            .to_domain()
     }
 }
 

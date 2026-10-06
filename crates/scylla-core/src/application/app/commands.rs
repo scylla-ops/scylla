@@ -156,9 +156,7 @@ impl Run<Persist<DeleteApp>> for AppUseCases {
     async fn run(&self, input: Prepared<DeleteApp>) -> DomainResult<Committed<DeleteApp>> {
         input
             .commit(async |id| {
-                // A DB trigger drops the app's grants with the row; reload so the live set stops carrying them.
                 self.app_repo.delete(&id).await?;
-                self.policy_control.reload().await?;
                 self.registry.disconnect(&id);
                 self.registry.wake(None);
                 Ok(Deleted::new(id))

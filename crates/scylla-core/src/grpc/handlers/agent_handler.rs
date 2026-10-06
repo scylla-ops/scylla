@@ -660,7 +660,6 @@ mod tests {
                     agents.clone(),
                     jobs.clone(),
                     Arc::new(crate::test_support::stubs::StubHash::secrets()),
-                    Arc::new(crate::test_support::stubs::CountingPolicy::default()),
                     registry.clone(),
                 )),
                 registry.clone(),

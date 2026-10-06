@@ -2,11 +2,12 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::OrganizationId;
 use crate::domain::role::{RoleDescription, RoleDisplayName};
 use async_trait::async_trait;
-use scylla_auth::authz::{Role, RoleRepository, ScopeKind};
+use scylla_auth::authz::{Role, RoleKind, RoleRepository, ScopeKind};
 use sqlx::{PgConnection, PgPool};
 use tracing::instrument;
 
 use super::error::{DbFieldExt, SqlxResultExt};
+use super::version::{from_db, to_db, written};
 
 const SCOPE_SYSTEM: &str = "system";
 const SCOPE_ORGANIZATION: &str = "organization";
@@ -25,7 +26,8 @@ impl PgRoleRepository {
 
     async fn select(&self, id: Option<&str>) -> DomainResult<Vec<Role>> {
         let rows = sqlx::query!(
-            "SELECT r.id, r.key, r.name, r.description, r.scope_kind, r.owner_org_id, r.builtin, \
+            "SELECT r.id, r.key, r.name, r.description, r.scope_kind, r.kind, r.owner_org_id, \
+             r.builtin, r.version, \
              COALESCE(ARRAY_AGG(rp.permission) FILTER (WHERE rp.permission IS NOT NULL), ARRAY[]::text[]) \
                  AS \"permissions!\" \
              FROM roles r \
@@ -50,6 +52,9 @@ impl PgRoleRepository {
                         )));
                     }
                 };
+                let kind = RoleKind::parse(&r.kind).ok_or_else(|| {
+                    DomainError::Infrastructure(format!("unknown role kind '{}'", r.kind))
+                })?;
                 Ok(Role {
                     id: r.id,
                     key: r.key,
@@ -57,12 +62,23 @@ impl PgRoleRepository {
                     description: RoleDescription::new(r.description)
                         .db_field("role description")?,
                     scope,
+                    kind,
                     owner_org: r.owner_org_id.map(OrganizationId::new),
                     builtin: r.builtin,
                     permissions: r.permissions,
+                    version: from_db(r.version),
                 })
             })
             .collect()
+    }
+}
+
+impl PgRoleRepository {
+    async fn found(&self, id: &str) -> DomainResult<Role> {
+        self.select(Some(id))
+            .await?
+            .pop()
+            .ok_or_else(|| DomainError::not_found("Role", id))
     }
 }
 
@@ -94,13 +110,14 @@ impl RoleRepository for PgRoleRepository {
     async fn create(&self, role: &Role) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
         sqlx::query!(
-            "INSERT INTO roles (id, key, name, description, scope_kind, owner_org_id, builtin) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            "INSERT INTO roles (id, key, name, description, scope_kind, kind, owner_org_id, builtin) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             role.id,
             role.key.as_deref(),
             role.name.as_str(),
             role.description.as_str(),
             role.scope.as_str(),
+            role.kind.as_str(),
             role.owner_org.as_ref().map(OrganizationId::as_str),
             role.builtin,
         )
@@ -114,30 +131,70 @@ impl RoleRepository for PgRoleRepository {
     #[instrument(skip_all, fields(role_id = %role.id))]
     async fn update(&self, role: &Role) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
-        sqlx::query!(
-            "UPDATE roles SET name = $2, description = $3, updated_at = NOW() WHERE id = $1",
+        let updated = sqlx::query!(
+            "UPDATE roles SET name = $2, description = $3, updated_at = NOW(), version = version + 1 \
+             WHERE id = $1 AND version = $4",
             role.id,
             role.name.as_str(),
             role.description.as_str(),
+            to_db(role.version),
         )
         .execute(&mut *tx)
         .await
-        .to_domain()?;
-        sqlx::query!("DELETE FROM role_permissions WHERE role_id = $1", role.id)
-            .execute(&mut *tx)
-            .await
-            .to_domain()?;
-        insert_permissions(&mut tx, role).await?;
-        tx.commit().await.to_domain()
+        .to_domain()?
+        .rows_affected()
+            > 0;
+        if updated {
+            sqlx::query!("DELETE FROM role_permissions WHERE role_id = $1", role.id)
+                .execute(&mut *tx)
+                .await
+                .to_domain()?;
+            insert_permissions(&mut tx, role).await?;
+        }
+        tx.commit().await.to_domain()?;
+        written(
+            updated.then_some(()),
+            "Role",
+            &role.id,
+            self.found(&role.id),
+        )
+        .await
+    }
+
+    #[instrument(skip_all, fields(role_id = %role.id, version = role.version))]
+    async fn delete(&self, role: &Role) -> DomainResult<()> {
+        let deleted = sqlx::query!(
+            "DELETE FROM roles WHERE id = $1 AND version = $2",
+            role.id,
+            to_db(role.version),
+        )
+        .execute(&self.pool)
+        .await
+        .to_domain()?
+        .rows_affected()
+            > 0;
+        written(
+            deleted.then_some(()),
+            "Role",
+            &role.id,
+            self.found(&role.id),
+        )
+        .await
     }
 
     #[instrument(skip(self))]
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        sqlx::query!("DELETE FROM roles WHERE id = $1", id)
-            .execute(&self.pool)
-            .await
-            .to_domain()?;
-        Ok(())
+    async fn in_use(&self, id: &str) -> DomainResult<bool> {
+        let used = sqlx::query_scalar!(
+            "SELECT EXISTS (SELECT 1 FROM grants WHERE role_id = $1) \
+                 OR EXISTS (SELECT 1 FROM organization_invites \
+                            WHERE role_name = $1 AND status = 'pending' AND expires_at > NOW()) \
+             AS \"used!\"",
+            id,
+        )
+        .fetch_one(&self.pool)
+        .await
+        .to_domain()?;
+        Ok(used)
     }
 }
 
@@ -146,7 +203,7 @@ mod tests {
     use super::PgRoleRepository;
     use crate::domain::errors::DomainError;
     use crate::domain::role::{RoleDescription, RoleDisplayName, RoleName};
-    use scylla_auth::authz::{Role, RoleRepository, ScopeKind};
+    use scylla_auth::authz::{Role, RoleKind, RoleRepository, ScopeKind};
     use sqlx::PgPool;
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -170,6 +227,8 @@ mod tests {
             RoleDisplayName::new("CI Runner").unwrap(),
             RoleDescription::new("reads and runs pipelines").unwrap(),
             ScopeKind::Project,
+            RoleKind::Member,
+            None,
             vec!["readPipeline".into(), "runPipeline".into()],
         );
         let id = role.id.clone();
@@ -192,9 +251,121 @@ mod tests {
         let got = repo.get(&id).await.unwrap().unwrap();
         assert_eq!(got.name.as_str(), "CI");
         assert_eq!(got.permissions, vec!["readPipeline".to_string()]);
+        assert_eq!(got.version, 1);
 
-        repo.delete(&id).await.unwrap();
+        let stale = repo.update(&updated).await.unwrap_err();
+        assert!(matches!(stale, DomainError::Stale(_)), "{stale}");
+        assert!(matches!(
+            repo.delete(&updated).await.unwrap_err(),
+            DomainError::Stale(_)
+        ));
+
+        repo.delete(&got).await.unwrap();
         assert!(repo.get(&id).await.unwrap().is_none());
+    }
+
+    fn owned(name: &str, organization: &crate::domain::organization::Organization) -> Role {
+        Role::new_custom(
+            RoleDisplayName::new(name).unwrap(),
+            RoleDescription::new("").unwrap(),
+            ScopeKind::Project,
+            RoleKind::Member,
+            Some(organization.id().clone()),
+            vec!["runPipeline".into()],
+        )
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn a_role_name_is_unique_in_an_organization_and_never_a_platform_name(pool: PgPool) {
+        use crate::test_support::prelude::*;
+        let o1 = seed_org(&pool, "o1").await;
+        let o2 = seed_org(&pool, "o2").await;
+        let repo = PgRoleRepository::new(pool);
+        let conflict = |err: DomainError| {
+            assert!(
+                matches!(&err, DomainError::Conflict(m) if m == "Role name already exists"),
+                "{err}"
+            );
+        };
+
+        repo.create(&owned("Deployer", &o1)).await.unwrap();
+        repo.create(&owned("Deployer", &o2)).await.unwrap();
+        conflict(repo.create(&owned("Deployer", &o1)).await.unwrap_err());
+        conflict(
+            repo.create(&owned("Project Viewer", &o1))
+                .await
+                .unwrap_err(),
+        );
+        let platform = Role::new_custom(
+            RoleDisplayName::new("Deployer").unwrap(),
+            RoleDescription::new("").unwrap(),
+            ScopeKind::Project,
+            RoleKind::Member,
+            None,
+            vec!["runPipeline".into()],
+        );
+        conflict(repo.create(&platform).await.unwrap_err());
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn a_role_is_in_use_while_granted(pool: PgPool) {
+        use crate::postgres::PgGrantRepository;
+        use crate::test_support::prelude::*;
+        use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
+        let (org, project, _) = seed_org_project_pipeline(&pool, "used").await;
+        let user = seed_user(&pool, "carol").await;
+        let repo = PgRoleRepository::new(pool.clone());
+        let role = owned("Deployer", &org);
+        repo.create(&role).await.unwrap();
+        assert!(!repo.in_use(&role.id).await.unwrap());
+
+        PgGrantRepository::new(pool)
+            .create(&Grant::new(
+                Principal::User(user.id().clone()),
+                RoleName::new(&role.id).unwrap(),
+                Scope::Project(project.id().clone()),
+            ))
+            .await
+            .unwrap();
+        assert!(repo.in_use(&role.id).await.unwrap());
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn an_organization_delete_takes_its_roles_and_their_grants(pool: PgPool) {
+        use crate::postgres::{PgGrantRepository, PgOrganizationRepository};
+        use crate::test_support::prelude::*;
+        use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
+        use scylla_core::application::organization::OrganizationRepository;
+        let (org, project, _) = seed_org_project_pipeline(&pool, "gone").await;
+        let other = seed_org(&pool, "stays").await;
+        let user = seed_user(&pool, "carol").await;
+        let repo = PgRoleRepository::new(pool.clone());
+        let role = owned("Deployer", &org);
+        let kept = owned("Deployer", &other);
+        repo.create(&role).await.unwrap();
+        repo.create(&kept).await.unwrap();
+        PgGrantRepository::new(pool.clone())
+            .create(&Grant::new(
+                Principal::User(user.id().clone()),
+                RoleName::new(&role.id).unwrap(),
+                Scope::Project(project.id().clone()),
+            ))
+            .await
+            .unwrap();
+
+        PgOrganizationRepository::new(pool.clone())
+            .delete(&org)
+            .await
+            .unwrap();
+
+        assert!(repo.get(&role.id).await.unwrap().is_none());
+        assert!(repo.get(&kept.id).await.unwrap().is_some());
+        let grants: i64 = sqlx::query_scalar("SELECT count(*) FROM grants WHERE role_id = $1")
+            .bind(&role.id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(grants, 0);
     }
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -204,6 +375,8 @@ mod tests {
             RoleDisplayName::new("System Admin").unwrap(),
             RoleDescription::new("").unwrap(),
             ScopeKind::Project,
+            RoleKind::Member,
+            None,
             vec!["readPipeline".into()],
         );
         let err = repo.create(&shadow).await.unwrap_err();
@@ -216,21 +389,12 @@ mod tests {
     #[sqlx::test(migrations = "../../migrations")]
     async fn effective_permissions_resolves_roles_and_direct_grants(pool: PgPool) {
         use crate::domain::caller::{CallerContext, ServiceIdentity};
-        use crate::domain::errors::DomainResult;
         use crate::postgres::PgGrantRepository;
         use crate::test_support::prelude::*;
-        use scylla_auth::authz::{Grant, GrantRepository, PolicyControl, Principal, Scope};
+        use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
         use scylla_core::application::role::{GetEffectivePermissions, RoleUseCases};
         use scylla_core::test_support::authz::{RecordingPermissionService, actions};
         use std::sync::Arc;
-
-        struct NoopPolicy;
-        #[async_trait::async_trait]
-        impl PolicyControl for NoopPolicy {
-            async fn reload(&self) -> DomainResult<()> {
-                Ok(())
-            }
-        }
 
         sqlx::query!(
             "INSERT INTO roles (id, name, scope_kind, builtin) VALUES ('ci', 'CI', 'project', FALSE)"
@@ -281,7 +445,6 @@ mod tests {
         let uc = RoleUseCases::new(
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool)),
-            Arc::new(NoopPolicy),
         );
         let actions = actions(Arc::new(RecordingPermissionService::new()));
         let caller = CallerContext::Service(ServiceIdentity::recorder());
@@ -314,26 +477,17 @@ mod tests {
     #[sqlx::test(migrations = "../../migrations")]
     async fn my_permissions_needs_no_permission_unlike_the_admin_view(pool: PgPool) {
         use crate::domain::caller::{CallerContext, ServiceIdentity};
-        use crate::domain::errors::DomainResult;
         use crate::domain::ids::UserId;
         use crate::postgres::PgGrantRepository;
         use crate::test_support::prelude::*;
         use scylla_auth::authz::{
-            Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, PolicyControl, Principal, Scope,
+            Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope,
         };
         use scylla_core::application::role::{
             GetEffectivePermissions, GetMyPermissions, RoleUseCases,
         };
         use scylla_core::test_support::authz::{DenyingPermissionService, actions};
         use std::sync::Arc;
-
-        struct NoopPolicy;
-        #[async_trait::async_trait]
-        impl PolicyControl for NoopPolicy {
-            async fn reload(&self) -> DomainResult<()> {
-                Ok(())
-            }
-        }
 
         let org = seed_org(&pool, "o1").await;
         let alice = seed_user(&pool, "alice").await;
@@ -349,7 +503,6 @@ mod tests {
         let uc = RoleUseCases::new(
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool)),
-            Arc::new(NoopPolicy),
         );
         let actions = actions(Arc::new(DenyingPermissionService::new()));
 

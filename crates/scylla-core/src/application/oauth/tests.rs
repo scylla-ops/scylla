@@ -5,9 +5,7 @@ use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::user::{Email, User};
 use crate::test_support::authz::{DenyingPermissionService, actions};
-use crate::test_support::stubs::{
-    CountingPolicy, NoUsers, OneUser, StubHash, StubSessions, StubSignups,
-};
+use crate::test_support::stubs::{NoUsers, OneUser, StubHash, StubSessions, StubSignups};
 use crate::test_support::users::UserBuilder;
 use async_trait::async_trait;
 use std::sync::Mutex;
@@ -53,7 +51,6 @@ struct Lab {
     identities: Arc<StubIdentities>,
     signups: Arc<StubSignups>,
     sessions: Arc<StubSessions>,
-    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -82,7 +79,6 @@ fn lab(info: OAuthUserInfo, identities: StubIdentities, users: Arc<dyn UserRepos
     let identities = Arc::new(identities);
     let signups = Arc::new(StubSignups::default());
     let sessions = Arc::new(StubSessions::default());
-    let policy = Arc::new(CountingPolicy::default());
     Lab {
         uc: OAuthUseCases::new(
             Arc::new(StubProvider(info)),
@@ -91,12 +87,10 @@ fn lab(info: OAuthUserInfo, identities: StubIdentities, users: Arc<dyn UserRepos
             users,
             sessions.clone(),
             Arc::new(StubHash::passwords()),
-            policy.clone(),
         ),
         identities,
         signups,
         sessions,
-        policy,
     }
 }
 
@@ -126,7 +120,6 @@ async fn a_first_login_provisions_an_account_with_the_identity() {
     assert_eq!(provisioned[0].1.id(), organization_id);
     assert_eq!(provisioned[0].1.name().as_str(), "dev's organization");
     assert_eq!(provisioned[0].3.as_deref(), Some("gh-1"));
-    assert_eq!(lab.policy.reloads(), 1);
     assert_eq!(lab.sessions.rows()[0].token(), outcome.token);
 }
 
@@ -143,7 +136,6 @@ async fn a_known_identity_signs_in_to_its_account() {
     assert!(matches!(outcome.account, AccountOutcome::Existing));
     assert_eq!(outcome.user_id, UserId::new("dev"));
     assert!(lab.signups.provisioned().is_empty());
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]

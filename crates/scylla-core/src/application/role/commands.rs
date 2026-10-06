@@ -1,29 +1,39 @@
 //! The role's writes. One block per command, in the order it runs: the struct, its access,
-//! its payload types, what `Prepare` checks and builds, what `Persist` writes. The policy reload
-//! sits next to the write that changes a role Cedar emits.
+//! its payload types, what `Prepare` checks and builds, what `Persist` writes. A command on one
+//! role is checked on the role: the access model takes the manage-roles action of its owner.
 
 use super::RoleUseCases;
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::OrganizationId;
 use crate::domain::permission::Permission;
-use crate::domain::role::{RoleDescription, RoleDisplayName};
+use crate::domain::role::{RoleDescription, RoleDisplayName, RoleName};
 use async_trait::async_trait;
-use scylla_auth::authz::{Role, ScopeKind, validate_role_permissions};
+use scylla_auth::authz::{Role, RoleKind, ScopeKind, validate_role_permissions};
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
     Run,
 };
 
+/// With an organization, a role of that organization; without, a platform role.
 #[derive(Debug)]
 pub struct CreateRole {
+    pub organization_id: Option<OrganizationId>,
     pub name: RoleDisplayName,
     pub description: RoleDescription,
     pub scope: ScopeKind,
+    pub kind: RoleKind,
     pub permissions: Vec<String>,
 }
 
 impl Describe for CreateRole {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ManageRoles)
+        Access::Requires(
+            self.organization_id
+                .as_ref()
+                .map_or(Permission::ManageRoles, |organization| {
+                    Permission::ManageOrgRoles(organization.clone())
+                }),
+        )
     }
 }
 
@@ -36,11 +46,29 @@ impl Command for CreateRole {
 impl Run<Prepare<CreateRole>> for RoleUseCases {
     async fn run(&self, input: Authorized<CreateRole>) -> DomainResult<Prepared<CreateRole>> {
         let cmd = input.command();
+        if cmd.organization_id.is_some() && cmd.scope == ScopeKind::System {
+            return Err(DomainError::validation(
+                "a role of an organization is organization or project scoped",
+            ));
+        }
+        if cmd.kind == RoleKind::Admin {
+            return Err(DomainError::validation(
+                "the admin kind is reserved for the builtin roles",
+            ));
+        }
         validate_role_permissions(&cmd.permissions, cmd.scope)?;
+        self.ensure_no_escalation(
+            input.caller(),
+            &cmd.permissions,
+            cmd.organization_id.as_ref(),
+        )
+        .await?;
         let role = Role::new_custom(
             cmd.name.clone(),
             cmd.description.clone(),
             cmd.scope,
+            cmd.kind,
+            cmd.organization_id.clone(),
             cmd.permissions.clone(),
         );
         Ok(input.prepared(Draft::new(role)))
@@ -54,7 +82,6 @@ impl Run<Persist<CreateRole>> for RoleUseCases {
             .commit(async |draft| {
                 let role = draft.into_inner();
                 self.role_repo.create(&role).await?;
-                self.policy_control.reload().await?;
                 Ok(role)
             })
             .await
@@ -63,7 +90,7 @@ impl Run<Persist<CreateRole>> for RoleUseCases {
 
 #[derive(Debug)]
 pub struct UpdateRole {
-    pub id: String,
+    pub id: RoleName,
     pub name: RoleDisplayName,
     pub description: RoleDescription,
     pub permissions: Vec<String>,
@@ -71,7 +98,7 @@ pub struct UpdateRole {
 
 impl Describe for UpdateRole {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ManageRoles)
+        Access::Requires(Permission::ManageRole(self.id.clone()))
     }
 }
 
@@ -84,12 +111,10 @@ impl Command for UpdateRole {
 impl Run<Prepare<UpdateRole>> for RoleUseCases {
     async fn run(&self, input: Authorized<UpdateRole>) -> DomainResult<Prepared<UpdateRole>> {
         let cmd = input.command();
-        let mut role = self
-            .role_repo
-            .get(&cmd.id)
-            .await?
-            .ok_or_else(|| DomainError::not_found("Role", &cmd.id))?;
+        let mut role = self.role(&cmd.id).await?;
         validate_role_permissions(&cmd.permissions, role.scope)?;
+        self.ensure_no_escalation(input.caller(), &cmd.permissions, role.owner_org.as_ref())
+            .await?;
         role.name = cmd.name.clone();
         role.description = cmd.description.clone();
         role.permissions.clone_from(&cmd.permissions);
@@ -104,7 +129,6 @@ impl Run<Persist<UpdateRole>> for RoleUseCases {
             .commit(async |draft| {
                 let role = draft.into_inner();
                 self.role_repo.update(&role).await?;
-                self.policy_control.reload().await?;
                 Ok(role)
             })
             .await
@@ -113,12 +137,12 @@ impl Run<Persist<UpdateRole>> for RoleUseCases {
 
 #[derive(Debug)]
 pub struct DeleteRole {
-    pub id: String,
+    pub id: RoleName,
 }
 
 impl Describe for DeleteRole {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ManageRoles)
+        Access::Requires(Permission::ManageRole(self.id.clone()))
     }
 }
 
@@ -130,22 +154,15 @@ impl Command for DeleteRole {
 #[async_trait]
 impl Run<Prepare<DeleteRole>> for RoleUseCases {
     async fn run(&self, input: Authorized<DeleteRole>) -> DomainResult<Prepared<DeleteRole>> {
-        let id = &input.command().id;
-        let role = self
-            .role_repo
-            .get(id)
-            .await?
-            .ok_or_else(|| DomainError::not_found("Role", id))?;
+        let role = self.role(&input.command().id).await?;
         if role.builtin {
             return Err(DomainError::business_rule(
                 "builtin roles cannot be deleted",
             ));
         }
-        // A role still granted must be unassigned first; those grants would silently stop working.
-        let grants = self.grant_repo.list_all().await?;
-        if grants.iter().any(|g| g.role.as_str() == id) {
+        if self.role_repo.in_use(&role.id).await? {
             return Err(DomainError::business_rule(
-                "role is still granted to one or more principals; revoke those grants first",
+                "role is still granted or offered in a pending invitation; revoke those first",
             ));
         }
         Ok(input.prepared(role))
@@ -157,8 +174,7 @@ impl Run<Persist<DeleteRole>> for RoleUseCases {
     async fn run(&self, input: Prepared<DeleteRole>) -> DomainResult<Committed<DeleteRole>> {
         input
             .commit(async |role| {
-                self.role_repo.delete(&role.id).await?;
-                self.policy_control.reload().await?;
+                self.role_repo.delete(&role).await?;
                 Ok(Deleted::new(role))
             })
             .await

@@ -3,17 +3,28 @@
 
 use super::RoleUseCases;
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::OrganizationId;
 use crate::domain::permission::{PERMISSION_CATALOG, Permission};
+use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{EffectiveScope, Principal, Role};
 use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
+/// With an organization, the platform roles and that organization's; without, every role.
 #[derive(Debug)]
-pub struct ListRoles;
+pub struct ListRoles {
+    pub organization_id: Option<OrganizationId>,
+}
 
 impl Describe for ListRoles {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ManageRoles)
+        Access::Requires(
+            self.organization_id
+                .as_ref()
+                .map_or(Permission::ManageRoles, |organization| {
+                    Permission::ManageOrgRoles(organization.clone())
+                }),
+        )
     }
 }
 
@@ -24,19 +35,22 @@ impl Query for ListRoles {
 #[async_trait]
 impl Run<Fetch<ListRoles>> for RoleUseCases {
     async fn run(&self, input: Authorized<ListRoles>) -> DomainResult<Fetched<ListRoles>> {
-        let roles = self.role_repo.list_all().await?;
+        let mut roles = self.role_repo.list_all().await?;
+        if let Some(organization) = &input.command().organization_id {
+            roles.retain(|r| r.usable_in(Some(organization)));
+        }
         Ok(input.fetched(roles))
     }
 }
 
 #[derive(Debug)]
 pub struct GetRole {
-    pub id: String,
+    pub id: RoleName,
 }
 
 impl Describe for GetRole {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ManageRoles)
+        Access::Requires(Permission::ManageRole(self.id.clone()))
     }
 }
 
@@ -47,23 +61,19 @@ impl Query for GetRole {
 #[async_trait]
 impl Run<Fetch<GetRole>> for RoleUseCases {
     async fn run(&self, input: Authorized<GetRole>) -> DomainResult<Fetched<GetRole>> {
-        let id = &input.command().id;
-        let role = self
-            .role_repo
-            .get(id)
-            .await?
-            .ok_or_else(|| DomainError::not_found("Role", id))?;
+        let role = self.role(&input.command().id).await?;
         Ok(input.fetched(role))
     }
 }
 
-/// Every permission key with the resource type it targets.
+/// Every permission key with the resource type it targets: compiled-in data, so any signed-in
+/// caller reads it.
 #[derive(Debug)]
 pub struct ListAuthzVocabulary;
 
 impl Describe for ListAuthzVocabulary {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ManageRoles)
+        Access::Authenticated
     }
 }
 

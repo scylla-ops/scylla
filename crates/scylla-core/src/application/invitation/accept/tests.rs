@@ -9,7 +9,7 @@ use crate::domain::invitation::Invitation;
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, User, Username};
 use crate::test_support::authz::{DenyingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, NoUsers, OneUser, StubHash, StubSessions};
+use crate::test_support::stubs::{NoUsers, OneUser, StubHash, StubSessions};
 use crate::test_support::users::UserBuilder;
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, ORGANIZATION_MEMBER_ROLE, Principal, Scope};
@@ -60,7 +60,6 @@ struct Lab {
     uc: InvitationAcceptUseCases,
     invitations: Arc<OneInvitation>,
     sessions: Arc<StubSessions>,
-    policy: Arc<CountingPolicy>,
     hash: Arc<StubHash>,
 }
 
@@ -91,7 +90,6 @@ fn lab(role: Option<&str>, users: Arc<dyn UserRepository>) -> Lab {
         accepted: Mutex::default(),
     });
     let sessions = Arc::new(StubSessions::default());
-    let policy = Arc::new(CountingPolicy::default());
     let hash = Arc::new(StubHash::passwords());
     Lab {
         uc: InvitationAcceptUseCases::new(
@@ -99,11 +97,9 @@ fn lab(role: Option<&str>, users: Arc<dyn UserRepository>) -> Lab {
             users,
             hash.clone(),
             sessions.clone(),
-            policy.clone(),
         ),
         invitations,
         sessions,
-        policy,
         hash,
     }
 }
@@ -126,7 +122,6 @@ async fn an_accept_creates_the_invitee_grants_the_role_and_signs_in() {
     );
     assert_eq!(outcome.organization_id, OrganizationId::new("org-1"));
     assert_eq!(lab.hash.hashed(), 1);
-    assert_eq!(lab.policy.reloads(), 1);
     assert_eq!(lab.sessions.rows()[0].token(), outcome.token);
 }
 
@@ -156,5 +151,4 @@ async fn an_unknown_token_writes_nothing() {
     assert!(matches!(err, DomainError::NotFound(_)));
     assert!(lab.invitations.accepted.lock().unwrap().is_empty());
     assert!(lab.sessions.rows().is_empty());
-    assert_eq!(lab.policy.reloads(), 0);
 }

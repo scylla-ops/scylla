@@ -1,4 +1,4 @@
-use crate::authz::role::{FULL_CONTROL, Role};
+use crate::authz::role::{FULL_CONTROL, Role, RoleKind};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
@@ -108,104 +108,6 @@ impl ScopeKind {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RoleKind {
-    Admin,
-    Member,
-    Agent,
-}
-
-impl RoleKind {
-    #[must_use]
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Admin => "admin",
-            Self::Member => "member",
-            Self::Agent => "agent",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct GrantableRole {
-    pub name: &'static str,
-    pub scope: ScopeKind,
-    pub kind: RoleKind,
-    pub description: &'static str,
-}
-
-pub const GRANTABLE_ROLES: &[GrantableRole] = &[
-    GrantableRole {
-        name: SYSTEM_ADMIN_ROLE,
-        scope: ScopeKind::System,
-        kind: RoleKind::Admin,
-        description: "Global super-user: full control over every scope.",
-    },
-    GrantableRole {
-        name: ORGANIZATION_ADMIN_ROLE,
-        scope: ScopeKind::Organization,
-        kind: RoleKind::Admin,
-        description: "Owner of an organization and everything beneath it.",
-    },
-    GrantableRole {
-        name: ORGANIZATION_AGENT_ROLE,
-        scope: ScopeKind::Organization,
-        kind: RoleKind::Agent,
-        description: "Machine app scoped to an organization: pull and run its jobs.",
-    },
-    GrantableRole {
-        name: PROJECT_ADMIN_ROLE,
-        scope: ScopeKind::Project,
-        kind: RoleKind::Admin,
-        description: "Owner of a project and everything beneath it.",
-    },
-    GrantableRole {
-        name: PROJECT_AGENT_ROLE,
-        scope: ScopeKind::Project,
-        kind: RoleKind::Agent,
-        description: "Machine app scoped to a project: pull and run its jobs.",
-    },
-    GrantableRole {
-        name: ORGANIZATION_TRIGGER_RUNNER_ROLE,
-        scope: ScopeKind::Organization,
-        kind: RoleKind::Agent,
-        description: "Machine app that fires the triggers of an organization: run its pipelines.",
-    },
-    GrantableRole {
-        name: ORGANIZATION_MEMBER_ROLE,
-        scope: ScopeKind::Organization,
-        kind: RoleKind::Member,
-        description: "Belongs to the organization: sees it exists, nothing more.",
-    },
-    GrantableRole {
-        name: ORGANIZATION_VIEWER_ROLE,
-        scope: ScopeKind::Organization,
-        kind: RoleKind::Member,
-        description: "Read every project and run in the organization, change nothing.",
-    },
-    GrantableRole {
-        name: PROJECT_DEVELOPER_ROLE,
-        scope: ScopeKind::Project,
-        kind: RoleKind::Member,
-        description: "Build in a project: create, edit and run its pipelines, and cancel their runs.",
-    },
-    GrantableRole {
-        name: PROJECT_VIEWER_ROLE,
-        scope: ScopeKind::Project,
-        kind: RoleKind::Member,
-        description: "Read a project, its pipelines and its runs, change nothing.",
-    },
-];
-
-#[must_use]
-pub fn grantable_roles(filter: Option<ScopeKind>) -> Vec<GrantableRole> {
-    GRANTABLE_ROLES
-        .iter()
-        .copied()
-        .filter(|r| filter.is_none_or(|k| r.scope == k))
-        .collect()
-}
-
 /// One gate for `CreateGrant` and `CreateInvitation`: what can be granted equals what can be invited.
 pub fn check_grantable(
     roles: &[Role],
@@ -218,7 +120,7 @@ pub fn check_grantable(
 ) -> DomainResult<()> {
     let wanted = roles
         .iter()
-        .find(|r| r.id == role.as_str())
+        .find(|r| r.id == role.as_str() && r.usable_in(organization))
         .ok_or_else(|| DomainError::validation(format!("unknown role '{}'", role.as_str())))?;
     if wanted.scope != scope.kind() {
         return Err(DomainError::validation(format!(
@@ -228,15 +130,32 @@ pub fn check_grantable(
             scope.kind().as_str()
         )));
     }
-    let app_role = GRANTABLE_ROLES
-        .iter()
-        .any(|r| r.kind == RoleKind::Agent && r.name == role.as_str());
-    if grantee == PrincipalKind::User && app_role {
+    if grantee == PrincipalKind::User && wanted.kind == RoleKind::Agent {
         return Err(DomainError::validation(format!(
             "role '{}' is for apps only",
             role.as_str()
         )));
     }
+    ensure_no_escalation(
+        roles,
+        grants,
+        delegator,
+        &wanted.permissions,
+        scope,
+        organization,
+    )
+}
+
+/// The delegator holds every wanted permission through a grant at System, at the organization or
+/// at the scope itself. A service is trusted; `*` covers every permission.
+pub fn ensure_no_escalation(
+    roles: &[Role],
+    grants: &[Grant],
+    delegator: &CallerContext,
+    wanted: &[String],
+    scope: &Scope,
+    organization: Option<&OrganizationId>,
+) -> DomainResult<()> {
     let Some(delegator) = Principal::from_caller(delegator) else {
         return Ok(());
     };
@@ -251,11 +170,11 @@ pub fn check_grantable(
         .filter_map(|g| roles.iter().find(|r| r.id == g.role.as_str()))
         .flat_map(|r| r.permissions.iter().map(String::as_str))
         .collect();
-    if held.contains(FULL_CONTROL) || wanted.permissions.iter().all(|p| held.contains(p.as_str())) {
+    if held.contains(FULL_CONTROL) || wanted.iter().all(|p| held.contains(p.as_str())) {
         Ok(())
     } else {
         Err(DomainError::business_rule(
-            "cannot grant permissions you do not hold at this scope (no privilege escalation)",
+            "cannot confer permissions you do not hold at this scope (no privilege escalation)",
         ))
     }
 }
@@ -400,9 +319,15 @@ mod tests {
             name: RoleDisplayName::new(id).unwrap(),
             description: RoleDescription::new("").unwrap(),
             scope,
+            kind: if matches!(id, ORGANIZATION_AGENT_ROLE | PROJECT_AGENT_ROLE) {
+                RoleKind::Agent
+            } else {
+                RoleKind::Member
+            },
             owner_org: None,
             builtin: false,
             permissions: permissions.iter().map(ToString::to_string).collect(),
+            version: 0,
         });
         check_grantable(
             &roles,

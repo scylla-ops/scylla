@@ -11,7 +11,7 @@ use crate::domain::organization::{Organization, OrganizationName};
 use crate::domain::role::RoleName;
 use crate::domain::user::User;
 use derive_more::Constructor;
-use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, PolicyControl, Principal, Scope};
+use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 use std::sync::Arc;
 
 pub struct SignupOutcome {
@@ -51,7 +51,6 @@ pub struct SignupUseCases {
     pub(super) signup_repo: Arc<dyn SignupRepository>,
     pub(super) session_repo: Arc<dyn SessionRepository>,
     pub(super) hash_service: Arc<dyn HashService>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 #[cfg(test)]
