@@ -5,13 +5,13 @@ use scylla_auth::cedar::CedarPermissionService;
 #[cfg(feature = "register")]
 use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
-    AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuthUseCases, BootstrapUseCases,
-    CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases,
-    InvitationAcceptUseCases, InvitationUseCases, JobLogUseCases, JobReaper, JobUseCases, Mailer,
-    NoopMailer, OAuthUseCases, OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer,
-    PipelineUseCases, ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
-    SessionSweeper, TriggerCronScheduler, TriggerFireUseCases, TriggerFirer, TriggerFiring,
-    TriggerUseCases, UserUseCases, WebhookIngressUseCases,
+    AgentUseCases, AppTokenUseCases, AppUseCases, AuthUseCases, BootstrapUseCases, CronSchedule,
+    DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationAcceptUseCases,
+    InvitationUseCases, JobLogUseCases, JobReaper, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
+    OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer, PipelineUseCases,
+    ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SessionSweeper,
+    TriggerCronScheduler, TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerUseCases,
+    UserUseCases, WebhookIngressUseCases,
 };
 use scylla_core::config::ControlPlaneConfig;
 use scylla_core::error::StartupError;
@@ -32,9 +32,12 @@ use scylla_extension::{Actions, Hooks};
 use sqlx::PgPool;
 use std::future::Future;
 use std::sync::Arc;
-use tokio::sync::Notify;
+use std::time::Duration;
+use tokio::sync::mpsc;
 use tonic_async_interceptor::async_interceptor;
+use tower_http::classify::{GrpcCode, GrpcErrorsAsFailures, SharedClassifier};
 use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
 
 pub(crate) struct Services {
     pub auth_uc: Arc<AuthUseCases>,
@@ -58,8 +61,6 @@ pub(crate) struct Services {
     pub app_token_uc: Arc<AppTokenUseCases>,
     pub agent_uc: Arc<AgentUseCases>,
     pub agent_registry: Arc<InMemoryAgentRegistry>,
-    pub pending_signal: Arc<Notify>,
-    pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: Arc<GrantUseCases>,
     pub role_uc: Arc<RoleUseCases>,
     pub permission_checker: Arc<CedarPermissionService<PgAuthzEntityProvider>>,
@@ -130,33 +131,39 @@ pub(crate) async fn init_services(
     ));
     let user_uc = Arc::new(UserUseCases::new(
         user_repo.clone(),
+        grant_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
+    ));
+    // The registry and the live tail come first: the dispatcher sends through the one and
+    // closes the other, and every use case that starts or ends a job goes through the dispatcher.
+    let (wakes, woken) = mpsc::unbounded_channel();
+    let agent_registry = Arc::new(InMemoryAgentRegistry::new(wakes));
+    let job_log_stream = Arc::new(InMemoryJobLogStream::new());
+    let dispatch_uc = Arc::new(DispatchUseCases::new(
+        agent_registry.clone(),
+        permission_checker.clone(),
+        job_repo.clone(),
+        secret_resolver.clone(),
+        job_log_stream.clone(),
     ));
     let org_uc = Arc::new(OrganizationUseCases::new(
         org_repo.clone(),
         user_repo.clone(),
+        app_repo.clone(),
         permission_checker.clone(),
+        dispatch_uc.clone(),
     ));
     let project_uc = Arc::new(ProjectUseCases::new(
         project_repo.clone(),
         user_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        permission_checker.clone(),
+        dispatch_uc.clone(),
     ));
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),
         secret_cipher.clone(),
-    ));
-    // Built before dispatch_uc, app_uc and grant_uc: they hand a job to a live stream, or drop it on disable, delete or revoke.
-    let agent_registry = Arc::new(InMemoryAgentRegistry::new());
-    let dispatch_uc = Arc::new(DispatchUseCases::new(
-        agent_registry.clone(),
-        permission_checker.clone(),
-        job_repo.clone(),
-        pipeline_repo.clone(),
-        secret_resolver.clone(),
     ));
     let pipeline_uc = Arc::new(PipelineUseCases::new(
         pipeline_repo.clone(),
@@ -165,7 +172,11 @@ pub(crate) async fn init_services(
         secret_resolver.clone(),
         dispatch_uc.clone(),
     ));
-    let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
+    let job_uc = Arc::new(JobUseCases::new(
+        job_repo.clone(),
+        job_log_stream.clone(),
+        dispatch_uc.clone(),
+    ));
     let app_uc = Arc::new(AppUseCases::new(
         app_repo.clone(),
         app_credential_repo.clone(),
@@ -182,6 +193,7 @@ pub(crate) async fn init_services(
     let agent_uc = Arc::new(AgentUseCases::new(
         app_repo.clone(),
         agent_repo.clone(),
+        job_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
         agent_registry.clone(),
@@ -222,6 +234,7 @@ pub(crate) async fn init_services(
         invite_repo.clone(),
         org_repo.clone(),
         role_repo.clone(),
+        grant_repo.clone(),
         mailer.clone(),
     ));
     let invitation_accept_uc = Arc::new(InvitationAcceptUseCases::new(
@@ -253,7 +266,6 @@ pub(crate) async fn init_services(
         None => None,
     };
 
-    let job_log_stream = Arc::new(InMemoryJobLogStream::new());
     let job_log_uc = Arc::new(JobLogUseCases::new(
         job_log_repo.clone(),
         job_log_stream.clone(),
@@ -267,7 +279,6 @@ pub(crate) async fn init_services(
         pipeline_repo.clone(),
         project_repo.clone(),
         app_repo.clone(),
-        hash_service.clone(),
         permission_checker.clone(),
         secret_cipher.clone(),
         cron_schedule.clone(),
@@ -289,7 +300,7 @@ pub(crate) async fn init_services(
     {
         let scheduler = TriggerCronScheduler::new(actions.clone(), trigger_uc.clone(), firing);
         tokio::spawn(async move {
-            let mut tick = tokio::time::interval(std::time::Duration::from_secs(15));
+            let mut tick = tokio::time::interval(Duration::from_secs(15));
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             loop {
                 tick.tick().await;
@@ -298,34 +309,34 @@ pub(crate) async fn init_services(
         });
     }
 
-    let pending_signal = Arc::new(Notify::new());
+    // A wake names the agents a pass is for; the tick passes over every agent. The wakes that
+    // arrived during a pass make one pass.
     {
         let scheduler = PendingJobScheduler::new(actions.clone(), dispatch_uc);
-        let signal = pending_signal.clone();
+        let mut woken = woken;
         tokio::spawn(async move {
-            scheduler.drain().await;
-            let mut tick = tokio::time::interval(std::time::Duration::from_secs(30));
+            let mut tick = tokio::time::interval(Duration::from_secs(30));
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             loop {
-                tokio::select! {
-                    () = signal.notified() => {}
-                    _ = tick.tick() => {}
-                }
-                scheduler.drain().await;
+                let first = tokio::select! {
+                    Some(wake) = woken.recv() => wake,
+                    _ = tick.tick() => None,
+                };
+                scheduler
+                    .drain(PendingJobScheduler::targets(first, &mut woken))
+                    .await;
             }
         });
     }
 
     {
         let reaper = JobReaper::new(actions.clone(), job_uc.clone());
-        let registry = agent_registry.clone();
         tokio::spawn(async move {
-            reaper.reap(&[]).await;
-            let mut tick = tokio::time::interval(std::time::Duration::from_secs(30));
+            let mut tick = tokio::time::interval(Duration::from_secs(30));
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             loop {
                 tick.tick().await;
-                reaper.reap(&registry.connected()).await;
+                reaper.reap().await;
             }
         });
     }
@@ -333,7 +344,7 @@ pub(crate) async fn init_services(
     {
         let sweeper = SessionSweeper::new(actions.clone(), auth_uc.clone());
         tokio::spawn(async move {
-            let mut tick = tokio::time::interval(std::time::Duration::from_secs(3600));
+            let mut tick = tokio::time::interval(Duration::from_secs(3600));
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             loop {
                 tick.tick().await;
@@ -364,8 +375,6 @@ pub(crate) async fn init_services(
         app_token_uc,
         agent_uc,
         agent_registry,
-        pending_signal,
-        job_log_stream,
         grant_uc,
         role_uc,
         permission_checker,
@@ -405,7 +414,7 @@ pub(crate) fn build_cors_layer(cors: &scylla_core::config::CorsConfig) -> CorsLa
         .collect();
     layer = layer.allow_headers(headers);
 
-    layer = layer.max_age(std::time::Duration::from_secs(cors.max_age_seconds));
+    layer = layer.max_age(Duration::from_secs(cors.max_age_seconds));
 
     let expose_headers: Vec<HeaderName> = cors
         .expose_headers
@@ -415,6 +424,26 @@ pub(crate) fn build_cors_layer(cors: &scylla_core::config::CorsConfig) -> CorsLa
     layer = layer.expose_headers(expose_headers);
 
     layer
+}
+
+// Client-caused statuses log at DEBUG; the server's own errors are already logged by the error mapper.
+pub(crate) fn grpc_classifier() -> GrpcErrorsAsFailures {
+    let client = [
+        GrpcCode::Cancelled,
+        GrpcCode::InvalidArgument,
+        GrpcCode::NotFound,
+        GrpcCode::AlreadyExists,
+        GrpcCode::PermissionDenied,
+        GrpcCode::ResourceExhausted,
+        GrpcCode::FailedPrecondition,
+        GrpcCode::Aborted,
+        GrpcCode::OutOfRange,
+        GrpcCode::Unauthenticated,
+    ];
+    client.into_iter().fold(
+        GrpcErrorsAsFailures::new(),
+        GrpcErrorsAsFailures::with_success,
+    )
 }
 
 pub(crate) async fn shutdown_signal() {
@@ -486,7 +515,6 @@ where
     use tonic::transport::Server;
     use tonic_web::GrpcWebLayer;
     use tower::ServiceBuilder;
-    use tower_http::trace::TraceLayer;
 
     let auth_handler = AuthHandler::new(services.actions.clone(), services.auth_uc.clone());
     let user_handler = UserHandler::new(services.actions.clone(), services.user_uc.clone());
@@ -519,11 +547,12 @@ where
         services.job_log_uc.clone(),
         services.agent_uc.clone(),
         services.agent_registry.clone(),
-        services.job_log_stream.clone(),
-        services.pending_signal.clone(),
     );
-    let agent_admin_handler =
-        AgentAdminHandler::new(services.actions.clone(), services.agent_uc.clone());
+    let agent_admin_handler = AgentAdminHandler::new(
+        services.actions.clone(),
+        services.agent_uc.clone(),
+        services.app_uc.clone(),
+    );
     let grant_handler = GrantHandler::new(services.actions.clone(), services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.actions.clone(), services.role_uc.clone());
     let invitation_handler =
@@ -604,7 +633,11 @@ where
 
     let agent_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
-        .service(AgentServiceServer::new(agent_handler));
+        .service(
+            AgentServiceServer::new(agent_handler)
+                .max_decoding_message_size(scylla_proto::agent::MAX_MESSAGE_BYTES)
+                .max_encoding_message_size(scylla_proto::agent::MAX_MESSAGE_BYTES),
+        );
 
     let agent_admin_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -658,7 +691,7 @@ where
         .routes()
         .into_axum_router()
         .layer(GrpcWebLayer::new())
-        .layer(TraceLayer::new_for_grpc());
+        .layer(TraceLayer::new(SharedClassifier::new(grpc_classifier())));
 
     // The webhook router sets no fallback, so merging into the tonic router (which has one) is safe.
     let http = surface
@@ -679,8 +712,11 @@ where
     let app = scylla_core::rest::ui::attach(app, &config.ui);
 
     // CORS is no longer needed by the UI (same origin) but third-party clients and Vite on :5173 rely on it.
+    // The keepalive ends a dead agent connection in about 30 seconds.
     let mut server = Server::builder()
         .accept_http1(true)
+        .http2_keepalive_interval(Some(Duration::from_secs(20)))
+        .http2_keepalive_timeout(Some(Duration::from_secs(10)))
         .layer(build_cors_layer(&config.cors));
     let router = server.add_routes(Routes::from(app));
 
@@ -703,4 +739,35 @@ where
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::grpc_classifier;
+    use tower_http::classify::{ClassifiedResponse, ClassifyResponse};
+
+    fn fails(code: u16) -> bool {
+        let response = http::Response::builder()
+            .header("grpc-status", code)
+            .body(())
+            .unwrap();
+        matches!(
+            grpc_classifier().classify_response(&response),
+            ClassifiedResponse::Ready(Err(_))
+        )
+    }
+
+    #[test]
+    fn client_statuses_are_not_failures() {
+        for code in [0, 1, 3, 5, 6, 7, 8, 9, 10, 11, 16] {
+            assert!(!fails(code), "grpc-status {code}");
+        }
+    }
+
+    #[test]
+    fn server_statuses_are_failures() {
+        for code in [2, 4, 12, 13, 14, 15] {
+            assert!(fails(code), "grpc-status {code}");
+        }
+    }
 }

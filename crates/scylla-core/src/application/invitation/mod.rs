@@ -13,7 +13,7 @@ pub use token::mint_invitation_token;
 use crate::application::OrganizationRepository;
 use crate::application::mail::Mailer;
 use derive_more::Constructor;
-use scylla_auth::authz::RoleRepository;
+use scylla_auth::authz::{GrantRepository, RoleRepository};
 use std::sync::Arc;
 
 /// The invitation aggregate's stage runners, one block per action in `commands.rs` and
@@ -24,6 +24,7 @@ pub struct InvitationUseCases {
     pub(super) invite_repo: Arc<dyn InvitationRepository>,
     pub(super) org_repo: Arc<dyn OrganizationRepository>,
     pub(super) role_repo: Arc<dyn RoleRepository>,
+    pub(super) grant_repo: Arc<dyn GrantRepository>,
     pub(super) mailer: Arc<dyn Mailer>,
 }
 

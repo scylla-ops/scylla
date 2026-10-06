@@ -2,7 +2,6 @@ use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, UserId};
 use crate::domain::organization::Organization;
-use crate::domain::organization::OrganizationName;
 use async_trait::async_trait;
 use scylla_auth::authz::Grant;
 
@@ -31,14 +30,15 @@ pub trait OrganizationRepository: Send + Sync {
 
     async fn find_by_id(&self, id: &OrganizationId) -> DomainResult<Organization>;
 
+    /// Writes only if the row still carries `organization.version()`, and returns the row with the
+    /// bumped version. A stale value is `Stale`; a missing row is `NotFound`.
     async fn update(&self, organization: &Organization) -> DomainResult<Organization>;
 
-    async fn delete(&self, id: &OrganizationId) -> DomainResult<()>;
+    /// Same version rule as `update`.
+    async fn delete(&self, organization: &Organization) -> DomainResult<()>;
 
     async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Organization>>;
-
-    async fn name_exists(&self, name: &OrganizationName) -> DomainResult<bool>;
 }

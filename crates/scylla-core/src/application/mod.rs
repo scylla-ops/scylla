@@ -48,8 +48,8 @@ pub use secret::{
 };
 pub use signup::{SignupRepository, SignupUseCases};
 pub use trigger::{
-    CronSchedule, IngestOutcome, IngestWebhook, TriggerCronScheduler, TriggerDeliveryRepository,
-    TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerRepository, TriggerUseCases,
-    WebhookIngressUseCases,
+    CronSchedule, IngestOutcome, IngestWebhook, NextFire, TriggerCronScheduler,
+    TriggerDeliveryRepository, TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerRepository,
+    TriggerUseCases, WebhookIngressUseCases,
 };
 pub use user::{UserRepository, UserUseCases};

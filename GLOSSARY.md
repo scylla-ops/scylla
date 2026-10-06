@@ -12,12 +12,12 @@ The package is a `main.rs` and nothing else: it loads a configuration, opens the
 The package name, the binary name, the Dockerfile stage name and the config directory path are load-bearing: the image is built with `--target scylla-ce` and `docker-compose.yaml` bind-mounts `binaries/scylla-ce/config`. So is the depth of `scylla-db` and `scylla-core` under `crates/`: `sqlx::migrate!("../../migrations")` and the rust-embed `#[folder = "../../web/dist/"]` resolve against `CARGO_MANIFEST_DIR`. Changing any of them breaks the image build or the container at runtime, not the `cargo` build.
 
 ### `scylla-agent`
-Worker binary installed on each pipeline-executing machine. Authenticates as its [App](#app) (`--app-id` / `--app-secret` exchanged for a bearer token), opens the control plane's `WorkerService` stream over `8080`, receives `JobDispatch` messages, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status + log events back on the same stream. Presence is simply the open stream — no heartbeats.
+The worker binary on each machine that runs pipelines. It authenticates as its [App](#app): it exchanges `--app-id` and `--app-secret` for a bearer token. Then it opens the `AgentService` stream of the control plane on port `8080`. It runs each job that it receives as a task, and it starts a node when each of its deps has completed. It reads the stream while the jobs run, so a `CancelJob` frame stops a job at once. It sends the status and the output of each job on the same stream. The open stream is the presence of the agent; there is no heartbeat. On `SIGTERM` it stops its jobs, reports their end, and then closes the stream.
 
 ### `scylla-domain`
 The shared kernel, and the only Rust code both binaries run. Holds the domain model (entities, value objects, `DomainError`, the DAG planner) plus [`JobEvent`](#jobevent), the command vocabulary the agent reports and the control plane applies.
 
-Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
+Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `derive-where`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
 
 ### `scylla-proto`
 Library crate with the Rust bindings of the `.proto` files and the conversions to the domain types. The `.proto` files are in `crates/scylla-proto/proto/`, a git submodule of [`scylla-ops/scylla-protos`](https://github.com/scylla-ops/scylla-protos). The web UI pins the same repository with its own submodule.
@@ -28,7 +28,7 @@ Primary datastore. PostgreSQL 18 in the compose stack, listening on port `5432`.
 ## Domain entities
 
 ### Organization
-Top-level tenant. Carries a `name`, optional `description`, and an `is_active` flag. Owns projects. People reach it by holding a grant on it or on one of its projects; there is no membership table.
+Top-level tenant. Carries a `name`, optional `description`, and an `is_active` flag. The name is a label: two organizations can have the same name. Owns projects. People reach it by holding a grant on it or on one of its projects; there is no membership table.
 
 ### Project
 A unit of work inside an organization. Carries a `name`, optional `description`, `organization_id`, and `is_active` flag. Owns pipelines and jobs. Being on a project means holding a grant scoped to it.
@@ -40,7 +40,7 @@ A directed acyclic graph (DAG) of **nodes** describing what to run. A pipeline i
 One step in a pipeline. Carries a `command`, `args`, and a list of `deps` (other node IDs it depends on). Nodes must form a DAG — cycles are rejected at creation time.
 
 ### Job
-A single execution of a pipeline. Carries a `JobStatus` and a `JobNode` per pipeline node tracking per-node state and timestamps.
+A single execution of a pipeline. Carries a `JobStatus`, the nodes of the pipeline when the job was created, and a `JobNode` for each of these nodes, with its state and its times. A change to the pipeline does not change a job that exists. Each write of a job names the version it read.
 
 ### JobNode
 The runtime record for one pipeline node inside a job. Holds `NodeState`, `started_at`, `finished_at`.
@@ -48,8 +48,11 @@ The runtime record for one pipeline node inside a job. Holds `NodeState`, `start
 ### App
 A machine principal owned by an organization (an agent / automation). Identified by an `AppId`; authenticates with a secret (stored hashed) that it exchanges for an app token, and acts under scoped grants — typically the `organization-agent` role on its org. An App with an open agent stream is an online **agent**; "agent" now means an App running the agent binary.
 
+### Trigger runner
+The App that a trigger fire runs as. An organization has one trigger runner or none. The server makes it at the first `CreateTrigger` in the organization. It has the kind `trigger_runner`, the name `trigger-runner`, the `organization-trigger-runner` role and no secret. The server finds it by its kind, not by its name. A user cannot give this name to an App, and cannot disable the trigger runner, delete it or add a secret to it.
+
 ### Session
-An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions.
+An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions. The store keeps only the SHA-256 of a token, as for an app token and an invite token.
 
 ### User
 A user account. A user is related to the tenancy tree only through **grants**: holding a role on a scope is what puts them there, so "who is in this organization" and "what may they do" are the same rows (see [Authorization](#authorization) and `docs/src/access-model.md`).
@@ -57,14 +60,14 @@ A user account. A user is related to the tenancy tree only through **grants**: h
 ## States & status values
 
 ### `JobStatus`
-- `Pending` — created, not yet dispatched.
-- `Running` — an agent is executing at least one node.
-- `Completed` — all nodes finished successfully.
-- `Failed` — at least one node failed.
-- `Cancelled` — user- or system-cancelled.
-- `Orphaned` — running job lost its agent (e.g. agent disconnect without shutdown).
+- `Pending`: created. The job waits in the pool, or it is placed on an agent that has not started it.
+- `Running`: an agent reported that the job started.
+- `Completed`: all nodes finished successfully.
+- `Failed`: a node failed, the agent could not run the job or stopped it when it shut down, or the control plane could not dispatch it.
+- `Cancelled`: `JobService.CancelJob` ended the job.
+- `Orphaned`: the agent stayed disconnected for 60 seconds after its last contact, or it reconnected without the job.
 
-Terminal: `Completed`, `Failed`, `Cancelled`, `Orphaned`. Legal transitions: `Pending → Running | Cancelled`; `Running → Completed | Failed | Cancelled | Orphaned`.
+Terminal: `Completed`, `Failed`, `Cancelled`, `Orphaned`. Legal transitions: `Pending → Running | Failed | Cancelled | Orphaned`; `Running → Completed | Failed | Cancelled | Orphaned`. When a job ends, each node that has not finished becomes `Cancelled`.
 
 ### `NodeState`
 Per-node execution state: `Pending`, `Running`, `Completed`, `Failed`, `Cancelled`, `Skipped`. Terminal: everything but `Pending` and `Running`. Unlike `JobStatus` there is no `Orphaned`; conversely `Skipped` has no job-level equivalent, it marks a node whose dependency failed so it never ran.
@@ -105,7 +108,7 @@ runtime-defined roles, so this list is exhaustive.
 | `organization-agent` | Organization | machine app scoped to an organization: pull and run its jobs |
 | `organization-trigger-runner` | Organization | machine app that fires the organization's triggers: run its pipelines |
 | `project-admin` | Project | owner of a project and everything beneath it |
-| `project-developer` | Project | build in a project: create, edit and run its pipelines |
+| `project-developer` | Project | build in a project: create, edit and run its pipelines, and cancel their runs |
 | `project-viewer` | Project | read a project, its pipelines and its runs, change nothing |
 | `project-agent` | Project | machine app scoped to a project: pull and run its jobs |
 
@@ -162,6 +165,10 @@ a grant at a scope reaches everything beneath it.
 authorization mechanism — stored in `grants`, linked into Cedar on reload. A
 direct **permission** grant (e.g. Alice `runPipeline` in Org A) is additive to
 P's role-derived permissions.
+A grant refers to a principal and a scope that exist: a database trigger
+refuses the insert if not. An app gets grants only in the organization that
+owns it. A user cannot get an agent role. `check_grantable` (`scylla-auth`) is
+the one check of a new grant or invitation.
 
 ### Principal
 A grant-holding actor: a human `User` or a machine `App`. Maps to the
@@ -209,7 +216,10 @@ A prerequisite node ID. A node only becomes runnable once all its deps are in a 
 ## Agent presence
 
 ### Connected (online)
-An agent is connected when its [App](#app) holds an open `WorkerService` stream to the control plane. Presence is tracked in memory (the worker registry), not persisted — there are no heartbeats. App listings expose this as a `connected` flag, and `RunPipeline` only dispatches to a connected, authorized worker.
+An agent is connected when its [App](#app) holds an open `AgentService` stream to the control plane. The registry keeps the presence in memory; there is no heartbeat. A second stream of the same App replaces the first. Agent listings show it as a `connected` flag.
+
+### Placement
+The dispatcher gives the oldest pending job to a connected agent that holds `executeJob` on the pipeline of the job and has no job that has not ended. It reads this from the grants of the agent, so it writes no audit row. The job goes to the open stream of the agent and shows the agent in `Job.Pending.agent_id` until it starts. When that stream closes, the job goes back to the pool if it did not start. A newer stream of the same agent keeps the jobs placed on it.
 
 ## Networking & protocol
 
@@ -292,6 +302,8 @@ A domain object with an identity and mutable state (e.g. `Pipeline`, `Job`, `App
 
 ### Value object
 An immutable, validated wrapper in `domain/<aggregate>.rs` or `domain/<aggregate>/` (e.g. `PipelineName`, `NodeId`, `WorkingDir`, `JobStatus`). Built via a fallible constructor that enforces the invariant.
+
+Each bounded string is a `Text<R>` from `domain/text.rs`. The marker `R` is a `Rule`: it gives the label, the maximum length and the checks. The maximum counts UTF-8 bytes. No kind accepts U+0000. A one-line kind (a name, a label, a key) also refuses every other control character. A free-form kind (a description, a script, an argument, a value) keeps them. A `SECRET` kind does not show its value in `Debug` or `Display`. A value read from the database goes through the same checks, so a row that breaks a rule fails when it is read.
 
 ### Repository
 A port describing persistence for one aggregate (`PipelineRepository`, `JobRepository`, ...). The trait lives in `application/<feature>/repository.rs`; the PostgreSQL implementation lives in `scylla-db/src/postgres/` (one `Pg…Repository` per aggregate, queries via `sqlx::query!` / `query_as!`).

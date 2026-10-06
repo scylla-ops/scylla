@@ -64,7 +64,7 @@ impl AppCredentialRepository for PgAppCredentialRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .not_found_as("AppCredential", id.to_string())?;
+        .not_found_as("AppCredential", id)?;
         row_into_credential(
             rec.id,
             rec.app_id,

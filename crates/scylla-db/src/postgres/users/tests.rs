@@ -30,7 +30,7 @@ async fn create_then_find_round_trips(pool: PgPool) {
 async fn find_by_id_not_found_returns_not_found_error(pool: PgPool) {
     let repo = PgUserRepository::new(pool);
     let res = repo.find_by_id(&UserId::generate()).await;
-    assert!(matches!(res, Err(DomainError::NotFound { .. })));
+    assert!(matches!(res, Err(DomainError::NotFound(_))));
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -65,7 +65,7 @@ async fn duplicate_email_maps_to_conflict(pool: PgPool) {
     let clash = UserBuilder::new("ivana").email("dup@example.com").build();
     assert!(matches!(
         repo.create(&clash).await,
-        Err(DomainError::Conflict(_))
+        Err(DomainError::Conflict(m)) if m == "Email already exists"
     ));
 }
 
@@ -109,10 +109,10 @@ async fn delete_removes_row(pool: PgPool) {
     let user = user("eve");
     repo.create(&user).await.expect("create");
 
-    repo.delete(user.id()).await.expect("delete");
+    repo.delete(&user).await.expect("delete");
     assert!(matches!(
         repo.find_by_id(user.id()).await,
-        Err(DomainError::NotFound { .. })
+        Err(DomainError::NotFound(_))
     ));
 }
 
@@ -124,7 +124,16 @@ async fn unique_username_violation_maps_to_conflict(pool: PgPool) {
     let dup = user("frank");
     assert!(matches!(
         repo.create(&dup).await,
-        Err(DomainError::Conflict(_))
+        Err(DomainError::Conflict(m)) if m == "Username already exists"
+    ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_value_the_database_cannot_store_is_a_validation_error(pool: PgPool) {
+    let repo = PgUserRepository::new(pool);
+    assert!(matches!(
+        repo.find_by_id(&UserId::new("nul\0id")).await,
+        Err(DomainError::Validation(_))
     ));
 }
 
@@ -143,11 +152,63 @@ async fn list_all_paginates_in_creation_order(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn username_exists_reflects_state(pool: PgPool) {
+async fn an_update_from_a_stale_read_is_stale_and_the_first_write_wins(pool: PgPool) {
+    let user = seed_user(&pool, "eve").await;
     let repo = PgUserRepository::new(pool);
-    let user = user("grace");
 
-    assert!(!repo.username_exists(user.username()).await.unwrap());
-    repo.create(&user).await.expect("create");
-    assert!(repo.username_exists(user.username()).await.unwrap());
+    let mut first = repo.find_by_id(user.id()).await.expect("first read");
+    let mut second = repo.find_by_id(user.id()).await.expect("second read");
+    assert_eq!(first.version(), 0);
+
+    first.update_username(Username::new("a").unwrap()).unwrap();
+    let written = repo.update(&first).await.expect("first write");
+    assert_eq!(written.version(), 1);
+
+    second.update_username(Username::new("b").unwrap()).unwrap();
+    let err = repo.update(&second).await.expect_err("stale write");
+    assert!(matches!(err, DomainError::Stale(_)));
+
+    let stored = repo.find_by_id(user.id()).await.expect("find");
+    assert_eq!(stored.username().as_str(), "a");
+    assert_eq!(stored.version(), 1);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_delete_with_a_stale_version_is_stale(pool: PgPool) {
+    let user = seed_user(&pool, "eve").await;
+    let repo = PgUserRepository::new(pool);
+
+    let stale = repo.find_by_id(user.id()).await.expect("read");
+    let mut fresh = stale.clone();
+    fresh
+        .update_username(Username::new("renamed").unwrap())
+        .unwrap();
+    let fresh = repo.update(&fresh).await.expect("write");
+
+    let err = repo.delete(&stale).await.expect_err("stale delete");
+    assert!(matches!(err, DomainError::Stale(_)));
+    assert!(repo.find_by_id(user.id()).await.is_ok());
+
+    repo.delete(&fresh)
+        .await
+        .expect("delete at the current version");
+    assert!(matches!(
+        repo.find_by_id(user.id()).await,
+        Err(DomainError::NotFound(_))
+    ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_write_on_a_missing_row_is_not_found(pool: PgPool) {
+    let repo = PgUserRepository::new(pool);
+    let never_persisted = user("ghost");
+
+    assert!(matches!(
+        repo.update(&never_persisted).await,
+        Err(DomainError::NotFound(_))
+    ));
+    assert!(matches!(
+        repo.delete(&never_persisted).await,
+        Err(DomainError::NotFound(_))
+    ));
 }

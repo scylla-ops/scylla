@@ -24,7 +24,7 @@ async fn create_then_find_by_token(pool: PgPool) {
 async fn find_by_token_not_found(pool: PgPool) {
     let repo = PgSessionRepository::new(pool);
     let res = repo.find_by_token("does-not-exist").await;
-    assert!(matches!(res, Err(DomainError::NotFound { .. })));
+    assert!(matches!(res, Err(DomainError::NotFound(_))));
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -53,10 +53,36 @@ async fn cascade_user_delete_removes_sessions(pool: PgPool) {
     let session = SessionBuilder::new(user.id()).build();
     session_repo.create(&session).await.expect("create");
 
-    user_repo.delete(user.id()).await.expect("delete user");
+    user_repo.delete(&user).await.expect("delete user");
 
     assert!(matches!(
         session_repo.find_by_token(session.token()).await,
-        Err(DomainError::NotFound { .. })
+        Err(DomainError::NotFound(_))
+    ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn the_store_keeps_a_digest_and_a_revoke_by_token_removes_the_session(pool: PgPool) {
+    let user = seed_user(&pool, "digest").await;
+    let repo = PgSessionRepository::new(pool.clone());
+    let session = SessionBuilder::new(user.id()).build();
+    repo.create(&session).await.expect("create");
+
+    let stored: String = sqlx::query_scalar("SELECT token_hash FROM sessions WHERE id = $1")
+        .bind(session.id().as_str())
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_ne!(stored, session.token());
+    assert!(repo.find_by_token(&stored).await.is_err());
+    assert_eq!(
+        repo.find_by_token(session.token()).await.unwrap().token(),
+        session.token()
+    );
+
+    repo.delete_by_token(session.token()).await.unwrap();
+    assert!(matches!(
+        repo.find_by_token(session.token()).await,
+        Err(DomainError::NotFound(_))
     ));
 }

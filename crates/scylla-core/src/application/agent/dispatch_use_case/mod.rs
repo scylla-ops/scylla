@@ -1,120 +1,111 @@
-//! The placement of a stored job on a connected agent. `place` runs in the `commit` closure of
-//! `RunPipeline`, `RunPipelineWithInputs` and `DispatchPendingJobs`, after the job row exists.
+//! The placement of pending jobs on idle agents, and the orders that stop a job on its agent.
+//! Only `DispatchPendingJobs` places a job; a run stores the job and wakes the dispatcher.
 
 pub mod commands;
 
 pub use commands::DispatchPendingJobs;
 
-use crate::application::agent::dispatch::JobDispatch;
-use crate::application::agent::dispatch_port::AgentDispatch;
-use crate::application::{JobRepository, PipelineRepository, SecretResolver};
-use crate::domain::caller::CallerContext;
-use crate::domain::errors::DomainError;
-use crate::domain::ids::{AppId, PipelineId};
+use crate::application::agent::dispatch::assemble_dispatch;
+use crate::application::agent::dispatch_port::{AgentDispatch, AgentStream};
+use crate::application::job::JobScope;
+use crate::application::{JobLogStreamPort, JobRepository, SecretResolver};
+use crate::domain::clock;
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::{AppId, JobId};
 use crate::domain::job::Job;
-use crate::domain::permission::Permission;
-use scylla_auth::authz::PermissionService;
+use derive_more::Constructor;
+use scylla_auth::authz::{Visibility, VisibilityResolver};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use tracing::{info, warn};
+use tracing::{debug, warn};
 
-pub enum DispatchOutcome {
-    Dispatched(AppId),
-    NoAgentAvailable,
-}
-
-/// The stage runner of `DispatchPendingJobs`. `permission_service` asks for `ExecuteJob` only to
-/// choose an agent, never to refuse.
+/// The stage runner of `DispatchPendingJobs`. `visibility` reads the grants of an agent to
+/// choose its jobs; it asks the access model nothing, so a pass writes no audit row.
+#[derive(Constructor)]
 pub struct DispatchUseCases {
     registry: Arc<dyn AgentDispatch>,
-    permission_service: Arc<dyn PermissionService>,
+    visibility: Arc<dyn VisibilityResolver>,
     job_repo: Arc<dyn JobRepository>,
-    pipeline_repo: Arc<dyn PipelineRepository>,
     secret_resolver: Arc<dyn SecretResolver>,
-    next: AtomicUsize,
+    log_stream: Arc<dyn JobLogStreamPort>,
 }
 
 impl DispatchUseCases {
-    #[must_use]
-    pub fn new(
-        registry: Arc<dyn AgentDispatch>,
-        permission_service: Arc<dyn PermissionService>,
-        job_repo: Arc<dyn JobRepository>,
-        pipeline_repo: Arc<dyn PipelineRepository>,
-        secret_resolver: Arc<dyn SecretResolver>,
-    ) -> Self {
-        Self {
-            registry,
-            permission_service,
-            job_repo,
-            pipeline_repo,
-            secret_resolver,
-            next: AtomicUsize::new(0),
-        }
+    pub(crate) fn wake(&self, agent: Option<&AppId>) {
+        self.registry.wake(agent);
     }
 
-    /// Best-effort once the job exists: a failed attribution is logged, and the job runs anyway.
-    pub(crate) async fn place(&self, job: &mut Job, dispatch: &JobDispatch) -> DispatchOutcome {
-        let outcome = self.dispatch_job(job.pipeline_id(), dispatch).await;
-        if let DispatchOutcome::Dispatched(app_id) = &outcome {
-            info!(job_id = %job.id(), %app_id, "job dispatched to agent");
-            match self.job_repo.set_agent(job.id(), app_id).await {
-                Ok(()) => job.assign_agent(app_id.clone()),
-                Err(e) => {
-                    warn!(job_id = %job.id(), %app_id, error = %e, "failed to record job agent attribution");
-                }
-            }
-        }
-        outcome
+    pub(crate) fn open_streams(&self) -> Vec<AgentStream> {
+        self.registry.connected()
     }
 
-    async fn dispatch_job(
+    pub(crate) fn disconnect(&self, agent: &AppId) {
+        self.registry.disconnect(agent);
+    }
+
+    /// Every way a job goes back to the pool: the jobs of a stream that is gone, and the
+    /// dispatcher wakes for them.
+    pub(crate) async fn release(&self, stream: &AgentStream) -> DomainResult<u64> {
+        let released = self.job_repo.release(stream).await?;
+        if released > 0 {
+            self.registry.wake(None);
+        }
+        Ok(released)
+    }
+
+    /// After a server-side end: the agent that holds the job stops it, and the live tail closes.
+    pub(crate) fn stop(&self, job: &Job) {
+        if let Some(agent) = job.agent_app_id() {
+            self.cancel(agent, job.id());
+        }
+        self.log_stream.close(job.id());
+    }
+
+    /// An agent that is gone learns it at its next hello.
+    pub(crate) fn cancel(&self, agent: &AppId, job_id: &JobId) {
+        if let Err(e) = self.registry.cancel(agent, job_id) {
+            debug!(app_id = %agent, job_id = %job_id, error = %e, "could not send the cancel to the agent");
+        }
+        self.registry.wake(Some(agent));
+    }
+
+    /// Runs a delete that cascades to jobs, then stops the jobs of `scope` that were live; a
+    /// delete that fails stops nothing.
+    pub(crate) async fn recall<T>(
         &self,
-        pipeline_id: &PipelineId,
-        dispatch: &JobDispatch,
-    ) -> DispatchOutcome {
-        let agents = self.registry.connected();
-        if agents.is_empty() {
-            warn!(pipeline_id = %pipeline_id, "no connected agent; job left pending");
-            return DispatchOutcome::NoAgentAvailable;
+        scope: JobScope<'_>,
+        delete: impl Future<Output = DomainResult<T>>,
+    ) -> DomainResult<T> {
+        let live = self.job_repo.list_live(scope).await?;
+        let deleted = delete.await?;
+        for job in &live {
+            self.stop(job);
         }
+        Ok(deleted)
+    }
 
-        // Idlest first, then rotate among equals so eligible agents take turns.
-        let start = self.next.fetch_add(1, Ordering::Relaxed);
-        let n = agents.len();
-        let mut order: Vec<usize> = (0..n).collect();
-        order.sort_by_key(|&i| {
-            (
-                self.registry.in_flight(&agents[i]),
-                start.wrapping_add(i) % n,
-            )
-        });
-        for i in order {
-            let app_id = &agents[i];
-            let caller = CallerContext::App(app_id.clone());
-            match self
-                .permission_service
-                .check(&caller, Permission::ExecuteJob(pipeline_id.clone()))
-                .await
-            {
-                Ok(()) => match self.registry.dispatch(app_id, dispatch).await {
-                    Ok(()) => return DispatchOutcome::Dispatched(app_id.clone()),
-                    // Disconnected since `connected()` was snapshotted: try the next one.
-                    Err(e) => {
-                        warn!(app_id = %app_id, error = %e, "dispatch to agent failed; trying next");
+    /// Claims the oldest job the agent may run and sends it on the stream. A job that no
+    /// longer assembles fails, and the agent gets the next one.
+    async fn place(&self, stream: &AgentStream, visible: &Visibility) -> DomainResult<Option<Job>> {
+        while let Some((job, project_id)) = self.job_repo.claim_next(stream, visible).await? {
+            match assemble_dispatch(&*self.secret_resolver, &project_id, &job).await {
+                Ok(dispatch) => {
+                    if let Err(e) = self.registry.run(stream, dispatch) {
+                        warn!(app_id = %stream.agent, job_id = %job.id(), error = %e, "could not send the job; it goes back to the pool");
+                        self.release(stream).await?;
+                        return Ok(None);
                     }
-                },
-                Err(DomainError::Forbidden(_)) => {}
+                    return Ok(Some(job));
+                }
                 Err(e) => {
-                    warn!(app_id = %app_id, error = %e, "authz check errored during dispatch; skipping agent");
+                    warn!(job_id = %job.id(), error = %e, "the job cannot be dispatched; it fails");
+                    match self.job_repo.update(&job.fail(clock::now())?).await {
+                        Ok(_) | Err(DomainError::Stale(_)) => {}
+                        Err(e) => return Err(e),
+                    }
                 }
             }
         }
-        warn!(
-            pipeline_id = %pipeline_id,
-            "no connected agent authorized to execute pipeline; job left pending"
-        );
-        DispatchOutcome::NoAgentAvailable
+        Ok(None)
     }
 }
 

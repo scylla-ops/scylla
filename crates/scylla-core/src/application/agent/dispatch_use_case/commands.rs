@@ -1,18 +1,25 @@
-use super::{DispatchOutcome, DispatchUseCases};
+use super::DispatchUseCases;
 use crate::application::actions::service_only;
-use crate::application::agent::dispatch::{JobDispatch, assemble_dispatch};
+use crate::application::agent::AgentStream;
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::{AppId, PipelineId};
 use crate::domain::job::Job;
+use crate::domain::permission::Permission;
 use async_trait::async_trait;
+use scylla_auth::authz::Visibility;
 use scylla_extension::{
     Access, Authorized, Command, Committed, Describe, Persist, Prepare, Prepared, Run,
 };
-use tracing::warn;
+use std::collections::HashSet;
 
-/// One pass over the jobs stored while no eligible agent was connected. A job whose dispatch
-/// cannot be assembled is logged and skipped; `Committed` is the jobs an agent took.
+/// One pass: each targeted agent that is connected, idle and holds `executeJob` somewhere gets
+/// the oldest pending job it may run, on its open stream. `None` targets every connected agent.
+/// `Committed` is the jobs an agent took.
 #[derive(Debug)]
-pub struct DispatchPendingJobs;
+pub struct DispatchPendingJobs {
+    pub agents: Option<Vec<AppId>>,
+}
 
 impl Describe for DispatchPendingJobs {
     fn access(&self) -> Access {
@@ -21,7 +28,7 @@ impl Describe for DispatchPendingJobs {
 }
 
 impl Command for DispatchPendingJobs {
-    type Staged = Vec<(Job, JobDispatch)>;
+    type Staged = Vec<(AgentStream, Visibility)>;
     type Committed = Vec<Job>;
 }
 
@@ -32,14 +39,27 @@ impl Run<Prepare<DispatchPendingJobs>> for DispatchUseCases {
         input: Authorized<DispatchPendingJobs>,
     ) -> DomainResult<Prepared<DispatchPendingJobs>> {
         service_only(input.caller())?;
-        let jobs = self.job_repo.list_pending_unassigned().await?;
-        let mut staged = Vec::with_capacity(jobs.len());
-        for job in jobs {
-            match assemble_dispatch(&*self.pipeline_repo, &*self.secret_resolver, &job).await {
-                Ok(dispatch) => staged.push((job, dispatch)),
-                Err(e) => {
-                    warn!(job_id = %job.id(), error = %e, "pending-job drain: dispatch assembly failed; skipping");
-                }
+        let mut targets = self.registry.connected();
+        if let Some(agents) = &input.command().agents {
+            targets.retain(|stream| agents.contains(&stream.agent));
+        }
+        let agents: Vec<AppId> = targets.iter().map(|stream| stream.agent.clone()).collect();
+        let busy: HashSet<AppId> = self
+            .job_repo
+            .active_jobs(&agents)
+            .await?
+            .into_iter()
+            .map(|(agent, _)| agent)
+            .collect();
+        let execute = Permission::ExecuteJob(PipelineId::new("_"));
+        let mut staged = Vec::new();
+        for stream in targets.into_iter().filter(|s| !busy.contains(&s.agent)) {
+            let visible = self
+                .visibility
+                .visible_scopes(&CallerContext::App(stream.agent.clone()), execute.key())
+                .await?;
+            if !visible.is_empty() {
+                staged.push((stream, visible));
             }
         }
         Ok(input.prepared(staged))
@@ -55,10 +75,8 @@ impl Run<Persist<DispatchPendingJobs>> for DispatchUseCases {
         input
             .commit(async |staged| {
                 let mut placed = Vec::new();
-                for (mut job, dispatch) in staged {
-                    if let DispatchOutcome::Dispatched(_) = self.place(&mut job, &dispatch).await {
-                        placed.push(job);
-                    }
+                for (stream, visible) in staged {
+                    placed.extend(self.place(&stream, &visible).await?);
                 }
                 Ok(placed)
             })

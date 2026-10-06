@@ -2,18 +2,24 @@
 
 use super::*;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
+use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{InvitationId, OrganizationId, UserId};
 use crate::domain::invitation::{Invitation, InvitationStatus};
-use crate::domain::organization::{Organization, OrganizationName};
+use crate::domain::organization::Organization;
 use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
+use crate::domain::role::{RoleDescription, RoleDisplayName};
 use crate::domain::user::{Email, User};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::organizations::OrgBuilder;
-use crate::test_support::stubs::{alice, empty_page};
+use crate::test_support::stubs::{StubGrants, alice, empty_page};
 use async_trait::async_trait;
-use scylla_auth::authz::{Grant, PermissionService, Role, RoleRepository, ScopeKind};
+use scylla_auth::authz::{
+    FULL_CONTROL, Grant, ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE,
+    ORGANIZATION_MEMBER_ROLE, PROJECT_ADMIN_ROLE, PermissionService, Principal, Role,
+    RoleRepository, Scope, ScopeKind,
+};
 use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -21,15 +27,17 @@ use std::sync::Mutex;
 #[derive(Default)]
 struct StubInvitations {
     rows: Mutex<HashMap<InvitationId, Invitation>>,
+    tokens: Mutex<Vec<String>>,
 }
 
 #[async_trait]
 impl InvitationRepository for StubInvitations {
-    async fn create(&self, invite: &Invitation) -> DomainResult<()> {
+    async fn create(&self, invite: &Invitation, token: &str) -> DomainResult<()> {
         self.rows
             .lock()
             .unwrap()
             .insert(invite.id().clone(), invite.clone());
+        self.tokens.lock().unwrap().push(token.to_owned());
         Ok(())
     }
     async fn find_by_id(&self, id: &InvitationId) -> DomainResult<Invitation> {
@@ -38,7 +46,7 @@ impl InvitationRepository for StubInvitations {
             .unwrap()
             .get(id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("Invitation", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("Invitation", id))
     }
     async fn find_by_token(&self, _: &str) -> DomainResult<Invitation> {
         unreachable!("no invitation action reads by token")
@@ -96,13 +104,13 @@ impl OrganizationRepository for StubOrganizations {
         if id == self.0.id() {
             Ok(self.0.clone())
         } else {
-            Err(DomainError::not_found("Organization", id.to_string()))
+            Err(DomainError::not_found("Organization", id))
         }
     }
     async fn update(&self, organization: &Organization) -> DomainResult<Organization> {
         Ok(organization.clone())
     }
-    async fn delete(&self, _: &OrganizationId) -> DomainResult<()> {
+    async fn delete(&self, _: &Organization) -> DomainResult<()> {
         Ok(())
     }
     async fn list_all(
@@ -111,33 +119,63 @@ impl OrganizationRepository for StubOrganizations {
     ) -> DomainResult<PaginatedResult<Organization>> {
         empty_page()
     }
-    async fn name_exists(&self, _: &OrganizationName) -> DomainResult<bool> {
-        Ok(false)
-    }
 }
 
-#[derive(Default)]
+/// The catalog of these tests, counting each read.
 struct StubRoles {
+    rows: Vec<Role>,
     lookups: Mutex<usize>,
+}
+
+impl Default for StubRoles {
+    fn default() -> Self {
+        let role = |id: &str, kind: ScopeKind, permissions: &[&str]| Role {
+            id: id.to_string(),
+            key: Some(id.to_string()),
+            name: RoleDisplayName::new(id).unwrap(),
+            description: RoleDescription::new("").unwrap(),
+            scope: kind,
+            owner_org: None,
+            builtin: true,
+            permissions: permissions.iter().map(ToString::to_string).collect(),
+        };
+        Self {
+            rows: vec![
+                role(
+                    ORGANIZATION_ADMIN_ROLE,
+                    ScopeKind::Organization,
+                    &[FULL_CONTROL],
+                ),
+                role(
+                    ORGANIZATION_MEMBER_ROLE,
+                    ScopeKind::Organization,
+                    &["readOrganization"],
+                ),
+                role(
+                    ORGANIZATION_AGENT_ROLE,
+                    ScopeKind::Organization,
+                    &["readPipeline", "executeJob"],
+                ),
+                role(
+                    "inviter",
+                    ScopeKind::Organization,
+                    &["manageInvitations", "readOrganization"],
+                ),
+                role(PROJECT_ADMIN_ROLE, ScopeKind::Project, &[FULL_CONTROL]),
+            ],
+            lookups: Mutex::default(),
+        }
+    }
 }
 
 #[async_trait]
 impl RoleRepository for StubRoles {
     async fn list_all(&self) -> DomainResult<Vec<Role>> {
-        Ok(Vec::new())
-    }
-    async fn get(&self, id: &str) -> DomainResult<Option<Role>> {
         *self.lookups.lock().unwrap() += 1;
-        Ok((id == "organization-admin").then(|| Role {
-            id: id.to_string(),
-            key: Some(id.to_string()),
-            name: id.to_string(),
-            description: String::new(),
-            scope: ScopeKind::Organization,
-            owner_org: None,
-            builtin: true,
-            permissions: Vec::new(),
-        }))
+        Ok(self.rows.clone())
+    }
+    async fn get(&self, _: &str) -> DomainResult<Option<Role>> {
+        unreachable!("the invitation reads the whole catalog")
     }
     async fn create(&self, _: &Role) -> DomainResult<()> {
         Ok(())
@@ -195,6 +233,16 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
 }
 
 fn lab_with(permissions: Arc<dyn PermissionService>, mailer: StubMailer) -> Lab {
+    lab_held(permissions, mailer, ORGANIZATION_ADMIN_ROLE)
+}
+
+/// Alice, the inviter, holds `role` on the organization.
+fn lab_held(permissions: Arc<dyn PermissionService>, mailer: StubMailer, role: &str) -> Lab {
+    let held = Grant::new(
+        Principal::User(UserId::new("alice")),
+        RoleName::new(role).unwrap(),
+        Scope::Organization(organization()),
+    );
     let invitations = Arc::new(StubInvitations::default());
     let roles = Arc::new(StubRoles::default());
     let mailer = Arc::new(mailer);
@@ -206,6 +254,7 @@ fn lab_with(permissions: Arc<dyn PermissionService>, mailer: StubMailer) -> Lab 
                 OrgBuilder::new("Acme").id(organization()).build(),
             )),
             roles.clone(),
+            Arc::new(StubGrants::new(vec![held])),
             mailer.clone(),
         ),
         invitations,
@@ -252,7 +301,30 @@ async fn a_create_checks_the_permission_then_stores_and_mails_the_invitation() {
     assert_eq!(sent.len(), 1);
     assert_eq!(sent[0].0.as_str(), "newbie@example.com");
     assert!(sent[0].1.contains("Acme"));
-    assert!(sent[0].1.contains(invite.token()));
+    assert!(
+        sent[0]
+            .1
+            .contains(&lab.invitations.tokens.lock().unwrap()[0])
+    );
+}
+
+#[tokio::test]
+async fn a_service_cannot_send_an_invitation() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    let err = lab
+        .actions
+        .run(
+            &lab.uc,
+            &CallerContext::Service(ServiceIdentity::bootstrap()),
+            create(None),
+        )
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert!(lab.invitations.rows.lock().unwrap().is_empty());
+    assert!(lab.mailer.sent.lock().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -354,13 +426,36 @@ async fn a_denied_revoke_never_reads_or_revokes() {
         Email::new("newbie@example.com").unwrap(),
         None,
         UserId::new("alice"),
-        "token".to_string(),
     );
-    lab.invitations.create(&invitation).await.unwrap();
+    lab.invitations.create(&invitation, "token").await.unwrap();
 
     let err = lab.revoke(invitation.id()).await.unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
+    assert!(
+        lab.invitations
+            .rows
+            .lock()
+            .unwrap()
+            .contains_key(invitation.id())
+    );
+}
+
+#[tokio::test]
+async fn a_revoke_of_an_invitation_that_is_not_pending_writes_nothing() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let invitation = Invitation::create(
+        organization(),
+        Email::new("newbie@example.com").unwrap(),
+        None,
+        UserId::new("alice"),
+    )
+    .revoked();
+    lab.invitations.create(&invitation, "token").await.unwrap();
+
+    let err = lab.revoke(invitation.id()).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::BusinessRule(_)));
     assert!(
         lab.invitations
             .rows
@@ -376,5 +471,51 @@ async fn an_allowed_revoke_of_an_unknown_invitation_is_not_found() {
 
     let err = lab.revoke(&InvitationId::new("missing")).await.unwrap_err();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
+}
+
+#[tokio::test]
+async fn an_inviter_cannot_confer_more_than_it_holds() {
+    let lab = lab_held(
+        Arc::new(RecordingPermissionService::new()),
+        StubMailer::default(),
+        "inviter",
+    );
+
+    let err = lab
+        .create(create(Some(ORGANIZATION_ADMIN_ROLE)))
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, DomainError::BusinessRule(_)));
+    assert!(lab.invitations.rows.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn an_invitation_without_a_role_is_checked_as_organization_member() {
+    let holds_nothing = lab_held(
+        Arc::new(RecordingPermissionService::new()),
+        StubMailer::default(),
+        ORGANIZATION_AGENT_ROLE,
+    );
+    let err = holds_nothing.create(create(None)).await.unwrap_err();
+    assert!(matches!(err, DomainError::BusinessRule(_)));
+
+    let inviter = lab_held(
+        Arc::new(RecordingPermissionService::new()),
+        StubMailer::default(),
+        "inviter",
+    );
+    assert!(inviter.create(create(None)).await.is_ok());
+}
+
+#[tokio::test]
+async fn an_agent_role_or_a_role_of_another_scope_is_invalid() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    for role in [ORGANIZATION_AGENT_ROLE, PROJECT_ADMIN_ROLE] {
+        let err = lab.create(create(Some(role))).await.unwrap_err();
+        assert!(matches!(err, DomainError::Validation(_)), "{role}: {err:?}");
+    }
+    assert!(lab.invitations.rows.lock().unwrap().is_empty());
 }

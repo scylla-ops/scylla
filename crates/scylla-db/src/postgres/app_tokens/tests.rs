@@ -4,10 +4,8 @@ use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::AppId;
-use crate::domain::role::RoleName;
 use crate::postgres::{PgAppCredentialRepository, PgAppRepository};
 use crate::test_support::prelude::*;
-use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use scylla_core::application::HashService;
 use scylla_core::application::app::{
     AppRepository, AppTokenRepository, AppTokenUseCases, IssueAppToken,
@@ -20,19 +18,14 @@ use std::sync::Arc;
 async fn seed_app(pool: &PgPool, secret: &AppSecret) -> App {
     let org = seed_org(pool, "Acme").await;
     let hash = Argon2HashService::new().hash_secret(secret).await.unwrap();
-    let app = App::create(org.id().clone(), AppName::new("ci").unwrap());
+    let app = App::create(org.id().clone(), AppName::new("ci").unwrap()).unwrap();
     let credential = AppCredential::create(
         app.id().clone(),
         AppSecretLabel::new("default").unwrap(),
         hash,
     );
-    let grant = Grant::new(
-        Principal::App(app.id().clone()),
-        RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
-        Scope::Organization(org.id().clone()),
-    );
     PgAppRepository::new(pool.clone())
-        .provision(&app, &credential, &grant)
+        .create_app(&app, &credential)
         .await
         .unwrap();
     app
@@ -84,4 +77,29 @@ async fn issue_with_wrong_secret_is_unauthorized(pool: PgPool) {
         result,
         Err(crate::domain::errors::DomainError::Unauthorized(_))
     ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn the_store_keeps_a_digest_and_each_issued_token_stays_valid(pool: PgPool) {
+    let secret = scylla_core::application::app::mint_app_secret();
+    let app = seed_app(&pool, &secret).await;
+    let first = issue(&pool, app.id().clone(), secret.clone())
+        .await
+        .unwrap();
+    let second = issue(&pool, app.id().clone(), secret).await.unwrap();
+
+    let stored: Vec<String> =
+        sqlx::query_scalar("SELECT token_hash FROM app_tokens WHERE app_id = $1")
+            .bind(app.id().as_str())
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(stored.len(), 2);
+    let repo = PgAppTokenRepository::new(pool.clone());
+    for issued in [&first, &second] {
+        assert!(!stored.iter().any(|digest| digest == issued.token()));
+        let found = repo.find_by_token(issued.token()).await.unwrap();
+        assert_eq!(found.id(), issued.id());
+        assert_eq!(found.token(), issued.token());
+    }
 }

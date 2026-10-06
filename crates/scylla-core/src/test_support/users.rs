@@ -22,6 +22,7 @@ impl UserBuilder {
         #[builder(default = true)] is_active: bool,
         created_at: Option<DateTime<Utc>>,
         updated_at: Option<DateTime<Utc>>,
+        #[builder(default = 0)] version: u64,
     ) -> User {
         let now = created_at.unwrap_or_else(clock::now);
         let email = email.map(|e| Email::new(e).expect("test email invalid"));
@@ -33,6 +34,7 @@ impl UserBuilder {
             is_active,
             now,
             updated_at.unwrap_or(now),
+            version,
         )
     }
 }

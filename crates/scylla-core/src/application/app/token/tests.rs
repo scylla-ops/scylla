@@ -3,7 +3,9 @@
 use super::*;
 use crate::domain::agent::Agent;
 use crate::domain::app::AppToken;
-use crate::domain::app::{App, AppCredential, AppName, AppSecret, AppSecretHash, AppSecretLabel};
+use crate::domain::app::{
+    App, AppCredential, AppKind, AppName, AppSecret, AppSecretHash, AppSecretLabel,
+};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppCredentialId, AppId, OrganizationId};
@@ -32,15 +34,18 @@ impl AppRepository for OneApp {
     ) -> DomainResult<()> {
         unreachable!("no app write in the token exchange")
     }
-    async fn provision(&self, _: &App, _: &AppCredential, _: &Grant) -> DomainResult<()> {
+    async fn provision(&self, _: &App, _: &Grant) -> DomainResult<()> {
         unreachable!("no app write in the token exchange")
     }
     async fn find_by_id(&self, id: &AppId) -> DomainResult<App> {
         if id == self.0.id() {
             Ok(self.0.clone())
         } else {
-            Err(DomainError::not_found("App", id.to_string()))
+            Err(DomainError::not_found("App", id))
         }
+    }
+    async fn find_trigger_runner(&self, _: &OrganizationId) -> DomainResult<Option<AppId>> {
+        unreachable!("the token exchange reads one app")
     }
     async fn list_by_organization(&self, _: &OrganizationId) -> DomainResult<Vec<App>> {
         unreachable!("the token exchange reads one app")
@@ -143,6 +148,7 @@ fn lab(active: bool) -> Lab {
         AppId::new("app-1"),
         OrganizationId::new("acme"),
         AppName::new("ci").unwrap(),
+        AppKind::Standard,
         active,
         chrono::Utc::now(),
         chrono::Utc::now(),

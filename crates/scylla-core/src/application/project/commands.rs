@@ -4,6 +4,7 @@
 //! would be its next home once a failed reload no longer needs to fail the call.
 
 use super::ProjectUseCases;
+use crate::application::job::JobScope;
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId};
@@ -198,7 +199,12 @@ impl Run<Persist<DeleteProject>> for ProjectUseCases {
     async fn run(&self, input: Prepared<DeleteProject>) -> DomainResult<Committed<DeleteProject>> {
         input
             .commit(async |project| {
-                self.project_repo.delete(&project).await?;
+                self.dispatch
+                    .recall(
+                        JobScope::Project(project.id()),
+                        self.project_repo.delete(&project),
+                    )
+                    .await?;
                 self.policy_control.reload().await?;
                 Ok(Deleted::new(project))
             })

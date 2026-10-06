@@ -1,18 +1,22 @@
 //! The pipeline's actions through the engine, on stub ports.
 
 use super::*;
+use crate::application::agent::DispatchNode;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::DomainError;
 use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, TriggerId, UserId};
-use crate::domain::job::JobOrigin;
+use crate::domain::job::{JobOrigin, JobStatus};
 use crate::domain::permission::Permission;
-use crate::domain::pipeline::{Pipeline, PipelineName};
+use crate::domain::pipeline::{
+    EnvKey, EnvValue, NodeId, Pipeline, PipelineName, PipelineNode, Shell, Step,
+};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
+use crate::test_support::jobs::JobBuilder;
 use crate::test_support::pipelines::{PipelineBuilder, node};
 use crate::test_support::projects::ProjectBuilder;
 use crate::test_support::stubs::{
-    EchoResolver, OneProject, StubJobs, StubRegistry, alice, empty_page,
+    EchoResolver, OneProject, StubJobs, StubRegistry, StubTails, alice, dispatcher, empty_page,
 };
 use async_trait::async_trait;
 use scylla_auth::authz::PermissionService;
@@ -59,13 +63,13 @@ impl PipelineRepository for StubPipelines {
             .unwrap()
             .get(id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("Pipeline", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("Pipeline", id))
     }
     async fn update(&self, pipeline: &Pipeline) -> DomainResult<Pipeline> {
         self.create(pipeline).await
     }
-    async fn delete(&self, id: &PipelineId) -> DomainResult<()> {
-        self.rows.lock().unwrap().remove(id);
+    async fn delete(&self, pipeline: &Pipeline) -> DomainResult<()> {
+        self.rows.lock().unwrap().remove(pipeline.id());
         Ok(())
     }
     async fn list_all(
@@ -90,6 +94,16 @@ impl PipelineRepository for StubPipelines {
     }
 }
 
+/// A project without the secret each node asks for.
+struct NoSecret;
+
+#[async_trait]
+impl SecretResolver for NoSecret {
+    async fn resolve(&self, _: &ProjectId, _: &[PipelineNode]) -> DomainResult<Vec<DispatchNode>> {
+        Err(DomainError::not_found("Secret", "TOKEN"))
+    }
+}
+
 struct Lab {
     actions: Actions,
     uc: PipelineUseCases,
@@ -104,7 +118,10 @@ impl Lab {
     }
 
     fn seed(&self) -> Pipeline {
-        let pipeline = PipelineBuilder::for_project_id(project_id()).build();
+        self.seed_with(PipelineBuilder::for_project_id(project_id()).build())
+    }
+
+    fn seed_with(&self, pipeline: Pipeline) -> Pipeline {
         self.pipelines
             .rows
             .lock()
@@ -112,12 +129,23 @@ impl Lab {
             .insert(pipeline.id().clone(), pipeline.clone());
         pipeline
     }
+
+    async fn run(&self, pipeline: &Pipeline) -> DomainResult<Job> {
+        let run = RunPipeline {
+            id: pipeline.id().clone(),
+        };
+        self.actions.run(&self.uc, &alice(), run).await
+    }
 }
 
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
+    lab_resolving(permissions, Arc::new(EchoResolver))
+}
+
+fn lab_resolving(permissions: Arc<dyn PermissionService>, secrets: Arc<dyn SecretResolver>) -> Lab {
     let pipelines = Arc::new(StubPipelines::default());
     let jobs = Arc::new(StubJobs::default());
-    let registry = Arc::new(StubRegistry::accepting());
+    let registry = Arc::new(StubRegistry::default());
     let project = ProjectBuilder::for_org_id(OrganizationId::new("acme"), "rocket")
         .id(project_id())
         .build();
@@ -127,14 +155,12 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
             pipelines.clone(),
             Arc::new(OneProject(project)),
             jobs.clone(),
-            Arc::new(EchoResolver),
-            Arc::new(DispatchUseCases::new(
+            secrets,
+            dispatcher(
                 registry.clone(),
-                Arc::new(RecordingPermissionService::new()),
                 jobs.clone(),
-                pipelines.clone(),
-                Arc::new(EchoResolver),
-            )),
+                Arc::new(StubTails::default()),
+            ),
         ),
         pipelines,
         jobs,
@@ -191,7 +217,7 @@ async fn a_create_in_an_unknown_project_is_not_found_and_writes_nothing() {
         .await
         .unwrap_err();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
     assert!(lab.pipelines.rows.lock().unwrap().is_empty());
 }
 
@@ -234,10 +260,24 @@ async fn an_update_checks_its_permission_and_changes_only_what_is_set() {
 }
 
 #[tokio::test]
-async fn a_delete_checks_its_permission_and_removes_the_row() {
+async fn a_delete_checks_its_permission_removes_the_row_then_stops_its_live_jobs() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let seeded = lab.seed();
+    let agent = AppId::new("agent-1");
+    lab.registry.connect(&agent);
+    let running = lab.jobs.insert(
+        &JobBuilder::new(&seeded)
+            .running(true)
+            .agent(agent.clone())
+            .build(),
+    );
+    lab.jobs.insert(
+        &JobBuilder::new(&seeded)
+            .terminated(JobStatus::Completed)
+            .agent(agent.clone())
+            .build(),
+    );
 
     let deleted = lab
         .actions
@@ -257,6 +297,7 @@ async fn a_delete_checks_its_permission_and_removes_the_row() {
     );
     assert_eq!(deleted.last_state().id(), seeded.id());
     assert!(lab.pipelines.rows.lock().unwrap().is_empty());
+    assert_eq!(lab.registry.cancelled(), [(agent, running.id().clone())]);
 }
 
 #[tokio::test]
@@ -301,22 +342,13 @@ async fn a_get_and_a_project_list_check_their_permissions() {
 }
 
 #[tokio::test]
-async fn a_run_by_a_user_creates_a_job_with_a_human_origin_and_leaves_it_pending_without_agents() {
+async fn a_run_by_a_user_stores_a_pending_job_and_wakes_the_dispatcher() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let seeded = lab.seed();
+    lab.registry.connect(&AppId::new("agent-1"));
 
-    let job = lab
-        .actions
-        .run(
-            &lab.uc,
-            &alice(),
-            RunPipeline {
-                id: seeded.id().clone(),
-            },
-        )
-        .await
-        .unwrap();
+    let job = lab.run(&seeded).await.unwrap();
 
     assert_eq!(
         permissions.permissions(),
@@ -329,38 +361,81 @@ async fn a_run_by_a_user_creates_a_job_with_a_human_origin_and_leaves_it_pending
         }
     );
     assert!(job.inputs().is_empty());
+    assert_eq!(job.status(), JobStatus::Pending);
     assert!(job.agent_app_id().is_none());
     assert_eq!(lab.jobs.rows().len(), 1);
     assert!(lab.registry.dispatched().is_empty());
-    assert!(lab.jobs.assigned().is_empty());
+    assert_eq!(lab.registry.wakes(), [None]);
 }
 
 #[tokio::test]
-async fn a_run_hands_the_job_to_a_connected_agent_and_records_it() {
+async fn a_job_keeps_the_nodes_of_its_pipeline_when_the_pipeline_changes() {
     let lab = lab(Arc::new(RecordingPermissionService::new()));
-    let seeded = lab.seed();
-    let agent = AppId::new("agent-1");
-    lab.registry.connect(&agent);
+    let seeded = lab.seed_with(
+        PipelineBuilder::for_project_id(project_id())
+            .nodes(vec![node("old1", &[]), node("old2", &["old1"])])
+            .build(),
+    );
+    let job = lab.run(&seeded).await.unwrap();
 
-    let job = lab
-        .actions
+    lab.actions
         .run(
             &lab.uc,
             &alice(),
-            RunPipeline {
+            UpdatePipeline {
                 id: seeded.id().clone(),
+                name: None,
+                nodes: Some(vec![node("new", &[])]),
             },
         )
         .await
         .unwrap();
 
-    assert_eq!(job.agent_app_id(), Some(&agent));
-    let [(to, sent)] = lab.registry.dispatched().try_into().unwrap();
-    assert_eq!(to, agent);
-    assert_eq!(sent.job_id, job.id().to_string());
-    assert_eq!(sent.pipeline_id, seeded.id().to_string());
-    assert_eq!(sent.nodes.len(), seeded.nodes().len());
-    assert_eq!(lab.jobs.assigned(), vec![(job.id().clone(), agent)]);
+    let stored = lab.jobs.row(job.id());
+    let ids: Vec<&str> = stored.nodes().iter().map(|n| n.id().as_str()).collect();
+    assert_eq!(ids, ["old1", "old2"]);
+}
+
+#[tokio::test]
+async fn a_run_whose_secret_does_not_resolve_stores_nothing() {
+    let lab = lab_resolving(
+        Arc::new(RecordingPermissionService::new()),
+        Arc::new(NoSecret),
+    );
+    let seeded = lab.seed();
+
+    let err = lab.run(&seeded).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::NotFound(_)));
+    assert!(lab.jobs.rows().is_empty());
+    assert!(lab.registry.wakes().is_empty());
+}
+
+#[tokio::test]
+async fn a_run_too_large_to_dispatch_stores_nothing() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let script = Step::script("x".repeat(1024 * 1024), Shell::Sh).unwrap();
+    let nodes = (0..9)
+        .map(|i| {
+            PipelineNode::new(
+                NodeId::new(format!("n{i}")).unwrap(),
+                vec![],
+                script.clone(),
+                None,
+                vec![],
+            )
+        })
+        .collect();
+    let seeded = lab.seed_with(
+        PipelineBuilder::for_project_id(project_id())
+            .nodes(nodes)
+            .build(),
+    );
+
+    let err = lab.run(&seeded).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::Validation(_)));
+    assert!(lab.jobs.rows().is_empty());
 }
 
 #[tokio::test]
@@ -410,12 +485,13 @@ async fn a_trigger_run_checks_run_pipeline_and_keeps_its_origin_and_inputs() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let seeded = lab.seed();
-    let agent = AppId::new("agent-1");
-    lab.registry.connect(&agent);
     let origin = JobOrigin::Cron {
         trigger_id: TriggerId::new("t-1"),
     };
-    let inputs = vec![("MODE".to_string(), "nightly".to_string())];
+    let inputs = vec![(
+        EnvKey::new("MODE").unwrap(),
+        EnvValue::new("nightly").unwrap(),
+    )];
     let runner = CallerContext::App(AppId::new("runner"));
 
     let job = lab
@@ -438,9 +514,6 @@ async fn a_trigger_run_checks_run_pipeline_and_keeps_its_origin_and_inputs() {
     );
     assert_eq!(job.origin(), &origin);
     assert_eq!(job.inputs(), inputs.as_slice());
-    let [(to, sent)] = lab.registry.dispatched().try_into().unwrap();
-    assert_eq!(to, agent);
-    assert_eq!(sent.job_id, job.id().to_string());
-    assert_eq!(sent.nodes.len(), seeded.nodes().len());
-    assert_eq!(lab.jobs.assigned(), vec![(job.id().clone(), agent)]);
+    assert_eq!(lab.jobs.rows().len(), 1);
+    assert_eq!(lab.registry.wakes(), [None]);
 }

@@ -2,13 +2,15 @@
 
 use super::*;
 use crate::domain::agent::{Agent, AgentHost};
-use crate::domain::app::{App, AppCredential, AppName};
+use crate::domain::app::{App, AppCredential, AppName, TRIGGER_RUNNER_APP_NAME};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::{AppId, OrganizationId};
+use crate::domain::ids::{AppId, OrganizationId, ProjectId};
 use crate::domain::permission::Permission;
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, StubHash, StubRegistry, alice};
+use crate::test_support::jobs::JobBuilder;
+use crate::test_support::pipelines::PipelineBuilder;
+use crate::test_support::stubs::{CountingPolicy, StubHash, StubJobs, StubRegistry, alice};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, PermissionService, Principal, Scope};
@@ -45,7 +47,7 @@ impl AppRepository for StubApps {
         self.agents.rows.lock().unwrap().push(agent.clone());
         Ok(())
     }
-    async fn provision(&self, _: &App, _: &AppCredential, _: &Grant) -> DomainResult<()> {
+    async fn provision(&self, _: &App, _: &Grant) -> DomainResult<()> {
         unreachable!("an agent is provisioned with its agent row")
     }
     async fn find_by_id(&self, id: &AppId) -> DomainResult<App> {
@@ -54,7 +56,10 @@ impl AppRepository for StubApps {
             .unwrap()
             .get(id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("App", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("App", id))
+    }
+    async fn find_trigger_runner(&self, _: &OrganizationId) -> DomainResult<Option<AppId>> {
+        unreachable!("no trigger in an agent action")
     }
     async fn list_by_organization(&self, _: &OrganizationId) -> DomainResult<Vec<App>> {
         unreachable!("agents are listed through the agent repository")
@@ -90,7 +95,7 @@ impl AgentRepository for StubAgents {
             .iter()
             .find(|a| a.app_id() == app_id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("Agent", app_id.to_string()))
+            .ok_or_else(|| DomainError::not_found("Agent", app_id))
     }
     async fn list_by_organization(&self, org_id: &OrganizationId) -> DomainResult<Vec<Agent>> {
         let organizations = self.organizations.lock().unwrap();
@@ -127,6 +132,7 @@ struct Lab {
     uc: AgentUseCases,
     apps: Arc<StubApps>,
     agents: Arc<StubAgents>,
+    jobs: Arc<StubJobs>,
     hash: Arc<StubHash>,
     registry: Arc<StubRegistry>,
     policy: Arc<CountingPolicy>,
@@ -160,6 +166,7 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         agents: agents.clone(),
         ..StubApps::default()
     });
+    let jobs = Arc::new(StubJobs::default());
     let hash = Arc::new(StubHash::secrets());
     let registry = Arc::new(StubRegistry::default());
     let policy = Arc::new(CountingPolicy::default());
@@ -168,12 +175,14 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         uc: AgentUseCases::new(
             apps.clone(),
             agents.clone(),
+            jobs.clone(),
             hash.clone(),
             policy.clone(),
             registry.clone(),
         ),
         apps,
         agents,
+        jobs,
         hash,
         registry,
         policy,
@@ -222,12 +231,18 @@ async fn a_denied_create_never_hashes_or_persists() {
 }
 
 #[tokio::test]
-async fn reads_check_their_permission_and_join_the_live_registry() {
+async fn reads_check_their_permission_and_join_the_registry_and_the_placed_jobs() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let id = lab.create().await.unwrap().app.id().clone();
     lab.registry.connect(&id);
-    lab.registry.load(&id, 1);
+    let pipeline = PipelineBuilder::for_project_id(ProjectId::new("p")).build();
+    lab.jobs.insert(
+        &JobBuilder::new(&pipeline)
+            .running(true)
+            .agent(id.clone())
+            .build(),
+    );
 
     let views = lab
         .actions
@@ -256,6 +271,7 @@ async fn reads_check_their_permission_and_join_the_live_registry() {
     assert_eq!(views[0].in_flight, 1);
     assert_eq!(view.app.id(), &id);
     assert!(view.connected);
+    assert_eq!(view.in_flight, 1);
     assert_eq!(stats.total, 3);
     assert_eq!(
         permissions.permissions()[1..],
@@ -284,43 +300,46 @@ async fn a_get_of_an_app_that_is_not_an_agent_is_not_found() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
 }
 
 #[tokio::test]
-async fn a_delete_disconnects_the_agent_removes_the_app_and_reloads_the_policies() {
-    let permissions = Arc::new(RecordingPermissionService::new());
-    let lab = lab(permissions.clone());
-    let id = lab.create().await.unwrap().app.id().clone();
-
-    let deleted = lab
-        .actions
-        .run(&lab.uc, &alice(), DeleteAgent { id: id.clone() })
-        .await
-        .unwrap();
-
-    assert_eq!(deleted.last_state(), &id);
-    assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
-    assert!(lab.apps.rows.lock().unwrap().is_empty());
-    assert!(lab.agents.rows.lock().unwrap().is_empty());
-    assert_eq!(lab.policy.reloads(), 2);
-    assert_eq!(permissions.permissions()[1], Permission::DeleteApp(id));
-}
-
-#[tokio::test]
-async fn a_denied_delete_keeps_the_stream_and_the_row() {
-    let lab = lab(Arc::new(DenyingPermissionService::new()));
-    let id = AppId::new("app-1");
+async fn the_stats_of_an_unknown_app_are_not_found() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
 
     let err = lab
         .actions
-        .run(&lab.uc, &alice(), DeleteAgent { id })
+        .run(
+            &lab.uc,
+            &alice(),
+            GetAgentStats {
+                id: AppId::new("ghost"),
+            },
+        )
         .await
         .err()
         .unwrap();
 
-    assert!(matches!(err, DomainError::Forbidden(_)));
-    assert!(lab.registry.disconnected().is_empty());
+    assert!(matches!(err, DomainError::NotFound(_)));
+}
+
+#[tokio::test]
+async fn the_runner_name_is_refused() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    let reserved = CreateAgent {
+        organization_id: org(),
+        name: AppName::new(TRIGGER_RUNNER_APP_NAME).unwrap(),
+    };
+    let create = lab
+        .actions
+        .run(&lab.uc, &alice(), reserved)
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(create, DomainError::Validation(_)));
+    assert_eq!(lab.hash.hashed(), 0);
     assert_eq!(lab.policy.reloads(), 0);
 }
 

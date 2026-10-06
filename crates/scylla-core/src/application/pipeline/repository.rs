@@ -10,9 +10,12 @@ pub trait PipelineRepository: Send + Sync {
 
     async fn find_by_id(&self, id: &PipelineId) -> DomainResult<Pipeline>;
 
+    /// Writes only if the row still carries `pipeline.version()`, and returns the row with the
+    /// bumped version. A stale value is `Stale`; a missing row is `NotFound`.
     async fn update(&self, pipeline: &Pipeline) -> DomainResult<Pipeline>;
 
-    async fn delete(&self, id: &PipelineId) -> DomainResult<()>;
+    /// Same version rule as `update`.
+    async fn delete(&self, pipeline: &Pipeline) -> DomainResult<()>;
 
     async fn list_all(
         &self,

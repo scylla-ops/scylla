@@ -1,4 +1,5 @@
 mod error;
+mod version;
 
 pub mod agents;
 pub mod app_secrets;
@@ -21,6 +22,7 @@ pub mod signup;
 pub mod trigger_deliveries;
 pub mod triggers;
 pub mod users;
+pub mod visibility;
 
 pub use agents::PgAgentRepository;
 pub use app_secrets::PgAppCredentialRepository;

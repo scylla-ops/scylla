@@ -1,20 +1,19 @@
 //! The trigger's writes. One block per command, in the order it runs: the struct, its
 //! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
-use super::{TriggerUseCases, next_fire_time};
+use super::TriggerUseCases;
 use crate::application::actions::service_only;
 use crate::domain::clock;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, PipelineId, TriggerId};
 use crate::domain::permission::Permission;
-use crate::domain::trigger::{Trigger, TriggerInput, TriggerName, TriggerSource};
+use crate::domain::trigger::{FireObservation, Trigger, TriggerInput, TriggerName, TriggerSource};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
     Run,
 };
-use tracing::warn;
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -232,30 +231,30 @@ impl Run<Persist<DeleteTrigger>> for TriggerUseCases {
     async fn run(&self, input: Prepared<DeleteTrigger>) -> DomainResult<Committed<DeleteTrigger>> {
         input
             .commit(async |trigger| {
-                self.trigger_repo.delete(trigger.id()).await?;
+                self.trigger_repo.delete(&trigger).await?;
                 Ok(Deleted::new(trigger))
             })
             .await
     }
 }
 
-/// The outcome of a fire, sent by the trigger firer as a service. The row that the fire loaded
-/// is written back with its observation, as before.
+/// The outcome of a fire, sent by the trigger firer as a service. Only the observation is
+/// written: an edit that committed during the run stays.
 #[derive(Debug)]
 pub struct RecordTriggerFire {
-    pub trigger: Trigger,
+    pub id: TriggerId,
     pub status: &'static str,
 }
 
 impl Describe for RecordTriggerFire {
     fn access(&self) -> Access {
-        Access::Requires(Permission::ManageTrigger(self.trigger.id().clone()))
+        Access::Requires(Permission::ManageTrigger(self.id.clone()))
     }
 }
 
 impl Command for RecordTriggerFire {
-    type Staged = Draft<Trigger>;
-    type Committed = Trigger;
+    type Staged = Draft<FireObservation>;
+    type Committed = FireObservation;
 }
 
 #[async_trait]
@@ -264,10 +263,11 @@ impl Run<Prepare<RecordTriggerFire>> for TriggerUseCases {
         &self,
         input: Authorized<RecordTriggerFire>,
     ) -> DomainResult<Prepared<RecordTriggerFire>> {
-        let cmd = input.command();
-        let mut trigger = cmd.trigger.clone();
-        trigger.mark_fired(clock::now(), cmd.status);
-        Ok(input.prepared(Draft::new(trigger)))
+        let observation = FireObservation {
+            fired_at: clock::now(),
+            status: input.command().status.to_owned(),
+        };
+        Ok(input.prepared(Draft::new(observation)))
     }
 }
 
@@ -277,14 +277,19 @@ impl Run<Persist<RecordTriggerFire>> for TriggerUseCases {
         &self,
         input: Prepared<RecordTriggerFire>,
     ) -> DomainResult<Committed<RecordTriggerFire>> {
+        let id = input.command().id.clone();
         input
-            .commit(async |draft| self.trigger_repo.update(&draft.into_inner()).await)
+            .commit(async |draft| {
+                let observation = draft.into_inner();
+                self.trigger_repo.record_fire(&id, &observation).await?;
+                Ok(observation)
+            })
             .await
     }
 }
 
-/// One pass over the cron triggers that have no next fire time. An invalid expression and a
-/// failed write are logged, and that trigger stays unscheduled.
+/// One pass over the cron triggers that have no next fire time. A trigger whose next fire time
+/// cannot be computed is logged and stays unscheduled.
 #[derive(Debug)]
 pub struct ScheduleCronTriggers;
 
@@ -295,7 +300,7 @@ impl Describe for ScheduleCronTriggers {
 }
 
 impl Command for ScheduleCronTriggers {
-    type Staged = Draft<Vec<Trigger>>;
+    type Staged = DateTime<Utc>;
     type Committed = Vec<Trigger>;
 }
 
@@ -306,20 +311,7 @@ impl Run<Prepare<ScheduleCronTriggers>> for TriggerUseCases {
         input: Authorized<ScheduleCronTriggers>,
     ) -> DomainResult<Prepared<ScheduleCronTriggers>> {
         service_only(input.caller())?;
-        let mut staged = Vec::new();
-        for mut trigger in self.trigger_repo.list_unscheduled_cron().await? {
-            match next_fire_time(&trigger, &*self.schedule, clock::now()) {
-                Ok(Some(next)) => {
-                    trigger.set_next_fire_at(Some(next));
-                    staged.push(trigger);
-                }
-                Ok(None) => {}
-                Err(e) => {
-                    warn!(trigger_id = %trigger.id(), error = %e, "cron seed: invalid expression; trigger will not fire");
-                }
-            }
-        }
-        Ok(input.prepared(Draft::new(staged)))
+        Ok(input.prepared(clock::now()))
     }
 }
 
@@ -330,18 +322,10 @@ impl Run<Persist<ScheduleCronTriggers>> for TriggerUseCases {
         input: Prepared<ScheduleCronTriggers>,
     ) -> DomainResult<Committed<ScheduleCronTriggers>> {
         input
-            .commit(async |draft| {
-                let staged = draft.into_inner();
-                let mut scheduled = Vec::with_capacity(staged.len());
-                for trigger in staged {
-                    match self.trigger_repo.update(&trigger).await {
-                        Ok(trigger) => scheduled.push(trigger),
-                        Err(e) => {
-                            warn!(trigger_id = %trigger.id(), error = %e, "cron seed: could not persist next_fire_at");
-                        }
-                    }
-                }
-                Ok(scheduled)
+            .commit(async |now| {
+                self.trigger_repo
+                    .seed_cron(&|trigger| self.next_cron_fire(trigger, now))
+                    .await
             })
             .await
     }
@@ -386,13 +370,8 @@ impl Run<Persist<ClaimDueTriggers>> for TriggerUseCases {
     ) -> DomainResult<Committed<ClaimDueTriggers>> {
         input
             .commit(async |(now, limit)| {
-                let compute_next = |trigger: &Trigger| -> DomainResult<DateTime<Utc>> {
-                    next_fire_time(trigger, &*self.schedule, now)?.ok_or_else(|| {
-                        DomainError::internal("non-cron trigger reached the cron claim")
-                    })
-                };
                 self.trigger_repo
-                    .claim_due_cron(now, limit, &compute_next)
+                    .claim_due_cron(now, limit, &|trigger| self.next_cron_fire(trigger, now))
                     .await
             })
             .await

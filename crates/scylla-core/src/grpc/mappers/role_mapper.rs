@@ -4,9 +4,10 @@ use crate::application::role::{
     CreateRole, DeleteRole, GetEffectivePermissions, GetMyPermissions, GetRole,
     ListAuthzVocabulary, ListRoles, UpdateRole,
 };
+use crate::domain::role::{RoleDescription, RoleDisplayName};
 use crate::grpc::convert::{
     Parse, permission_from_key, permission_key, principal_ref_from_proto, required,
-    scope_kind_from_proto, scope_kind_to_proto, scope_ref_to_proto, wrap,
+    scope_kind_from_proto, scope_kind_to_proto, scope_ref_to_proto, valid, wrap,
 };
 use scylla_auth::authz::{EffectiveScope, FULL_CONTROL, Role, resource_home_scope};
 use scylla_proto::authz::v1::{
@@ -26,8 +27,8 @@ pub fn role_to_proto(role: &Role) -> ProtoRole {
     };
     ProtoRole {
         role_id: wrap(role.id.clone()),
-        name: role.name.clone(),
-        description: role.description.clone(),
+        name: role.name.to_string(),
+        description: role.description.to_string(),
         scope_kind: scope_kind_to_proto(role.scope) as i32,
         access: Some(access_from_keys(role.is_full_control(), &role.permissions)),
         origin: Some(origin),
@@ -92,8 +93,8 @@ impl Parse for CreateRoleRequest {
         Ok(CreateRole {
             scope: scope_kind_from_proto(self.scope_kind)?,
             permissions: permissions_from_proto(self.access)?,
-            name: self.name,
-            description: self.description,
+            name: valid(self.name, RoleDisplayName::new)?,
+            description: valid(self.description, RoleDescription::new)?,
         })
     }
 }
@@ -105,8 +106,8 @@ impl Parse for UpdateRoleRequest {
         Ok(UpdateRole {
             id: required(self.role_id, "role_id")?,
             permissions: permissions_from_proto(self.access)?,
-            name: self.name,
-            description: self.description,
+            name: valid(self.name, RoleDisplayName::new)?,
+            description: valid(self.description, RoleDescription::new)?,
         })
     }
 }
@@ -154,7 +155,7 @@ mod tests {
         .parse()
         .unwrap();
 
-        assert_eq!(command.name, "CI");
+        assert_eq!(command.name.as_str(), "CI");
         assert_eq!(command.scope, ScopeKind::Project);
         assert_eq!(
             command.permissions,
@@ -206,6 +207,33 @@ mod tests {
         };
 
         assert_eq!(err.code(), Code::InvalidArgument);
+    }
+
+    #[test]
+    fn a_blank_name_is_an_invalid_argument() {
+        for name in ["", "   "] {
+            let Err(err) = CreateRoleRequest {
+                name: name.to_string(),
+                description: String::new(),
+                scope_kind: ProtoScopeKind::Project as i32,
+                access: restricted(&[Permission::ReadPipeline]),
+            }
+            .parse() else {
+                panic!("a blank create name must be refused");
+            };
+            assert_eq!(err.code(), Code::InvalidArgument);
+
+            let Err(err) = UpdateRoleRequest {
+                role_id: wrap("ci"),
+                name: name.to_string(),
+                description: String::new(),
+                access: restricted(&[Permission::ReadPipeline]),
+            }
+            .parse() else {
+                panic!("a blank update name must be refused");
+            };
+            assert_eq!(err.code(), Code::InvalidArgument);
+        }
     }
 
     #[test]

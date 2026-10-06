@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::domain::agent::Agent;
-use crate::domain::app::{App, AppCredential, AppName, AppSecretLabel};
+use crate::domain::app::{App, AppCredential, AppName, AppSecretLabel, TRIGGER_RUNNER_APP_NAME};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppCredentialId, AppId, OrganizationId};
 use crate::domain::permission::Permission;
@@ -39,7 +39,7 @@ impl AppRepository for StubApps {
     ) -> DomainResult<()> {
         unreachable!("no agent in an app action")
     }
-    async fn provision(&self, _: &App, _: &AppCredential, _: &Grant) -> DomainResult<()> {
+    async fn provision(&self, _: &App, _: &Grant) -> DomainResult<()> {
         unreachable!("no grant in an app action")
     }
     async fn find_by_id(&self, id: &AppId) -> DomainResult<App> {
@@ -48,7 +48,10 @@ impl AppRepository for StubApps {
             .unwrap()
             .get(id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("App", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("App", id))
+    }
+    async fn find_trigger_runner(&self, _: &OrganizationId) -> DomainResult<Option<AppId>> {
+        unreachable!("only a trigger action looks up the runner")
     }
     async fn list_by_organization(
         &self,
@@ -72,6 +75,7 @@ impl AppRepository for StubApps {
                     a.id().clone(),
                     a.organization_id().clone(),
                     a.name().clone(),
+                    a.kind(),
                     active,
                     a.created_at(),
                     a.updated_at(),
@@ -106,7 +110,7 @@ impl AppCredentialRepository for StubCredentials {
             .unwrap()
             .get(id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("AppCredential", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("AppCredential", id))
     }
     async fn list_by_app(&self, app_id: &AppId) -> DomainResult<Vec<AppCredential>> {
         Ok(self
@@ -349,7 +353,7 @@ async fn an_activation_keeps_the_stream() {
 }
 
 #[tokio::test]
-async fn a_delete_removes_the_app_and_reloads_the_policies() {
+async fn a_delete_reloads_the_policies_closes_the_stream_and_wakes_the_dispatcher() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let created = lab.create().await.unwrap();
@@ -364,7 +368,115 @@ async fn a_delete_removes_the_app_and_reloads_the_policies() {
     assert_eq!(deleted.last_state(), &id);
     assert!(lab.apps.rows.lock().unwrap().is_empty());
     assert_eq!(lab.policy.reloads(), 1);
+    assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
+    assert_eq!(lab.registry.wakes(), [None]);
     assert_eq!(permissions.permissions()[1], Permission::DeleteApp(id));
+}
+
+#[tokio::test]
+async fn a_denied_delete_keeps_the_stream_and_the_row() {
+    let lab = lab(Arc::new(DenyingPermissionService::new()));
+
+    let err = lab
+        .actions
+        .run(
+            &lab.uc,
+            &alice(),
+            DeleteApp {
+                id: AppId::new("app-1"),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert!(lab.registry.disconnected().is_empty());
+    assert_eq!(lab.policy.reloads(), 0);
+}
+
+#[tokio::test]
+async fn a_create_refuses_the_reserved_runner_name_before_hashing() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    let reserved = CreateApp {
+        name: AppName::new(TRIGGER_RUNNER_APP_NAME).unwrap(),
+        ..create()
+    };
+    let err = lab
+        .actions
+        .run(&lab.uc, &alice(), reserved)
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, DomainError::Validation(_)));
+    assert_eq!(lab.hash.hashed(), 0);
+    assert!(lab.apps.rows.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn the_trigger_runner_cannot_be_disabled_deleted_or_given_a_secret() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let runner = App::trigger_runner(org()).unwrap();
+    let id = runner.id().clone();
+    lab.apps.rows.lock().unwrap().insert(id.clone(), runner);
+
+    let disable = SetAppActive {
+        id: id.clone(),
+        is_active: false,
+    };
+    let disable = lab
+        .actions
+        .run(&lab.uc, &alice(), disable)
+        .await
+        .err()
+        .unwrap();
+    let delete = DeleteApp { id: id.clone() };
+    let delete = lab
+        .actions
+        .run(&lab.uc, &alice(), delete)
+        .await
+        .err()
+        .unwrap();
+    let secret = lab.create_secret(&id).await.err().unwrap();
+
+    assert!(matches!(disable, DomainError::BusinessRule(_)));
+    assert!(matches!(delete, DomainError::BusinessRule(_)));
+    assert!(matches!(secret, DomainError::BusinessRule(_)));
+    assert!(lab.apps.rows.lock().unwrap()[&id].is_active());
+    assert!(lab.credentials.rows.lock().unwrap().is_empty());
+    assert!(lab.registry.disconnected().is_empty());
+    assert_eq!(lab.policy.reloads(), 0);
+}
+
+#[tokio::test]
+async fn an_allowed_action_on_an_unknown_app_is_not_found() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let ghost = AppId::new("ghost");
+
+    let delete = DeleteApp { id: ghost.clone() };
+    let delete = lab
+        .actions
+        .run(&lab.uc, &alice(), delete)
+        .await
+        .err()
+        .unwrap();
+    let disable = SetAppActive {
+        id: ghost,
+        is_active: false,
+    };
+    let disable = lab
+        .actions
+        .run(&lab.uc, &alice(), disable)
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(delete, DomainError::NotFound(_)));
+    assert!(matches!(disable, DomainError::NotFound(_)));
+    assert!(lab.registry.disconnected().is_empty());
+    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -394,7 +506,7 @@ async fn a_secret_for_a_missing_app_is_not_found_and_never_hashed() {
 
     let err = lab.create_secret(&AppId::new("ghost")).await.err().unwrap();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
     assert_eq!(lab.hash.hashed(), 0);
     assert!(lab.credentials.rows.lock().unwrap().is_empty());
 }
@@ -486,7 +598,7 @@ async fn an_allowed_action_on_an_unknown_secret_is_not_found() {
     let revoke = lab.revoke_secret(&missing).await.unwrap_err();
     let disable = lab.set_secret_enabled(&missing, false).await.unwrap_err();
 
-    assert!(matches!(revoke, DomainError::NotFound { .. }));
-    assert!(matches!(disable, DomainError::NotFound { .. }));
+    assert!(matches!(revoke, DomainError::NotFound(_)));
+    assert!(matches!(disable, DomainError::NotFound(_)));
     assert!(lab.registry.disconnected().is_empty());
 }

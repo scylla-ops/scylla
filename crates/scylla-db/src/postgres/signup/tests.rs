@@ -71,7 +71,10 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
 
     let org_repo = PgOrganizationRepository::new(pool.clone());
     assert!(
-        !org_repo.name_exists(second_org.name()).await.unwrap(),
+        matches!(
+            org_repo.find_by_id(second_org.id()).await,
+            Err(crate::domain::errors::DomainError::NotFound(_))
+        ),
         "second org must not be persisted"
     );
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();

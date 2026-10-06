@@ -18,16 +18,17 @@ pub trait UserRepository: Send + Sync {
 
     async fn find_by_email(&self, email: &Email) -> DomainResult<User>;
 
+    /// Writes only if the row still carries `user.version()`, and returns the row with the
+    /// bumped version. A stale value is `Stale`; a missing row is `NotFound`.
     async fn update(&self, user: &User) -> DomainResult<User>;
 
-    async fn delete(&self, id: &UserId) -> DomainResult<()>;
+    /// Same version rule as `update`.
+    async fn delete(&self, user: &User) -> DomainResult<()>;
 
     async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<User>>;
-
-    async fn username_exists(&self, username: &Username) -> DomainResult<bool>;
 }
 
 /// Resolves a page of ids to users in the page's order; an id with no user is dropped.

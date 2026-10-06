@@ -8,19 +8,30 @@ use crate::domain::ids::{AppId, GrantId, OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::permission::ResourceRef;
 use crate::domain::role::RoleName;
+use crate::domain::role::{RoleDescription, RoleDisplayName};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::stubs::{CountingPolicy, StubGrants, StubRegistry, StubRoles};
 use async_trait::async_trait;
 use scylla_auth::authz::*;
 use scylla_auth::authz::{ResourceAncestors, Role};
 use scylla_extension::{Actions, Deleted};
+use std::collections::HashMap;
 
-struct StubAncestry;
+/// Every project is in `o1`; an app is in the organization its entry names, and unknown without one.
+#[derive(Default)]
+struct StubAncestry {
+    apps: HashMap<AppId, OrganizationId>,
+}
+
 #[async_trait]
 impl AuthzEntityProvider for StubAncestry {
-    async fn resource_ancestors(&self, _resource: &ResourceRef) -> DomainResult<ResourceAncestors> {
+    async fn resource_ancestors(&self, resource: &ResourceRef) -> DomainResult<ResourceAncestors> {
+        let organization = match resource {
+            ResourceRef::App(id) => self.apps.get(id).cloned(),
+            _ => Some(OrganizationId::new("o1")),
+        };
         Ok(ResourceAncestors {
-            organization: Some(OrganizationId::new("o1")),
+            organization,
             ..Default::default()
         })
     }
@@ -33,8 +44,8 @@ fn test_role(id: &str, scope: ScopeKind, permissions: &[&str]) -> Role {
     Role {
         id: id.to_string(),
         key: Some(id.to_string()),
-        name: id.to_string(),
-        description: String::new(),
+        name: RoleDisplayName::new(id).unwrap(),
+        description: RoleDescription::new("").unwrap(),
         scope,
         owner_org: None,
         builtin: true,
@@ -91,6 +102,15 @@ fn lab(grants: Vec<Grant>) -> Lab {
 }
 
 fn lab_with(grants: Vec<Grant>, roles: Vec<Role>, permissions: Arc<dyn PermissionService>) -> Lab {
+    lab_in(grants, roles, permissions, StubAncestry::default())
+}
+
+fn lab_in(
+    grants: Vec<Grant>,
+    roles: Vec<Role>,
+    permissions: Arc<dyn PermissionService>,
+    ancestry: StubAncestry,
+) -> Lab {
     let grants = Arc::new(StubGrants::new(grants));
     let registry = Arc::new(StubRegistry::default());
     Lab {
@@ -100,7 +120,7 @@ fn lab_with(grants: Vec<Grant>, roles: Vec<Role>, permissions: Arc<dyn Permissio
             Arc::new(StubRoles::new(roles)),
             Arc::new(CountingPolicy::default()),
             registry.clone(),
-            Arc::new(StubAncestry),
+            Arc::new(ancestry),
         ),
         grants,
         registry,
@@ -196,6 +216,10 @@ async fn a_create_checks_the_permission_of_its_scope_then_stores_the_grant() {
     assert_eq!(stored.principal, grant.principal);
     assert_eq!(stored.scope, grant.scope);
     assert_eq!(lab.grants.created().as_slice(), [stored]);
+    assert!(
+        lab.registry.wakes().is_empty(),
+        "a user grant wakes no agent"
+    );
 }
 
 #[tokio::test]
@@ -400,23 +424,158 @@ async fn an_organization_grant_needs_no_prior_admission() {
     assert!(lab.grant(&service(), &grant).await.is_ok());
 }
 
-#[tokio::test]
-async fn app_grants_need_no_admission() {
-    let roles = vec![test_role(
-        PROJECT_AGENT_ROLE,
-        ScopeKind::Project,
-        &["readPipeline", "executeJob"],
-    )];
-    let lab = lab_with(vec![], roles, Arc::new(RecordingPermissionService::new()));
-    let grant = Grant::new(
+fn agent_roles() -> Vec<Role> {
+    vec![
+        test_role(
+            PROJECT_AGENT_ROLE,
+            ScopeKind::Project,
+            &["readPipeline", "executeJob"],
+        ),
+        test_role(
+            ORGANIZATION_AGENT_ROLE,
+            ScopeKind::Organization,
+            &["readPipeline", "executeJob"],
+        ),
+    ]
+}
+
+fn app_in(organization: &str) -> StubAncestry {
+    StubAncestry {
+        apps: HashMap::from([(AppId::new("agent-1"), OrganizationId::new(organization))]),
+    }
+}
+
+fn agent_grant(role: &str, scope: Scope) -> Grant {
+    Grant::new(
         Principal::App(AppId::new("agent-1")),
-        RoleName::new(PROJECT_AGENT_ROLE).unwrap(),
-        Scope::Project(ProjectId::new("p1")),
+        RoleName::new(role).unwrap(),
+        scope,
+    )
+}
+
+#[tokio::test]
+async fn an_app_of_the_organization_needs_no_admission() {
+    let lab = lab_in(
+        vec![],
+        agent_roles(),
+        Arc::new(RecordingPermissionService::new()),
+        app_in("o1"),
     );
+    let grant = agent_grant(PROJECT_AGENT_ROLE, Scope::Project(ProjectId::new("p1")));
+    assert!(lab.grant(&service(), &grant).await.is_ok());
+    assert_eq!(lab.registry.wakes(), [Some(AppId::new("agent-1"))]);
+}
+
+#[tokio::test]
+async fn an_app_of_another_organization_is_refused() {
+    let lab = lab_in(
+        vec![],
+        agent_roles(),
+        Arc::new(RecordingPermissionService::new()),
+        app_in("o2"),
+    );
+    for grant in [
+        agent_grant(ORGANIZATION_AGENT_ROLE, org()),
+        agent_grant(PROJECT_AGENT_ROLE, Scope::Project(ProjectId::new("p1"))),
+    ] {
+        let err = lab.grant(&service(), &grant).await.unwrap_err();
+        assert!(matches!(err, DomainError::BusinessRule(_)), "{err:?}");
+    }
+    assert!(lab.grants.created().is_empty());
+}
+
+#[tokio::test]
+async fn an_agent_role_is_refused_to_a_user() {
+    let lab = lab_with(
+        vec![],
+        agent_roles(),
+        Arc::new(RecordingPermissionService::new()),
+    );
+    let grant = Grant::new(
+        Principal::User(UserId::new("alice")),
+        RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
+        org(),
+    );
+    let err = lab.grant(&service(), &grant).await.unwrap_err();
+    assert!(matches!(err, DomainError::Validation(_)));
+}
+
+#[tokio::test]
+async fn a_project_grant_manager_cannot_confer_more_than_it_holds() {
+    let p1 = || Scope::Project(ProjectId::new("p1"));
+    let roles = vec![
+        test_role(PROJECT_ADMIN_ROLE, ScopeKind::Project, &[FULL_CONTROL]),
+        test_role(
+            "project-grants",
+            ScopeKind::Project,
+            &["manageProjectGrants", "readProject"],
+        ),
+        test_role(
+            ORGANIZATION_MEMBER_ROLE,
+            ScopeKind::Organization,
+            &["readOrganization"],
+        ),
+    ];
+    let bob = Principal::User(UserId::new("bob"));
+    let alice = Principal::User(UserId::new("alice"));
+    let lab = lab_with(
+        vec![
+            Grant::new(bob, RoleName::new("project-grants").unwrap(), p1()),
+            Grant::new(
+                alice.clone(),
+                RoleName::new(ORGANIZATION_MEMBER_ROLE).unwrap(),
+                org(),
+            ),
+        ],
+        roles,
+        Arc::new(RecordingPermissionService::new()),
+    );
+    let bob = CallerContext::User(UserId::new("bob"));
+
+    let err = lab
+        .grant(
+            &bob,
+            &Grant::new(
+                alice.clone(),
+                RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
+                p1(),
+            ),
+        )
+        .await
+        .unwrap_err();
+    assert!(matches!(err, DomainError::BusinessRule(_)));
     assert!(
-        lab.grant(&service(), &grant).await.is_ok(),
-        "an App grant needs no admission"
+        lab.grant(
+            &bob,
+            &Grant::new(alice, RoleName::new("project-grants").unwrap(), p1())
+        )
+        .await
+        .is_ok()
     );
+}
+
+#[tokio::test]
+async fn a_repeated_create_returns_the_stored_grant() {
+    let existing = owner_grant(Principal::User(UserId::new("alice")), org());
+    let lab = lab_with(
+        vec![existing.clone()],
+        vec![test_role(
+            ORGANIZATION_ADMIN_ROLE,
+            ScopeKind::Organization,
+            &[FULL_CONTROL],
+        )],
+        Arc::new(RecordingPermissionService::new()),
+    );
+
+    let stored = lab
+        .grant(
+            &service(),
+            &owner_grant(Principal::User(UserId::new("alice")), org()),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(stored, existing);
 }
 
 #[tokio::test]
@@ -556,64 +715,6 @@ async fn an_allowed_revoke_of_an_unknown_grant_changes_nothing() {
     assert!(lab.grants.deleted().is_empty());
 }
 
-#[test]
-fn removal_orphans_scope_blocks_the_sole_human_owner() {
-    let victim = Principal::User(UserId::new("u1"));
-    let grants = vec![owner_grant(victim.clone(), org())];
-    assert!(
-        removal_orphans_scope(&grants, &org(), &victim),
-        "removing the only human owner must be reported as orphaning"
-    );
-}
-
-#[test]
-fn removal_orphans_scope_allows_when_another_human_owner_remains() {
-    let victim = Principal::User(UserId::new("u1"));
-    let grants = vec![
-        owner_grant(victim.clone(), org()),
-        owner_grant(Principal::User(UserId::new("u2")), org()),
-    ];
-    assert!(
-        !removal_orphans_scope(&grants, &org(), &victim),
-        "a co-owner keeps the scope owned"
-    );
-}
-
-#[test]
-fn removal_orphans_scope_ignores_non_owner_members() {
-    let victim = Principal::User(UserId::new("u1"));
-    let grants = vec![Grant::new(
-        victim.clone(),
-        RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
-        org(),
-    )];
-    assert!(
-        !removal_orphans_scope(&grants, &org(), &victim),
-        "removing a non-owner never orphans the scope"
-    );
-}
-
-#[test]
-fn removal_orphans_scope_does_not_count_app_owners_as_human() {
-    let victim = Principal::User(UserId::new("u1"));
-    let grants = vec![
-        owner_grant(victim.clone(), org()),
-        owner_grant(Principal::App(AppId::new("agent-1")), org()),
-    ];
-    assert!(
-        removal_orphans_scope(&grants, &org(), &victim),
-        "an App owner is not a human owner"
-    );
-}
-
-#[test]
-fn removal_orphans_scope_is_scoped() {
-    let other = Scope::Organization(OrganizationId::new("o2"));
-    let victim = Principal::User(UserId::new("u1"));
-    let grants = vec![owner_grant(victim.clone(), other)];
-    assert!(!removal_orphans_scope(&grants, &org(), &victim));
-}
-
 #[tokio::test]
 async fn revoke_all_access_refuses_to_strip_the_last_owner() {
     let alice = Principal::User(UserId::new("alice"));
@@ -644,4 +745,80 @@ async fn revoke_all_access_checks_the_scope_permission_and_disconnects_a_machine
         vec![Permission::ManageProjectGrants(ProjectId::new("p1"))]
     );
     assert_eq!(lab.registry.disconnected(), vec![AppId::new("agent-1")]);
+}
+
+#[tokio::test]
+async fn revoke_all_access_at_system_scope_refuses_to_strip_the_last_admin_of_an_organization() {
+    let alice = Principal::User(UserId::new("alice"));
+    let lab = lab(vec![
+        Grant::new(
+            alice.clone(),
+            RoleName::new(SYSTEM_ADMIN_ROLE).unwrap(),
+            Scope::System,
+        ),
+        owner_grant(alice.clone(), org()),
+    ]);
+
+    let err = lab
+        .revoke_all_access(&service(), &alice, &Scope::System)
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, DomainError::BusinessRule(_)));
+    assert!(lab.grants.revoked_all().is_empty());
+}
+
+#[tokio::test]
+async fn revoking_the_last_organization_grant_of_a_user_strips_the_access_beneath_it() {
+    let alice = Principal::User(UserId::new("alice"));
+    let member = Grant::new(
+        alice.clone(),
+        RoleName::new(ORGANIZATION_MEMBER_ROLE).unwrap(),
+        org(),
+    );
+    let project = Grant::new(
+        alice.clone(),
+        RoleName::new(PROJECT_VIEWER_ROLE).unwrap(),
+        Scope::Project(ProjectId::new("p1")),
+    );
+    let lab = lab(vec![member.clone(), project]);
+
+    lab.revoke(&member.id).await.unwrap().unwrap();
+
+    assert_eq!(lab.grants.revoked_all(), vec![(alice, org())]);
+    assert!(lab.grants.deleted().is_empty());
+}
+
+#[tokio::test]
+async fn revoking_one_of_two_organization_grants_of_a_user_deletes_only_it() {
+    let alice = Principal::User(UserId::new("alice"));
+    let member = Grant::new(
+        alice.clone(),
+        RoleName::new(ORGANIZATION_MEMBER_ROLE).unwrap(),
+        org(),
+    );
+    let viewer = Grant::new(
+        alice,
+        RoleName::new(ORGANIZATION_VIEWER_ROLE).unwrap(),
+        org(),
+    );
+    let lab = lab(vec![member.clone(), viewer]);
+
+    lab.revoke(&member.id).await.unwrap().unwrap();
+
+    assert_eq!(lab.grants.deleted(), vec![member.id]);
+    assert!(lab.grants.revoked_all().is_empty());
+}
+
+#[tokio::test]
+async fn the_last_project_admin_may_be_revoked() {
+    let grant = Grant::new(
+        Principal::User(UserId::new("u1")),
+        RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
+        Scope::Project(ProjectId::new("p1")),
+    );
+    let lab = lab(vec![grant.clone()]);
+
+    assert!(lab.revoke(&grant.id).await.is_ok());
+    assert_eq!(lab.grants.deleted(), vec![grant.id]);
 }

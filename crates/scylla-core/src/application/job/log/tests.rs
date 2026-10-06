@@ -35,9 +35,10 @@ fn page(items: Vec<JobLog>) -> PaginatedResult<JobLog> {
 
 #[async_trait]
 impl JobLogRepository for StubLogs {
-    async fn create(&self, log: &JobLog) -> DomainResult<JobLog> {
-        self.rows.lock().unwrap().push(log.clone());
-        Ok(log.clone())
+    async fn create_many(&self, logs: &[JobLog]) -> DomainResult<()> {
+        self.reads.lock().unwrap().push("insert");
+        self.rows.lock().unwrap().extend_from_slice(logs);
+        Ok(())
     }
     async fn list_by_job(
         &self,
@@ -67,14 +68,21 @@ impl JobLogRepository for StubLogs {
     }
 }
 
+/// Replays `lines` to a subscriber, and records each line published.
 #[derive(Default)]
 struct StubLive {
     lines: Mutex<Vec<JobLog>>,
     subscribes: Mutex<usize>,
+    published: Mutex<Vec<JobLog>>,
 }
 
 #[async_trait]
 impl JobLogStreamPort for StubLive {
+    fn open(&self, _: &JobId) {}
+    fn publish(&self, log: &JobLog) {
+        self.published.lock().unwrap().push(log.clone());
+    }
+    fn close(&self, _: &JobId) {}
     async fn subscribe(&self, _: &JobId, _: Option<&NodeId>) -> DomainResult<JobLogLiveStream> {
         *self.subscribes.lock().unwrap() += 1;
         let lines = self.lines.lock().unwrap().clone();
@@ -89,7 +97,7 @@ struct Lab {
     live: Arc<StubLive>,
 }
 
-/// `job-1` runs `build`; `test` has not started.
+/// `job-1` runs `build` on `agent`; `test` has not started.
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let pipeline = PipelineBuilder::for_project_id(ProjectId::new("p"))
         .nodes(vec![node("build", &[]), node("test", &["build"])])
@@ -97,6 +105,7 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let job = JobBuilder::new(&pipeline)
         .id(JobId::new("job-1"))
         .running(true)
+        .agent(AppId::new("agent"))
         .build()
         .apply_node_started(&NodeId::new("build").unwrap(), clock::now())
         .unwrap();
@@ -126,40 +135,86 @@ fn agent() -> CallerContext {
     CallerContext::App(AppId::new("agent"))
 }
 
+fn append(job: &str, lines: &[&str]) -> AppendJobLogs {
+    let job_id = JobId::new(job);
+    AppendJobLogs {
+        logs: lines
+            .iter()
+            .map(|line| job_log(&job_id, "build", line))
+            .collect(),
+        job_id,
+    }
+}
+
+fn lines(logs: &[JobLog]) -> Vec<&str> {
+    logs.iter().map(JobLog::line).collect()
+}
+
 #[tokio::test]
-async fn an_append_checks_append_job_log_and_stores_the_line() {
+async fn an_append_checks_once_stores_one_batch_and_publishes_each_line_in_order() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
-    let job_id = JobId::new("job-1");
-    let log = job_log(&job_id, "build", "hello");
 
     let stored = lab
         .actions
-        .run(&lab.uc, &agent(), AppendJobLog { log: log.clone() })
+        .run(&lab.uc, &agent(), append("job-1", &["one", "two", "three"]))
         .await
         .unwrap();
 
-    assert_eq!(stored.id(), log.id());
-    assert_eq!(lab.logs.rows.lock().unwrap().len(), 1);
+    assert_eq!(lines(&stored), ["one", "two", "three"]);
+    assert_eq!(*lab.logs.reads.lock().unwrap(), vec!["insert"]);
+    assert_eq!(
+        lines(&lab.live.published.lock().unwrap()),
+        ["one", "two", "three"]
+    );
     assert_eq!(
         permissions.permissions(),
-        vec![Permission::AppendJobLog(job_id)]
+        vec![Permission::AppendJobLog(JobId::new("job-1"))]
     );
+}
+
+#[tokio::test]
+async fn only_the_agent_of_the_job_appends_to_it() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let other = CallerContext::App(AppId::new("other"));
+
+    let err = lab
+        .actions
+        .run(&lab.uc, &other, append("job-1", &["hello"]))
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, DomainError::BusinessRule(_)));
+    assert!(lab.logs.rows.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn a_line_of_another_job_refuses_the_batch() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let mut batch = append("job-1", &["mine"]);
+    batch
+        .logs
+        .push(job_log(&JobId::new("job-2"), "build", "theirs"));
+
+    let err = lab.actions.run(&lab.uc, &agent(), batch).await.unwrap_err();
+
+    assert!(matches!(err, DomainError::Validation(_)));
+    assert!(lab.logs.rows.lock().unwrap().is_empty());
 }
 
 #[tokio::test]
 async fn a_denied_append_stores_nothing() {
     let lab = lab(Arc::new(DenyingPermissionService::new()));
-    let log = job_log(&JobId::new("job-1"), "build", "hello");
 
     let err = lab
         .actions
-        .run(&lab.uc, &agent(), AppendJobLog { log })
+        .run(&lab.uc, &agent(), append("job-1", &["hello"]))
         .await
         .unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert!(lab.logs.rows.lock().unwrap().is_empty());
+    assert!(lab.live.published.lock().unwrap().is_empty());
 }
 
 #[tokio::test]

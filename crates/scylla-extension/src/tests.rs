@@ -181,7 +181,7 @@ impl Notes {
             .get(&note.id)
             .ok_or_else(|| DomainError::not_found("Note", note.id.as_str()))?;
         if stored.version != note.version {
-            return Err(DomainError::conflict("note changed since it was read"));
+            return Err(DomainError::stale("Note", note.id.as_str()));
         }
         Ok(())
     }
@@ -812,7 +812,7 @@ async fn two_writes_staged_from_the_same_read_commit_once() {
         (Err(a), Err(b)) => panic!("both renames failed: {a}, {b}"),
     };
 
-    assert!(matches!(lost, DomainError::Conflict(_)));
+    assert!(matches!(lost, DomainError::Stale(_)));
     let stored = lab.notes.find(&id).unwrap();
     assert_eq!(stored.title, won.title);
     assert_eq!(stored.version, 1);
@@ -829,7 +829,7 @@ async fn a_delete_of_an_unknown_note_is_refused_before_prepare() {
 
     let system = CallerContext::Service(ServiceIdentity::recorder());
     let err = lab.run(&system, delete(&missing)).await.unwrap_err();
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
     let entries = lab.journal.entries();
     assert_eq!(entries.len(), 3);
     assert_eq!((entries[1].1, entries[1].2), (StageKind::Authorize, true));

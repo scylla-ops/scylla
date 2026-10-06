@@ -5,6 +5,7 @@
 use super::RoleUseCases;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::Permission;
+use crate::domain::role::{RoleDescription, RoleDisplayName};
 use async_trait::async_trait;
 use scylla_auth::authz::{Role, ScopeKind, validate_role_permissions};
 use scylla_extension::{
@@ -14,8 +15,8 @@ use scylla_extension::{
 
 #[derive(Debug)]
 pub struct CreateRole {
-    pub name: String,
-    pub description: String,
+    pub name: RoleDisplayName,
+    pub description: RoleDescription,
     pub scope: ScopeKind,
     pub permissions: Vec<String>,
 }
@@ -63,8 +64,8 @@ impl Run<Persist<CreateRole>> for RoleUseCases {
 #[derive(Debug)]
 pub struct UpdateRole {
     pub id: String,
-    pub name: String,
-    pub description: String,
+    pub name: RoleDisplayName,
+    pub description: RoleDescription,
     pub permissions: Vec<String>,
 }
 
@@ -87,10 +88,10 @@ impl Run<Prepare<UpdateRole>> for RoleUseCases {
             .role_repo
             .get(&cmd.id)
             .await?
-            .ok_or_else(|| DomainError::not_found("role", &cmd.id))?;
+            .ok_or_else(|| DomainError::not_found("Role", &cmd.id))?;
         validate_role_permissions(&cmd.permissions, role.scope)?;
-        role.name.clone_from(&cmd.name);
-        role.description.clone_from(&cmd.description);
+        role.name = cmd.name.clone();
+        role.description = cmd.description.clone();
         role.permissions.clone_from(&cmd.permissions);
         Ok(input.prepared(Draft::new(role)))
     }
@@ -134,7 +135,7 @@ impl Run<Prepare<DeleteRole>> for RoleUseCases {
             .role_repo
             .get(id)
             .await?
-            .ok_or_else(|| DomainError::not_found("role", id))?;
+            .ok_or_else(|| DomainError::not_found("Role", id))?;
         if role.builtin {
             return Err(DomainError::business_rule(
                 "builtin roles cannot be deleted",

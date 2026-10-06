@@ -5,7 +5,7 @@ use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::DomainError;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
-use crate::domain::role::RoleName;
+use crate::domain::role::{RoleDescription, RoleDisplayName, RoleName};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::stubs::{CountingPolicy, StubGrants, StubRoles, alice};
 use scylla_auth::authz::{Grant, PermissionService, Role, ScopeKind};
@@ -37,8 +37,8 @@ fn role(id: &str, scope: ScopeKind, builtin: bool, permissions: &[&str]) -> Role
     Role {
         id: id.to_string(),
         key: builtin.then(|| id.to_string()),
-        name: id.to_string(),
-        description: String::new(),
+        name: RoleDisplayName::new(id).unwrap(),
+        description: RoleDescription::new("").unwrap(),
         scope,
         owner_org: None,
         builtin,
@@ -48,8 +48,8 @@ fn role(id: &str, scope: ScopeKind, builtin: bool, permissions: &[&str]) -> Role
 
 fn create(permissions: &[&str]) -> CreateRole {
     CreateRole {
-        name: "CI Runner".to_string(),
-        description: String::new(),
+        name: RoleDisplayName::new("CI Runner").unwrap(),
+        description: RoleDescription::new("").unwrap(),
         scope: ScopeKind::Project,
         permissions: permissions.iter().map(ToString::to_string).collect(),
     }
@@ -110,8 +110,8 @@ async fn an_update_validates_against_the_stored_scope_and_rewrites_the_role() {
     );
     let update = |permissions: &[&str]| UpdateRole {
         id: "ci".to_string(),
-        name: "CI".to_string(),
-        description: "runs the builds".to_string(),
+        name: RoleDisplayName::new("CI").unwrap(),
+        description: RoleDescription::new("runs the builds").unwrap(),
         permissions: permissions.iter().map(ToString::to_string).collect(),
     };
 
@@ -127,7 +127,7 @@ async fn an_update_validates_against_the_stored_scope_and_rewrites_the_role() {
         .run(&lab.uc, &alice(), update(&["runPipeline"]))
         .await
         .unwrap();
-    assert_eq!(updated.name, "CI");
+    assert_eq!(updated.name.as_str(), "CI");
     assert_eq!(updated.permissions, vec!["runPipeline".to_string()]);
     assert_eq!(lab.roles.rows().as_slice(), [updated]);
 }
@@ -148,7 +148,7 @@ async fn a_missing_role_is_not_found() {
         .await
         .unwrap_err();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
 }
 
 #[tokio::test]

@@ -22,14 +22,14 @@ struct OneInvitation {
 
 #[async_trait]
 impl InvitationRepository for OneInvitation {
-    async fn create(&self, _: &Invitation) -> DomainResult<()> {
+    async fn create(&self, _: &Invitation, _: &str) -> DomainResult<()> {
         unreachable!("no invitation create in an accept")
     }
     async fn find_by_id(&self, _: &InvitationId) -> DomainResult<Invitation> {
         unreachable!("an accept reads by token")
     }
     async fn find_by_token(&self, token: &str) -> DomainResult<Invitation> {
-        if token == self.invitation.token() {
+        if token == "invite-token" {
             Ok(self.invitation.clone())
         } else {
             Err(DomainError::not_found("Invitation", token))
@@ -87,7 +87,6 @@ fn lab(role: Option<&str>, users: Arc<dyn UserRepository>) -> Lab {
             Email::new("newbie@example.com").unwrap(),
             role.map(|r| RoleName::new(r).unwrap()),
             UserId::new("boss"),
-            "invite-token".to_string(),
         ),
         accepted: Mutex::default(),
     });
@@ -154,7 +153,7 @@ async fn an_unknown_token_writes_nothing() {
 
     let err = lab.accept("no-such-token").await.err().unwrap();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
     assert!(lab.invitations.accepted.lock().unwrap().is_empty());
     assert!(lab.sessions.rows().is_empty());
     assert_eq!(lab.policy.reloads(), 0);

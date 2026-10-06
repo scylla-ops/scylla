@@ -1,13 +1,20 @@
 //! The organization's actions through the engine, on stub ports.
 
 use super::*;
+use crate::application::AppRepository;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
+use crate::domain::agent::Agent;
+use crate::domain::app::{App, AppCredential, AppName};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::{OrganizationId, UserId};
+use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::organization::{Organization, OrganizationName};
 use crate::domain::permission::Permission;
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, NoUsers, alice, empty_page};
+use crate::test_support::jobs::JobBuilder;
+use crate::test_support::pipelines::PipelineBuilder;
+use crate::test_support::stubs::{
+    CountingPolicy, NoUsers, StubJobs, StubRegistry, StubTails, alice, dispatcher, empty_page,
+};
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, PermissionService};
 use scylla_extension::Actions;
@@ -58,13 +65,13 @@ impl OrganizationRepository for StubOrganizations {
             .unwrap()
             .get(id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("Organization", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("Organization", id))
     }
     async fn update(&self, organization: &Organization) -> DomainResult<Organization> {
         self.create(organization).await
     }
-    async fn delete(&self, id: &OrganizationId) -> DomainResult<()> {
-        self.rows.lock().unwrap().remove(id);
+    async fn delete(&self, organization: &Organization) -> DomainResult<()> {
+        self.rows.lock().unwrap().remove(organization.id());
         Ok(())
     }
     async fn list_all(
@@ -73,8 +80,53 @@ impl OrganizationRepository for StubOrganizations {
     ) -> DomainResult<PaginatedResult<Organization>> {
         empty_page()
     }
-    async fn name_exists(&self, name: &OrganizationName) -> DomainResult<bool> {
-        Ok(self.rows.lock().unwrap().values().any(|o| o.name() == name))
+}
+
+/// The Apps of each organization; nothing else is read.
+#[derive(Default)]
+struct StubApps(Mutex<Vec<App>>);
+
+#[async_trait]
+impl AppRepository for StubApps {
+    async fn create_app(&self, _: &App, _: &AppCredential) -> DomainResult<()> {
+        unreachable!("an organization action writes no app")
+    }
+    async fn provision_agent(
+        &self,
+        _: &App,
+        _: &AppCredential,
+        _: &Agent,
+        _: &Grant,
+    ) -> DomainResult<()> {
+        unreachable!("an organization action writes no app")
+    }
+    async fn provision(&self, _: &App, _: &Grant) -> DomainResult<()> {
+        unreachable!("an organization action writes no app")
+    }
+    async fn find_by_id(&self, _: &AppId) -> DomainResult<App> {
+        unreachable!("an organization action lists its apps")
+    }
+    async fn find_trigger_runner(&self, _: &OrganizationId) -> DomainResult<Option<AppId>> {
+        unreachable!("an organization action lists its apps")
+    }
+    async fn list_by_organization(
+        &self,
+        organization_id: &OrganizationId,
+    ) -> DomainResult<Vec<App>> {
+        Ok(self
+            .0
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|a| a.organization_id() == organization_id)
+            .cloned()
+            .collect())
+    }
+    async fn set_active(&self, _: &AppId, _: bool) -> DomainResult<()> {
+        unreachable!("an organization action writes no app")
+    }
+    async fn delete(&self, _: &AppId) -> DomainResult<()> {
+        unreachable!("an organization action writes no app")
     }
 }
 
@@ -82,7 +134,10 @@ struct Lab {
     actions: Actions,
     uc: OrganizationUseCases,
     organizations: Arc<StubOrganizations>,
+    apps: Arc<StubApps>,
     policy: Arc<CountingPolicy>,
+    jobs: Arc<StubJobs>,
+    registry: Arc<StubRegistry>,
 }
 
 impl Lab {
@@ -93,12 +148,28 @@ impl Lab {
 
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let organizations = Arc::new(StubOrganizations::default());
+    let apps = Arc::new(StubApps::default());
     let policy = Arc::new(CountingPolicy::default());
+    let jobs = Arc::new(StubJobs::default());
+    let registry = Arc::new(StubRegistry::default());
     Lab {
         actions: actions(permissions),
-        uc: OrganizationUseCases::new(organizations.clone(), Arc::new(NoUsers), policy.clone()),
+        uc: OrganizationUseCases::new(
+            organizations.clone(),
+            Arc::new(NoUsers),
+            apps.clone(),
+            policy.clone(),
+            dispatcher(
+                registry.clone(),
+                jobs.clone(),
+                Arc::new(StubTails::default()),
+            ),
+        ),
         organizations,
+        apps,
         policy,
+        jobs,
+        registry,
     }
 }
 
@@ -143,15 +214,14 @@ async fn a_denied_caller_writes_nothing() {
 }
 
 #[tokio::test]
-async fn a_taken_name_is_a_conflict_and_writes_nothing() {
+async fn a_name_is_a_label_so_two_organizations_can_share_it() {
     let lab = lab(Arc::new(RecordingPermissionService::new()));
-    lab.create("acme").await.unwrap();
+    let first = lab.create("acme").await.unwrap();
 
-    let err = lab.create("acme").await.unwrap_err();
+    let second = lab.create("acme").await.unwrap();
 
-    assert!(matches!(err, DomainError::Conflict(_)));
-    assert_eq!(lab.organizations.rows.lock().unwrap().len(), 1);
-    assert_eq!(lab.policy.reloads(), 1);
+    assert_ne!(first.id(), second.id());
+    assert_eq!(lab.organizations.rows.lock().unwrap().len(), 2);
 }
 
 #[tokio::test]
@@ -188,25 +258,6 @@ async fn an_update_stages_the_change_and_persists_it() {
 }
 
 #[tokio::test]
-async fn an_update_to_its_own_name_is_not_a_conflict() {
-    let lab = lab(Arc::new(RecordingPermissionService::new()));
-    let created = lab.create("acme").await.unwrap();
-
-    lab.actions
-        .run(
-            &lab.uc,
-            &alice(),
-            UpdateOrganization {
-                id: created.id().clone(),
-                name: Some(OrganizationName::new("acme").unwrap()),
-                description: None,
-            },
-        )
-        .await
-        .unwrap();
-}
-
-#[tokio::test]
 async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
@@ -231,6 +282,62 @@ async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
         permissions.permissions()[1],
         Permission::DeleteOrganization(created.id().clone())
     );
+}
+
+#[tokio::test]
+async fn a_delete_stops_the_live_jobs_of_the_organization_on_their_agents() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let created = lab.create("gone").await.unwrap();
+    let agent = AppId::new("agent-1");
+    lab.registry.connect(&agent);
+    let pipeline = PipelineBuilder::for_project_id(ProjectId::new("p")).build();
+    let running = lab.jobs.insert(
+        &JobBuilder::new(&pipeline)
+            .running(true)
+            .agent(agent.clone())
+            .build(),
+    );
+
+    lab.actions
+        .run(
+            &lab.uc,
+            &alice(),
+            DeleteOrganization {
+                id: created.id().clone(),
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(lab.registry.cancelled(), [(agent, running.id().clone())]);
+}
+
+#[tokio::test]
+async fn a_delete_closes_the_agent_streams_of_the_organization_apps() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let created = lab.create("gone").await.unwrap();
+    let other = lab.create("kept").await.unwrap();
+    let app = |organization: &Organization, name: &str| {
+        let app = App::create(organization.id().clone(), AppName::new(name).unwrap()).unwrap();
+        lab.apps.0.lock().unwrap().push(app.clone());
+        lab.registry.connect(app.id());
+        app
+    };
+    let ours = app(&created, "runner");
+    app(&other, "runner");
+
+    lab.actions
+        .run(
+            &lab.uc,
+            &alice(),
+            DeleteOrganization {
+                id: created.id().clone(),
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(lab.registry.disconnected(), [ours.id().clone()]);
 }
 
 #[tokio::test]

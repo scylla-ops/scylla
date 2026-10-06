@@ -47,14 +47,15 @@ impl SessionRepository for PgSessionRepository {
 pub mod queries {
     use super::*;
 
+    /// Stores the SHA-256 of the token, never the token.
     pub async fn create<'e, E>(executor: E, session: &Session) -> DomainResult<Session>
     where
         E: PgExecutor<'e>,
     {
         sqlx::query!(
             r#"
-            INSERT INTO sessions (id, token, user_id, created_at, expires_at, last_active_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO sessions (id, token_hash, user_id, created_at, expires_at, last_active_at)
+            VALUES ($1, encode(sha256(convert_to($2, 'UTF8')), 'hex'), $3, $4, $5, $6)
             "#,
             session.id().as_str(),
             session.token(),
@@ -75,9 +76,9 @@ pub mod queries {
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, token, user_id, created_at, expires_at, last_active_at
+            SELECT id, user_id, created_at, expires_at, last_active_at
             FROM sessions
-            WHERE token = $1
+            WHERE token_hash = encode(sha256(convert_to($1, 'UTF8')), 'hex')
             "#,
             token,
         )
@@ -87,7 +88,7 @@ pub mod queries {
         .not_found_as("Session", "<token>")?;
         Ok(Session::from_persistence(
             SessionId::new(rec.id),
-            rec.token,
+            token.to_owned(),
             UserId::new(rec.user_id),
             rec.created_at,
             rec.expires_at,
@@ -99,10 +100,13 @@ pub mod queries {
     where
         E: PgExecutor<'e>,
     {
-        sqlx::query!("DELETE FROM sessions WHERE token = $1", token)
-            .execute(executor)
-            .await
-            .to_domain()?;
+        sqlx::query!(
+            "DELETE FROM sessions WHERE token_hash = encode(sha256(convert_to($1, 'UTF8')), 'hex')",
+            token,
+        )
+        .execute(executor)
+        .await
+        .to_domain()?;
         Ok(())
     }
 

@@ -63,13 +63,19 @@ impl SecretResolver for DispatchSecretResolver {
                 match ev.source() {
                     EnvSource::Literal(value) => env.push(DispatchEnv {
                         key: ev.key().to_string(),
-                        value: value.clone(),
+                        value: value.to_string(),
                         masked: false,
                     }),
                     EnvSource::Secret(name) => {
                         let ciphertext = by_name
                             .get(name.as_str())
-                            .ok_or_else(|| DomainError::not_found("secret", name.as_str()))?;
+                            .ok_or_else(|| {
+                                DomainError::NotFound(format!(
+                                    "secret '{name}' referenced by node '{}' env '{}' is not in this project",
+                                    node.id(),
+                                    ev.key()
+                                ))
+                            })?;
                         let value = self.cipher.decrypt(ciphertext)?;
                         env.push(DispatchEnv {
                             key: ev.key().to_string(),

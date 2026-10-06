@@ -4,6 +4,7 @@
 pub mod clock;
 pub mod errors;
 pub mod ids;
+pub mod text;
 
 pub mod agent;
 pub mod app;

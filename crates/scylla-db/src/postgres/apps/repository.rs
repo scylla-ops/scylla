@@ -1,6 +1,5 @@
 use crate::domain::agent::Agent;
-use crate::domain::app::AppName;
-use crate::domain::app::{App, AppCredential};
+use crate::domain::app::{App, AppCredential, AppKind, AppName};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use async_trait::async_trait;
@@ -54,15 +53,9 @@ impl AppRepository for PgAppRepository {
     }
 
     #[instrument(skip_all, fields(app_id = %app.id(), org_id = %app.organization_id()))]
-    async fn provision(
-        &self,
-        app: &App,
-        credential: &AppCredential,
-        grant: &Grant,
-    ) -> DomainResult<()> {
+    async fn provision(&self, app: &App, grant: &Grant) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
         queries::create(&mut *tx, app).await?;
-        app_secrets::insert(&mut *tx, credential).await?;
         grants::insert(&mut *tx, grant).await?;
         tx.commit().await.to_domain()?;
         Ok(())
@@ -71,6 +64,14 @@ impl AppRepository for PgAppRepository {
     #[instrument(skip_all, fields(app_id = %id))]
     async fn find_by_id(&self, id: &AppId) -> DomainResult<App> {
         queries::find_by_id(&self.pool, id).await
+    }
+
+    #[instrument(skip_all, fields(org_id = %organization_id))]
+    async fn find_trigger_runner(
+        &self,
+        organization_id: &OrganizationId,
+    ) -> DomainResult<Option<AppId>> {
+        queries::find_trigger_runner(&self.pool, organization_id).await
     }
 
     #[instrument(skip_all, fields(org_id = %organization_id))]
@@ -100,15 +101,18 @@ pub mod queries {
         id: String,
         organization_id: String,
         name: String,
+        kind: String,
         is_active: bool,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
     ) -> DomainResult<App> {
         let name = AppName::new(name).db_field("app name")?;
+        let kind = AppKind::new(kind).db_field("app kind")?;
         Ok(App::from_persistence(
             AppId::new(id),
             OrganizationId::new(organization_id),
             name,
+            kind,
             is_active,
             created_at,
             updated_at,
@@ -121,12 +125,13 @@ pub mod queries {
     {
         sqlx::query!(
             r#"
-            INSERT INTO apps (id, organization_id, name, is_active, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO apps (id, organization_id, name, kind, is_active, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
             app.id().as_str(),
             app.organization_id().as_str(),
             app.name().as_str(),
+            app.kind().as_str(),
             app.is_active(),
             app.created_at(),
             app.updated_at(),
@@ -143,7 +148,7 @@ pub mod queries {
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, organization_id, name, is_active, created_at, updated_at
+            SELECT id, organization_id, name, kind, is_active, created_at, updated_at
             FROM apps
             WHERE id = $1
             "#,
@@ -151,11 +156,12 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        .not_found_as("App", id.to_string())?;
+        .not_found_as("App", id)?;
         row_into_app(
             rec.id,
             rec.organization_id,
             rec.name,
+            rec.kind,
             rec.is_active,
             rec.created_at,
             rec.updated_at,
@@ -171,7 +177,7 @@ pub mod queries {
     {
         let rows = sqlx::query!(
             r#"
-            SELECT id, organization_id, name, is_active, created_at, updated_at
+            SELECT id, organization_id, name, kind, is_active, created_at, updated_at
             FROM apps
             WHERE organization_id = $1
             ORDER BY created_at DESC
@@ -187,12 +193,30 @@ pub mod queries {
                     r.id,
                     r.organization_id,
                     r.name,
+                    r.kind,
                     r.is_active,
                     r.created_at,
                     r.updated_at,
                 )
             })
             .collect()
+    }
+
+    pub async fn find_trigger_runner<'e, E>(
+        executor: E,
+        organization_id: &OrganizationId,
+    ) -> DomainResult<Option<AppId>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let id = sqlx::query_scalar!(
+            "SELECT id FROM apps WHERE organization_id = $1 AND kind = 'trigger_runner'",
+            organization_id.as_str(),
+        )
+        .fetch_optional(executor)
+        .await
+        .to_domain()?;
+        Ok(id.map(AppId::new))
     }
 
     pub async fn set_active<'e, E>(executor: E, id: &AppId, active: bool) -> DomainResult<()>

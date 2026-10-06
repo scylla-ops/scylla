@@ -4,7 +4,7 @@ use super::*;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{ProjectId, SecretId};
 use crate::domain::permission::Permission;
-use crate::domain::secret::{Secret, SecretName};
+use crate::domain::secret::{Secret, SecretDescription, SecretName, SecretValue};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::stubs::alice;
 use async_trait::async_trait;
@@ -33,7 +33,7 @@ impl SecretRepository for StubSecrets {
             .unwrap()
             .get(id)
             .cloned()
-            .ok_or_else(|| DomainError::not_found("Secret", id.to_string()))
+            .ok_or_else(|| DomainError::not_found("Secret", id))
     }
     async fn list_by_project(&self, project_id: &ProjectId) -> DomainResult<Vec<Secret>> {
         Ok(self
@@ -104,8 +104,8 @@ fn create() -> CreateSecret {
     CreateSecret {
         project_id: project(),
         name: SecretName::new("DB_PASSWORD").unwrap(),
-        description: "desc".into(),
-        value: "value".into(),
+        description: SecretDescription::new("desc").unwrap(),
+        value: SecretValue::new("value").unwrap(),
     }
 }
 
@@ -183,7 +183,7 @@ async fn a_denied_delete_never_reads_or_removes() {
     let secret = Secret::create(
         project(),
         SecretName::new("DB_PASSWORD").unwrap(),
-        String::new(),
+        SecretDescription::new("").unwrap(),
         vec![0xAA],
     );
     lab.secrets.create(&secret).await.unwrap();
@@ -200,5 +200,34 @@ async fn an_allowed_delete_of_an_unknown_secret_is_not_found() {
 
     let err = lab.delete(&SecretId::new("missing")).await.unwrap_err();
 
-    assert!(matches!(err, DomainError::NotFound { .. }));
+    assert!(matches!(err, DomainError::NotFound(_)));
+}
+
+#[tokio::test]
+async fn an_unknown_secret_ref_names_the_secret_its_node_and_its_env_key() {
+    use crate::domain::pipeline::{EnvKey, EnvVar, NodeId, PipelineNode, Step};
+    let resolver = DispatchSecretResolver::new(
+        Arc::new(StubSecrets::default()),
+        Arc::new(StubCipher::default()),
+    );
+    let node = PipelineNode::new(
+        NodeId::new("n1").unwrap(),
+        Vec::new(),
+        Step::exec("echo".into(), Vec::new()).unwrap(),
+        None,
+        vec![EnvVar::secret(
+            EnvKey::new("X").unwrap(),
+            SecretName::new("MISSING").unwrap(),
+        )],
+    );
+
+    let err = resolver.resolve(&project(), &[node]).await.unwrap_err();
+
+    let DomainError::NotFound(message) = err else {
+        panic!("expected NotFound, got {err:?}");
+    };
+    assert_eq!(
+        message,
+        "secret 'MISSING' referenced by node 'n1' env 'X' is not in this project"
+    );
 }

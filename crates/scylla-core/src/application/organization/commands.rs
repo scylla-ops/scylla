@@ -2,8 +2,9 @@
 //! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::OrganizationUseCases;
+use crate::application::job::JobScope;
 use crate::domain::caller::CallerContext;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::OrganizationId;
 use crate::domain::organization::{Organization, OrganizationDescription, OrganizationName};
 use crate::domain::permission::Permission;
@@ -47,9 +48,6 @@ impl Run<Prepare<CreateOrganization>> for OrganizationUseCases {
         input: Authorized<CreateOrganization>,
     ) -> DomainResult<Prepared<CreateOrganization>> {
         let cmd = input.command();
-        if self.org_repo.name_exists(&cmd.name).await? {
-            return Err(DomainError::conflict("Organization name already exists"));
-        }
         let organization = Organization::create(cmd.name.clone(), cmd.description.clone())?;
         let owner = match input.caller() {
             CallerContext::User(user_id) => Some(Grant::new(
@@ -122,9 +120,6 @@ impl Run<Prepare<UpdateOrganization>> for OrganizationUseCases {
         let cmd = input.command();
         let mut organization = self.org_repo.find_by_id(&cmd.id).await?;
         if let Some(name) = &cmd.name {
-            if self.org_repo.name_exists(name).await? && organization.name() != name {
-                return Err(DomainError::conflict("Organization name already exists"));
-            }
             organization.update_name(name.clone())?;
         }
         if let Some(description) = &cmd.description {
@@ -183,11 +178,7 @@ impl Run<Persist<SetOrganizationActive>> for OrganizationUseCases {
         input: Prepared<SetOrganizationActive>,
     ) -> DomainResult<Committed<SetOrganizationActive>> {
         input
-            .commit(async |draft| {
-                let organization = draft.into_inner();
-                self.org_repo.update(&organization).await?;
-                Ok(organization)
-            })
+            .commit(async |draft| self.org_repo.update(&draft.into_inner()).await)
             .await
     }
 }
@@ -228,8 +219,20 @@ impl Run<Persist<DeleteOrganization>> for OrganizationUseCases {
     ) -> DomainResult<Committed<DeleteOrganization>> {
         input
             .commit(async |organization| {
-                self.org_repo.delete(organization.id()).await?;
+                let apps = self
+                    .app_repo
+                    .list_by_organization(organization.id())
+                    .await?;
+                self.dispatch
+                    .recall(
+                        JobScope::Organization(organization.id()),
+                        self.org_repo.delete(&organization),
+                    )
+                    .await?;
                 self.policy_control.reload().await?;
+                for app in &apps {
+                    self.dispatch.disconnect(app.id());
+                }
                 Ok(Deleted::new(organization))
             })
             .await

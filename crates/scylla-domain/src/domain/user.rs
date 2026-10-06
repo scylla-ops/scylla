@@ -23,10 +23,14 @@ pub struct User {
     is_active: bool,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    /// The row version the value was read at. The store checks it on every write and bumps
+    /// it itself; the domain never changes it.
+    version: u64,
 }
 
 impl User {
     #[must_use]
+    #[allow(clippy::too_many_arguments)]
     pub fn from_persistence(
         id: UserId,
         username: Username,
@@ -35,6 +39,7 @@ impl User {
         is_active: bool,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
+        version: u64,
     ) -> Self {
         Self {
             id,
@@ -44,6 +49,7 @@ impl User {
             is_active,
             created_at,
             updated_at,
+            version,
         }
     }
 
@@ -58,6 +64,7 @@ impl User {
             is_active: true,
             created_at: now,
             updated_at: now,
+            version: 0,
         }
     }
 
@@ -100,5 +107,10 @@ impl User {
     #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
+    }
+
+    #[must_use]
+    pub fn version(&self) -> u64 {
+        self.version
     }
 }

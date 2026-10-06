@@ -85,6 +85,9 @@ pub mod app {
 }
 
 pub mod agent {
+    pub const MAX_MESSAGE_BYTES: usize = 16 * 1024 * 1024;
+    pub const MAX_LOG_LINE_BYTES: usize = 64 * 1024;
+
     pub mod v1 {
         tonic::include_proto!("scylla.agent.v1");
     }

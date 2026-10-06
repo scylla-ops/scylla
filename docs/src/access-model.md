@@ -45,10 +45,38 @@ to read, change, enable, disable or delete it, and `runPipeline` to fire it
 now. A change also needs `runPipeline`. Thus the roles that give these
 permissions on the pipeline also give them on its triggers.
 
-A check on an unknown secret or trigger finds no project. Only a System grant
-reaches it. Thus a caller without a System grant gets "forbidden" for an
-unknown secret or trigger, and does not learn if it exists. A caller with a
-System grant gets "not found".
+A run reads the value of each secret that its pipeline refers to. Thus a
+principal that may create, update or run a pipeline of a project may read the
+secrets of that project through a run. `listSecrets` shows the names only; it
+is not the boundary. Put a secret that some of these principals must not read
+in a different project.
+
+To cancel a job, a caller needs `updateJob` on the job. The Project Developer
+role gives it, so a principal that may run the pipelines of a project may also
+cancel their jobs.
+
+## Agents
+
+An agent is an app. The control plane gives a job to an agent only when the
+agent holds `executeJob` on the pipeline of the job, through a grant on its
+project or on its organization. The dispatcher reads this rule from the grants
+of the agent, not from a check, so it writes no audit row. Only the agent that
+a job is placed on may report the status and the output of that job, and only
+until the job ends. When an app loses its grant, is disabled or is deleted,
+the control plane closes its stream.
+
+## Unknown ids
+
+A check on an item finds its nearest known container: the pipeline of a job
+or a trigger, the project of a pipeline or a secret, the organization of a
+project, an app or an invitation. A check on an id that does not exist finds
+no container, so the item is under System. Only a System grant reaches it.
+Thus a caller without a System grant gets "forbidden" and does not learn if
+the item exists. A caller with a System grant gets "not found".
+
+A write that refers to a container or a principal that does not exist, for
+example a project in an unknown organization or a grant to an unknown user,
+fails with "failed precondition".
 
 ## Invitations
 
@@ -58,9 +86,8 @@ above to that organization, with the permission `manageInvitations`. Thus the
 roles that give this permission on the organization also give it on its
 invitations.
 
-A check on an unknown invitation finds no organization. As for an unknown
-secret or trigger, only a System grant reaches it. A caller without a System
-grant gets "forbidden", and a caller with a System grant gets "not found".
+A check on an unknown invitation finds no organization (see
+[Unknown ids](#unknown-ids)).
 
 ## App secrets
 
@@ -70,9 +97,8 @@ organization that holds the app. Then it applies the rule above to that
 organization, with the permission `deleteApp`. Thus the roles that give this
 permission on the organization also give it on the secrets of its apps.
 
-A check on an unknown app secret finds no app. As for an unknown invitation,
-only a System grant reaches it. A caller without a System grant gets
-"forbidden", and a caller with a System grant gets "not found".
+A check on an unknown app secret finds no app (see
+[Unknown ids](#unknown-ids)).
 
 ## Revoking a grant
 
@@ -113,7 +139,7 @@ created at any scope with any permission set.
 | Organization Viewer         | Organization | Read every project and run in the organization                  |
 | Organization Member         | Organization | Sees the organization exists. Nothing else                      |
 | Project Admin               | Project      | Everything on the project, including managing its accesses      |
-| Project Developer           | Project      | Create, edit, run pipelines; read jobs and logs; list secrets   |
+| Project Developer           | Project      | Create, edit, run pipelines; read and cancel jobs; read logs; list secrets; read the secrets through a run |
 | Project Viewer              | Project      | Read the project, its pipelines, its jobs and logs              |
 | Organization Agent          | Organization | Machine app: pull and run the organization's jobs               |
 | Project Agent               | Project      | Machine app: pull and run the project's jobs                    |
@@ -124,14 +150,31 @@ the System scope). Tenants pick from it; they do not yet redefine it.
 
 ## Guarantees
 
-**An organization always keeps at least one human administrator.** The last one
-can be neither removed nor demoted; the error says to appoint another first.
+**The system and each organization always keep at least one human
+administrator** (`system-admin`, `organization-admin`). You cannot revoke the
+last one, remove all its access or delete its user. The error tells you to
+appoint another administrator first. An app does not count as an
+administrator.
 
 **A project may end up with no administrator.** Organization administrators
 cover it and can reopen access, so this is recoverable rather than a dead end.
 
-**Nobody can grant more than they hold.** A project administrator cannot award
-themselves an organization role.
+**Nobody can grant more than they hold.** A role is given only by a principal
+that holds each of its permissions on the scope, on the organization of the
+scope or on System. Full control there permits all roles. An invitation obeys
+the same rule, and an invitation without a role counts as
+`organization-member`. A project administrator cannot award themselves an
+organization role.
+
+**An agent role is for an app only.** A user cannot hold
+`organization-agent`, `project-agent` or `organization-trigger-runner`.
+
+**An app acts only in the organization that owns it.** A grant to an app on
+another organization, or on a project of another organization, is refused.
+
+**A grant refers to a principal and a scope that exist.** The database refuses
+a grant for an unknown user, app, organization or project. When the user, the
+app or the scope is deleted, its grants go with it.
 
 **A project-scope grant only goes to someone already in the organization.** A
 project administrator distributes access among people the organization has
@@ -142,7 +185,9 @@ organization and system administrators hold.
 **Removing someone from an organization strips every access beneath it** in one
 operation, projects included (`RevokeAllAccess`). System-scoped grants are never
 touched by it, so an organization administrator cannot strip a platform
-operator.
+operator. When `RevokeGrant` removes the last grant of a user on an
+organization, it also removes the grants of that user on the projects of the
+organization.
 
 ## Revocation timing
 

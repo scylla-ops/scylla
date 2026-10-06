@@ -17,20 +17,20 @@ namespace Scylla {
     // Machine principal (agent / automation) owned by an organization. As a
     // principal it carries scoped grants like a User (no ABAC attributes); as a
     // resource it lives under its org, so org-admins manage it via the hierarchy.
-    entity App in [Organization];
+    //
+    // Every resource sits under its nearest known ancestor. An unknown resource
+    // sits under System, so only a System grant reaches it. A grant sits under
+    // the scope it is bound at; a System grant sits under System.
+    entity App in [Organization, System];
 
     entity Organization in [System];
-    entity Project in [Organization];
-    entity Pipeline in [Project];
-    entity Job in [Pipeline];
-    // An unknown secret sits under System, so only a System grant reaches it.
+    entity Project in [Organization, System];
+    entity Pipeline in [Project, System];
+    entity Job in [Pipeline, System];
     entity Secret in [Project, System];
-    // Same for an unknown trigger, invitation and app secret.
     entity Trigger in [Pipeline, System];
     entity Invitation in [Organization, System];
     entity AppSecret in [App, System];
-    // A grant sits under the scope it is bound at; a System grant and an
-    // unknown grant sit under System.
     entity Grant in [Project, Organization, System];
 
     // Users are also `in [System]` so a System-scoped grant (system-admin)

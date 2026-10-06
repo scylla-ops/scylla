@@ -9,6 +9,7 @@ use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, TriggerId};
 use crate::domain::job::{Job, JobOrigin};
+use crate::domain::pipeline::{EnvKey, EnvValue};
 use crate::domain::trigger::{Trigger, TriggerInputSource, TriggerSource};
 use async_trait::async_trait;
 use derive_more::Constructor;
@@ -55,7 +56,7 @@ impl TriggerFirer {
         };
         let run = RunPipelineWithInputs {
             id: trigger.pipeline_id().clone(),
-            inputs: resolve_inputs(trigger, payload),
+            inputs: resolve_inputs(trigger, payload)?,
             origin,
         };
         self.actions
@@ -86,7 +87,7 @@ impl TriggerFiring for TriggerFirer {
         };
 
         let record = RecordTriggerFire {
-            trigger,
+            id: trigger_id.clone(),
             status: if outcome.is_ok() { "ok" } else { "error" },
         };
         if let Err(e) = self.actions.run(&*self.triggers, &service, record).await {
@@ -102,15 +103,21 @@ pub struct TriggerFireUseCases {
     firing: Arc<dyn TriggerFiring>,
 }
 
-fn resolve_inputs(trigger: &Trigger, payload: Option<&serde_json::Value>) -> Vec<(String, String)> {
+fn resolve_inputs(
+    trigger: &Trigger,
+    payload: Option<&serde_json::Value>,
+) -> DomainResult<Vec<(EnvKey, EnvValue)>> {
     trigger
         .inputs()
         .iter()
-        .filter_map(|input| match input.source() {
-            TriggerInputSource::Literal(value) => Some((input.key().to_string(), value.clone())),
-            TriggerInputSource::JsonPointer(pointer) => payload
-                .and_then(|body| body.pointer(pointer))
-                .map(|v| (input.key().to_string(), json_value_to_env(v))),
+        .filter_map(|input| {
+            let value = match input.source() {
+                TriggerInputSource::Literal(value) => Ok(value.clone()),
+                TriggerInputSource::JsonPointer(pointer) => {
+                    EnvValue::new(json_value_to_env(payload?.pointer(pointer.as_str())?))
+                }
+            };
+            Some(value.map(|value| (input.key().clone(), value)))
         })
         .collect()
 }
@@ -147,16 +154,24 @@ mod resolve_tests {
         EnvKey::new(k).unwrap()
     }
 
+    fn resolved(trigger: &Trigger, payload: Option<&serde_json::Value>) -> Vec<(String, String)> {
+        resolve_inputs(trigger, payload)
+            .unwrap()
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
+    }
+
     #[test]
     fn literal_inputs_resolve_without_payload() {
         let trigger = Trigger::create(
             PipelineId::new("p"),
             TriggerName::new("nightly").unwrap(),
             TriggerSource::Cron(CronSpec::new("0 9 * * *").unwrap()),
-            vec![TriggerInput::literal(key("RUN_MODE"), "nightly")],
+            vec![TriggerInput::literal(key("RUN_MODE"), "nightly").unwrap()],
         )
         .unwrap();
-        let resolved = resolve_inputs(&trigger, None);
+        let resolved = resolved(&trigger, None);
         assert_eq!(
             resolved,
             vec![("RUN_MODE".to_string(), "nightly".to_string())]
@@ -170,7 +185,7 @@ mod resolve_tests {
             TriggerInput::json_pointer(key("REPO"), "/repository/name").unwrap(),
         ]);
         let payload = json!({ "after": "abc123", "repository": { "name": "scylla" } });
-        let resolved = resolve_inputs(&trigger, Some(&payload));
+        let resolved = resolved(&trigger, Some(&payload));
         assert!(resolved.contains(&("GIT_COMMIT".to_string(), "abc123".to_string())));
         assert!(resolved.contains(&("REPO".to_string(), "scylla".to_string())));
     }
@@ -180,9 +195,9 @@ mod resolve_tests {
         let trigger = webhook_trigger(vec![
             TriggerInput::json_pointer(key("GIT_COMMIT"), "/after").unwrap(),
         ]);
-        assert!(resolve_inputs(&trigger, None).is_empty());
+        assert!(resolved(&trigger, None).is_empty());
         let payload = json!({ "other": 1 });
-        assert!(resolve_inputs(&trigger, Some(&payload)).is_empty());
+        assert!(resolved(&trigger, Some(&payload)).is_empty());
     }
 
     #[test]
@@ -192,8 +207,19 @@ mod resolve_tests {
             TriggerInput::json_pointer(key("FLAG"), "/ok").unwrap(),
         ]);
         let payload = json!({ "n": 42, "ok": true });
-        let resolved = resolve_inputs(&trigger, Some(&payload));
+        let resolved = resolved(&trigger, Some(&payload));
         assert!(resolved.contains(&("COUNT".to_string(), "42".to_string())));
         assert!(resolved.contains(&("FLAG".to_string(), "true".to_string())));
+    }
+
+    #[test]
+    fn a_payload_value_with_nul_is_a_validation_error() {
+        let trigger = webhook_trigger(vec![TriggerInput::json_pointer(key("S"), "/s").unwrap()]);
+        let payload = json!({ "s": "a\u{0}b" });
+        let err = resolve_inputs(&trigger, Some(&payload)).unwrap_err();
+        assert!(matches!(
+            err,
+            crate::domain::errors::DomainError::Validation(_)
+        ));
     }
 }

@@ -8,21 +8,21 @@ pub use queries::{
 };
 pub use repository::ProjectRepository;
 
-use crate::application::UserRepository;
+use crate::application::{DispatchUseCases, UserRepository};
 use derive_more::Constructor;
-use scylla_auth::authz::{PermissionService, PolicyControl, VisibilityResolver};
+use scylla_auth::authz::{PolicyControl, VisibilityResolver};
 use std::sync::Arc;
 
 /// The project aggregate's stage runners, one block per action in `commands.rs` and
-/// `queries.rs`. It has no method of its own; `Actions::run` drives it. `permission_service`
-/// serves one scoping decision in `queries.rs`, never a gate.
+/// `queries.rs`. It has no method of its own; `Actions::run` drives it. A delete stops the
+/// live jobs of the project through `dispatch`.
 #[derive(Constructor)]
 pub struct ProjectUseCases {
     pub(super) project_repo: Arc<dyn ProjectRepository>,
     pub(super) user_repo: Arc<dyn UserRepository>,
-    pub(super) permission_service: Arc<dyn PermissionService>,
     pub(super) visibility: Arc<dyn VisibilityResolver>,
     pub(super) policy_control: Arc<dyn PolicyControl>,
+    pub(super) dispatch: Arc<DispatchUseCases>,
 }
 
 #[cfg(test)]

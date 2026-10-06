@@ -11,13 +11,14 @@ use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
+/// `connected` comes from the registry, `in_flight` from the jobs placed on the agent.
 pub struct AgentView {
     pub app: App,
     pub connected: bool,
     pub last_seen: Option<DateTime<Utc>>,
-    pub in_flight: usize,
+    pub in_flight: u32,
     pub host: Option<AgentHost>,
 }
 
@@ -43,23 +44,24 @@ impl Run<Fetch<ListAgents>> for AgentUseCases {
             .agent_repo
             .list_by_organization(&input.command().organization_id)
             .await?;
-        let connected: HashSet<String> = self
+        let connected: HashSet<AppId> = self
             .registry
             .connected()
             .into_iter()
-            .map(|id| id.as_str().to_string())
+            .map(|stream| stream.agent)
             .collect();
+        let ids: Vec<AppId> = agents.iter().map(|a| a.app_id().clone()).collect();
+        let in_flight: HashMap<AppId, u32> =
+            self.job_repo.active_jobs(&ids).await?.into_iter().collect();
 
         let mut views = Vec::with_capacity(agents.len());
         for agent in &agents {
             let app = self.app_repo.find_by_id(agent.app_id()).await?;
-            let is_connected = connected.contains(app.id().as_str());
-            let in_flight = self.registry.in_flight(agent.app_id());
             views.push(AgentView {
+                connected: connected.contains(app.id()),
+                in_flight: in_flight.get(app.id()).copied().unwrap_or(0),
                 app,
-                connected: is_connected,
                 last_seen: agent.last_seen(),
-                in_flight,
                 host: agent.host().cloned(),
             });
         }
@@ -86,18 +88,20 @@ impl Query for GetAgent {
 impl Run<Fetch<GetAgent>> for AgentUseCases {
     async fn run(&self, input: Authorized<GetAgent>) -> DomainResult<Fetched<GetAgent>> {
         let id = &input.command().id;
-        let agent = self.agent_repo.find_by_app_id(id).await?;
         let app = self.app_repo.find_by_id(id).await?;
-        let connected = self
-            .registry
-            .connected()
-            .iter()
-            .any(|c| c.as_str() == id.as_str());
+        let agent = self.agent_repo.find_by_app_id(id).await?;
+        let in_flight = self
+            .job_repo
+            .active_jobs(std::slice::from_ref(id))
+            .await?
+            .into_iter()
+            .map(|(_, count)| count)
+            .sum();
         let view = AgentView {
             app,
-            connected,
+            connected: self.registry.connected().iter().any(|s| &s.agent == id),
             last_seen: agent.last_seen(),
-            in_flight: self.registry.in_flight(id),
+            in_flight,
             host: agent.host().cloned(),
         };
         Ok(input.fetched(view))
@@ -122,7 +126,8 @@ impl Query for GetAgentStats {
 #[async_trait]
 impl Run<Fetch<GetAgentStats>> for AgentUseCases {
     async fn run(&self, input: Authorized<GetAgentStats>) -> DomainResult<Fetched<GetAgentStats>> {
-        let stats = self.agent_repo.agent_stats(&input.command().id).await?;
+        let app = self.app_repo.find_by_id(&input.command().id).await?;
+        let stats = self.agent_repo.agent_stats(app.id()).await?;
         Ok(input.fetched(stats))
     }
 }

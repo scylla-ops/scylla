@@ -39,7 +39,7 @@ impl TriggerCronScheduler {
     async fn seed_unscheduled(&self, caller: &CallerContext) {
         let seed = ScheduleCronTriggers;
         if let Err(e) = self.actions.run(&*self.triggers, caller, seed).await {
-            warn!(error = %e, "cron seed: could not list unscheduled triggers");
+            warn!(error = %e, "cron seed: could not seed unscheduled triggers");
         }
     }
 

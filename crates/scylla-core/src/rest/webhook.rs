@@ -12,6 +12,7 @@ use axum::{
 use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tracing::error;
 
 const DELIVERY_HEADERS: [&str; 2] = ["X-Scylla-Delivery", "X-GitHub-Delivery"];
 const EVENT_HEADERS: [&str; 2] = ["X-Scylla-Event", "X-GitHub-Event"];
@@ -44,9 +45,13 @@ fn reply(result: &DomainResult<IngestOutcome>) -> (StatusCode, &'static str) {
         Ok(IngestOutcome::Fired(_)) => (StatusCode::ACCEPTED, "accepted"),
         Ok(IngestOutcome::Duplicate) => (StatusCode::OK, "duplicate"),
         Ok(IngestOutcome::Ping) => (StatusCode::OK, "pong"),
-        Err(DomainError::NotFound { .. }) => (StatusCode::NOT_FOUND, "not found"),
+        Err(DomainError::NotFound(_)) => (StatusCode::NOT_FOUND, "not found"),
         Err(DomainError::Unauthorized(_)) => (StatusCode::UNAUTHORIZED, "invalid signature"),
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "internal error"),
+        Err(DomainError::Validation(_)) => (StatusCode::UNPROCESSABLE_ENTITY, "invalid payload"),
+        Err(e) => {
+            error!(error = %e, "webhook delivery failed");
+            (StatusCode::INTERNAL_SERVER_ERROR, "internal error")
+        }
     }
 }
 
@@ -137,6 +142,10 @@ mod tests {
             (
                 Err(DomainError::unauthorized("bad")),
                 StatusCode::UNAUTHORIZED,
+            ),
+            (
+                Err(DomainError::validation("nul")),
+                StatusCode::UNPROCESSABLE_ENTITY,
             ),
             (
                 Err(DomainError::forbidden("no")),

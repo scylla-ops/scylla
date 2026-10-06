@@ -4,7 +4,7 @@ use crate::domain::ids::{AppCredentialId, GrantId, InvitationId, SecretId, Trigg
 use crate::domain::invitation::Invitation;
 use crate::domain::permission::ResourceRef;
 use crate::domain::role::RoleName;
-use crate::domain::secret::{Secret, SecretName};
+use crate::domain::secret::{Secret, SecretDescription, SecretName};
 use crate::domain::trigger::{CronSpec, Trigger, TriggerName, TriggerSource};
 use crate::domain::user::Email;
 use crate::postgres::{
@@ -43,7 +43,7 @@ async fn a_secret_resolves_to_its_project_and_organization(pool: PgPool) {
     let secret = Secret::create(
         project.id().clone(),
         SecretName::new("DB_PASSWORD").unwrap(),
-        String::new(),
+        SecretDescription::new("").unwrap(),
         vec![0xAA],
     );
     PgSecretRepository::new(pool.clone())
@@ -118,10 +118,9 @@ async fn an_invitation_resolves_to_its_organization(pool: PgPool) {
         Email::new("newbie@example.com").unwrap(),
         None,
         inviter.id().clone(),
-        "token".to_string(),
     );
     PgInvitationRepository::new(pool.clone())
-        .create(&invitation)
+        .create(&invitation, "token")
         .await
         .unwrap();
 
@@ -148,7 +147,7 @@ async fn an_unknown_invitation_has_no_ancestors(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn an_app_secret_resolves_to_its_app_and_organization(pool: PgPool) {
     let org = seed_org(&pool, "app-secret").await;
-    let app = App::create(org.id().clone(), AppName::new("ci-bot").unwrap());
+    let app = App::create(org.id().clone(), AppName::new("ci-bot").unwrap()).unwrap();
     let credential = AppCredential::create(
         app.id().clone(),
         AppSecretLabel::new("default").unwrap(),
