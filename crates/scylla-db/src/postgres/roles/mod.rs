@@ -2,7 +2,7 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::OrganizationId;
 use crate::domain::role::{RoleDescription, RoleDisplayName};
 use async_trait::async_trait;
-use scylla_auth::authz::{Role, RoleKind, RoleRepository, ScopeKind};
+use scylla_auth::authz::{ROLE_IN_USE, Role, RoleKind, RoleRepository, ScopeKind};
 use sqlx::{PgConnection, PgPool};
 use tracing::instrument;
 
@@ -163,39 +163,47 @@ impl RoleRepository for PgRoleRepository {
 
     #[instrument(skip_all, fields(role_id = %role.id, version = role.version))]
     async fn delete(&self, role: &Role) -> DomainResult<()> {
-        let deleted = sqlx::query!(
-            "DELETE FROM roles WHERE id = $1 AND version = $2",
+        let mut tx = self.pool.begin().await.to_domain()?;
+        // FOR UPDATE waits for a grant or an invitation that is being written with this role,
+        // and holds back the next one, so the use check below cannot go stale.
+        let version = sqlx::query_scalar!(
+            "SELECT version FROM roles WHERE id = $1 FOR UPDATE",
             role.id,
-            to_db(role.version),
         )
-        .execute(&self.pool)
+        .fetch_optional(&mut *tx)
         .await
         .to_domain()?
-        .rows_affected()
-            > 0;
-        written(
-            deleted.then_some(()),
-            "Role",
-            &role.id,
-            self.found(&role.id),
-        )
-        .await
+        .ok_or_else(|| DomainError::not_found("Role", &role.id))?;
+        if version != to_db(role.version) {
+            return Err(DomainError::stale("Role", &role.id));
+        }
+        if used(&mut *tx, &role.id).await? {
+            return Err(DomainError::business_rule(ROLE_IN_USE));
+        }
+        sqlx::query!("DELETE FROM roles WHERE id = $1", role.id)
+            .execute(&mut *tx)
+            .await
+            .to_domain()?;
+        tx.commit().await.to_domain()
     }
 
     #[instrument(skip(self))]
     async fn in_use(&self, id: &str) -> DomainResult<bool> {
-        let used = sqlx::query_scalar!(
-            "SELECT EXISTS (SELECT 1 FROM grants WHERE role_id = $1) \
-                 OR EXISTS (SELECT 1 FROM organization_invites \
-                            WHERE role_name = $1 AND status = 'pending' AND expires_at > NOW()) \
-             AS \"used!\"",
-            id,
-        )
-        .fetch_one(&self.pool)
-        .await
-        .to_domain()?;
-        Ok(used)
+        used(&self.pool, id).await
     }
+}
+
+async fn used<'e>(executor: impl sqlx::PgExecutor<'e>, id: &str) -> DomainResult<bool> {
+    sqlx::query_scalar!(
+        "SELECT EXISTS (SELECT 1 FROM grants WHERE role_id = $1) \
+             OR EXISTS (SELECT 1 FROM organization_invites \
+                        WHERE role_name = $1 AND status = 'pending' AND expires_at > NOW()) \
+         AS \"used!\"",
+        id,
+    )
+    .fetch_one(executor)
+    .await
+    .to_domain()
 }
 
 #[cfg(test)]
@@ -328,6 +336,10 @@ mod tests {
             .await
             .unwrap();
         assert!(repo.in_use(&role.id).await.unwrap());
+
+        let err = repo.delete(&role).await.unwrap_err();
+        assert!(matches!(err, DomainError::BusinessRule(_)));
+        assert!(repo.get(&role.id).await.unwrap().is_some());
     }
 
     #[sqlx::test(migrations = "../../migrations")]

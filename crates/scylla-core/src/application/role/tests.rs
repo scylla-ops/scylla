@@ -314,6 +314,63 @@ async fn a_role_holds_only_permissions_its_author_holds() {
 }
 
 #[tokio::test]
+async fn an_update_checks_only_the_permissions_it_adds() {
+    let dave = Principal::User(UserId::new("dave"));
+    let lab = lab(
+        Arc::new(RecordingPermissionService::new()),
+        vec![
+            role(
+                "role-manager",
+                ScopeKind::Organization,
+                false,
+                &["manageOrgRoles", "readProject"],
+            ),
+            owned("deployer", "o1", &["readProject", "runPipeline"]),
+            owned("owner", "o1", &["*"]),
+        ],
+        vec![Grant::new(
+            dave,
+            id("role-manager"),
+            Scope::Organization(OrganizationId::new("o1")),
+        )],
+    );
+    let dave = CallerContext::User(UserId::new("dave"));
+    let update = |role: &str, permissions: &[&str]| UpdateRole {
+        id: id(role),
+        name: RoleDisplayName::new("Renamed").unwrap(),
+        description: RoleDescription::new("").unwrap(),
+        permissions: permissions.iter().map(ToString::to_string).collect(),
+    };
+
+    lab.actions
+        .run(
+            &lab.uc,
+            &dave,
+            update("deployer", &["readProject", "runPipeline"]),
+        )
+        .await
+        .expect("keeping a permission the author lacks is no escalation");
+    lab.actions
+        .run(
+            &lab.uc,
+            &dave,
+            update("owner", &["readProject", "deleteProject"]),
+        )
+        .await
+        .expect("narrowing full control adds nothing");
+    let err = lab
+        .actions
+        .run(
+            &lab.uc,
+            &dave,
+            update("deployer", &["runPipeline", "deleteProject"]),
+        )
+        .await
+        .unwrap_err();
+    assert!(matches!(err, DomainError::BusinessRule(_)));
+}
+
+#[tokio::test]
 async fn an_organization_lists_the_platform_roles_and_its_own() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(

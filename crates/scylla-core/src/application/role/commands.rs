@@ -8,7 +8,7 @@ use crate::domain::ids::OrganizationId;
 use crate::domain::permission::Permission;
 use crate::domain::role::{RoleDescription, RoleDisplayName, RoleName};
 use async_trait::async_trait;
-use scylla_auth::authz::{Role, RoleKind, ScopeKind, validate_role_permissions};
+use scylla_auth::authz::{ROLE_IN_USE, Role, RoleKind, ScopeKind, validate_role_permissions};
 use scylla_extension::{
     Access, Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared,
     Run,
@@ -113,7 +113,17 @@ impl Run<Prepare<UpdateRole>> for RoleUseCases {
         let cmd = input.command();
         let mut role = self.role(&cmd.id).await?;
         validate_role_permissions(&cmd.permissions, role.scope)?;
-        self.ensure_no_escalation(input.caller(), &cmd.permissions, role.owner_org.as_ref())
+        // An edit confers only what it adds: an author may keep or drop a permission it lacks.
+        let added: Vec<String> = if role.is_full_control() {
+            Vec::new()
+        } else {
+            cmd.permissions
+                .iter()
+                .filter(|p| !role.permissions.contains(p))
+                .cloned()
+                .collect()
+        };
+        self.ensure_no_escalation(input.caller(), &added, role.owner_org.as_ref())
             .await?;
         role.name = cmd.name.clone();
         role.description = cmd.description.clone();
@@ -161,9 +171,7 @@ impl Run<Prepare<DeleteRole>> for RoleUseCases {
             ));
         }
         if self.role_repo.in_use(&role.id).await? {
-            return Err(DomainError::business_rule(
-                "role is still granted or offered in a pending invitation; revoke those first",
-            ));
+            return Err(DomainError::business_rule(ROLE_IN_USE));
         }
         Ok(input.prepared(role))
     }

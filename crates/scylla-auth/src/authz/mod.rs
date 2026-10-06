@@ -13,7 +13,7 @@ pub use grant::{
     ensure_owner_remains,
 };
 pub use role::{
-    EffectiveScope, FULL_CONTROL, Role, RoleKind, RoleRepository, permissions_by_role,
+    EffectiveScope, FULL_CONTROL, ROLE_IN_USE, Role, RoleKind, RoleRepository, permissions_by_role,
     resource_home_scope, validate_role_permissions,
 };
 pub use service::PermissionService;

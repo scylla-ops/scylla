@@ -114,8 +114,8 @@ pub fn validate_role_permissions(permissions: &[String], scope: ScopeKind) -> Do
         let home = resource_home_scope(resource_type);
         if !scope.covers(home) {
             return Err(DomainError::validation(format!(
-                "permission '{p}' targets a {resource_type} and is not usable in a {} role; \
-                 grant it in a role scoped at {} or broader",
+                "permission '{p}' targets the resource type '{resource_type}': a role of scope \
+                 '{}' cannot hold it; use a role of scope '{}' or broader",
                 scope.as_str(),
                 home.as_str()
             )));
@@ -131,12 +131,17 @@ pub struct EffectiveScope {
     pub permissions: Vec<String>,
 }
 
+pub const ROLE_IN_USE: &str =
+    "role is still granted or offered in a pending invitation; revoke those first";
+
 #[async_trait]
 pub trait RoleRepository: Send + Sync {
     async fn list_all(&self) -> DomainResult<Vec<Role>>;
     async fn get(&self, id: &str) -> DomainResult<Option<Role>>;
     async fn create(&self, role: &Role) -> DomainResult<()>;
     async fn update(&self, role: &Role) -> DomainResult<()>;
+    /// A business rule error, `ROLE_IN_USE`, when a grant or an invitation names the role at
+    /// the time of the delete.
     async fn delete(&self, role: &Role) -> DomainResult<()>;
     /// Granted, or offered in a pending invitation.
     async fn in_use(&self, id: &str) -> DomainResult<bool>;
