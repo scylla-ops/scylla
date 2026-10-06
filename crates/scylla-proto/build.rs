@@ -6,7 +6,6 @@ const PROTOS: &[&str] = &[
     "scylla/common/v1/common.proto",
     "scylla/exec/v1/step.proto",
     "scylla/auth/v1/auth.proto",
-    "scylla/registration/v1/registration.proto",
     "scylla/invitation/v1/invitation.proto",
     "scylla/oauth/v1/oauth.proto",
     "scylla/user/v1/user.proto",

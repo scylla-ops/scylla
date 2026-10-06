@@ -882,11 +882,11 @@ impl SessionRepository for StubSessions {
 /// Each provisioned account, with the provider identity when there is one.
 #[derive(Default)]
 pub struct StubSignups {
-    provisioned: Mutex<Vec<(User, Organization, Grant, Option<String>)>>,
+    provisioned: Mutex<Vec<(User, Organization, Vec<Grant>, Option<String>)>>,
 }
 
 impl StubSignups {
-    pub fn provisioned(&self) -> Vec<(User, Organization, Grant, Option<String>)> {
+    pub fn provisioned(&self) -> Vec<(User, Organization, Vec<Grant>, Option<String>)> {
         self.provisioned.lock().unwrap().clone()
     }
 }
@@ -897,12 +897,12 @@ impl SignupRepository for StubSignups {
         &self,
         user: &User,
         organization: &Organization,
-        grant: &Grant,
+        grants: &[Grant],
     ) -> DomainResult<()> {
         self.provisioned.lock().unwrap().push((
             user.clone(),
             organization.clone(),
-            grant.clone(),
+            grants.to_vec(),
             None,
         ));
         Ok(())
@@ -911,14 +911,14 @@ impl SignupRepository for StubSignups {
         &self,
         user: &User,
         organization: &Organization,
-        grant: &Grant,
+        grants: &[Grant],
         _: &str,
         provider_user_id: &str,
     ) -> DomainResult<()> {
         self.provisioned.lock().unwrap().push((
             user.clone(),
             organization.clone(),
-            grant.clone(),
+            grants.to_vec(),
             Some(provider_user_id.to_string()),
         ));
         Ok(())

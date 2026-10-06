@@ -135,6 +135,7 @@ described under "Custom roles".
 | Role                        | Scope        | Confers                                                        |
 | --------------------------- | ------------ | -------------------------------------------------------------- |
 | System Admin                | System       | Everything, everywhere                                          |
+| Organization Creator        | System       | Create organizations. The creator becomes the admin of each one |
 | Organization Admin          | Organization | Everything in the organization, including managing its accesses |
 | Organization Viewer         | Organization | Read every project and run in the organization                  |
 | Organization Member         | Organization | Sees the organization exists. Nothing else                      |

@@ -10,7 +10,7 @@ pub trait SignupRepository: Send + Sync {
         &self,
         user: &User,
         organization: &Organization,
-        grant: &Grant,
+        grants: &[Grant],
     ) -> DomainResult<()>;
 
     /// Same transaction as the account: an account with no linked identity and no email would be unrecoverable.
@@ -18,7 +18,7 @@ pub trait SignupRepository: Send + Sync {
         &self,
         user: &User,
         organization: &Organization,
-        grant: &Grant,
+        grants: &[Grant],
         provider: &str,
         provider_user_id: &str,
     ) -> DomainResult<()>;

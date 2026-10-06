@@ -29,13 +29,15 @@ impl SignupRepository for PgSignupRepository {
         &self,
         user: &User,
         organization: &Organization,
-        grant: &Grant,
+        account_grants: &[Grant],
     ) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
 
         users::repository::queries::create(&mut *tx, user).await?;
         organizations::repository::queries::create(&mut *tx, organization).await?;
-        grants::insert(&mut *tx, grant).await?;
+        for grant in account_grants {
+            grants::insert(&mut *tx, grant).await?;
+        }
 
         tx.commit().await.to_domain()?;
         Ok(())
@@ -46,7 +48,7 @@ impl SignupRepository for PgSignupRepository {
         &self,
         user: &User,
         organization: &Organization,
-        grant: &Grant,
+        account_grants: &[Grant],
         provider: &str,
         provider_user_id: &str,
     ) -> DomainResult<()> {
@@ -54,7 +56,9 @@ impl SignupRepository for PgSignupRepository {
 
         users::repository::queries::create(&mut *tx, user).await?;
         organizations::repository::queries::create(&mut *tx, organization).await?;
-        grants::insert(&mut *tx, grant).await?;
+        for grant in account_grants {
+            grants::insert(&mut *tx, grant).await?;
+        }
         super::super::oauth_identities::repository::queries::link(
             &mut *tx,
             user.id(),

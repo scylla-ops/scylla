@@ -11,11 +11,6 @@ repository.workspace = true
 # CARGO_MANIFEST_DIR. Moving it one level deeper silently ships no web UI.
 
 [features]
-# Public self-service signup (the gRPC RegistrationService). Off by default so a
-# deployment stays invite-only / OAuth-only unless it opts in. Forwarded by the
-# edition binaries.
-register = []
-
 # Exposes the `test_support` builders, the PermissionService doubles and the
 # `actions` engine builder to downstream test code (the persistence crate's
 # tests seed through the builders).

@@ -2,8 +2,6 @@ use crate::surface::Surface;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_auth::audit::AuditLog;
 use scylla_auth::cedar::CedarPermissionService;
-#[cfg(feature = "register")]
-use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuthUseCases, BootstrapUseCases, CronSchedule,
     DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationAcceptUseCases,
@@ -41,8 +39,6 @@ use tower_http::trace::TraceLayer;
 
 pub(crate) struct Services {
     pub auth_uc: Arc<AuthUseCases>,
-    #[cfg(feature = "register")]
-    pub signup_uc: Arc<SignupUseCases>,
     pub invitation_uc: Arc<InvitationUseCases>,
     pub invitation_accept_uc: Arc<InvitationAcceptUseCases>,
     pub oauth_uc: Option<Arc<OAuthUseCases>>,
@@ -119,12 +115,6 @@ pub(crate) async fn init_services(
 
     let auth_uc = Arc::new(AuthUseCases::new(
         user_repo.clone(),
-        session_repo.clone(),
-        hash_service.clone(),
-    ));
-    #[cfg(feature = "register")]
-    let signup_uc = Arc::new(SignupUseCases::new(
-        signup_repo.clone(),
         session_repo.clone(),
         hash_service.clone(),
     ));
@@ -341,8 +331,6 @@ pub(crate) async fn init_services(
 
     Ok(Services {
         auth_uc,
-        #[cfg(feature = "register")]
-        signup_uc,
         invitation_uc,
         invitation_accept_uc,
         oauth_uc,
@@ -467,8 +455,6 @@ pub(crate) async fn run_server<F>(
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    #[cfg(feature = "register")]
-    use scylla_core::grpc::RegistrationHandler;
     use scylla_core::grpc::{
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
         InvitationAcceptHandler, InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler,
@@ -479,8 +465,6 @@ where
         invitation_service_server::InvitationServiceServer,
     };
     use scylla_proto::oauth::v1::oauth_service_server::OauthServiceServer;
-    #[cfg(feature = "register")]
-    use scylla_proto::registration::v1::registration_service_server::RegistrationServiceServer;
     use scylla_proto::{
         agent::v1::agent_admin_service_server::AgentAdminServiceServer,
         agent::v1::agent_service_server::AgentServiceServer,
@@ -568,12 +552,6 @@ where
 
     let app_auth_service = AppAuthServiceServer::new(app_auth_handler);
 
-    #[cfg(feature = "register")]
-    let registration_service = RegistrationServiceServer::new(RegistrationHandler::new(
-        services.actions.clone(),
-        services.signup_uc.clone(),
-    ));
-
     let invitation_accept_service =
         InvitationAcceptServiceServer::new(InvitationAcceptHandler::new(
             services.actions.clone(),
@@ -660,9 +638,6 @@ where
         .add_service(role_service)
         .add_service(invitation_service)
         .add_service(invitation_accept_service);
-
-    #[cfg(feature = "register")]
-    grpc.add_service(registration_service);
 
     if let Some(svc) = oauth_service {
         grpc.add_service(svc);

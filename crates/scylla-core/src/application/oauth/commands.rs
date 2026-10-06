@@ -125,7 +125,7 @@ impl Run<Persist<OAuthCallback>> for OAuthUseCases {
                             .provision_account_with_identity(
                                 &account.user,
                                 &account.organization,
-                                &account.grant,
+                                &account.grants,
                                 PROVIDER_GITHUB,
                                 &provider_user_id,
                             )

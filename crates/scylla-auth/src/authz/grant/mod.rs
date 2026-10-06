@@ -16,6 +16,8 @@ pub const ORGANIZATION_VIEWER_ROLE: &str = "organization-viewer";
 pub const ORGANIZATION_MEMBER_ROLE: &str = "organization-member";
 pub const PROJECT_DEVELOPER_ROLE: &str = "project-developer";
 pub const PROJECT_VIEWER_ROLE: &str = "project-viewer";
+/// System scoped: create organizations, nothing else.
+pub const ORGANIZATION_CREATOR_ROLE: &str = "organization-creator";
 
 /// The system and every organization keep a human holder of their owner role; a project need not.
 pub fn ensure_owner_remains(

@@ -203,7 +203,7 @@ async fn list_projects(&self, request: Request<ListProjectsRequest>)
 `grpc::adapter::run` (in `scylla-core`) takes the caller from the
 interceptor, turns the request into its command or query through
 `grpc::convert::Parse`, runs the engine and maps a `DomainError` to a `Status`.
-A service without the interceptor (sign-in, signup, OAuth, the app token
+A service without the interceptor (sign-in, OAuth, the app token
 exchange, the invitation accept) uses `grpc::adapter::run_public`: the same
 steps, with `Anonymous` as the caller, so only a `Public` action passes. An
 HTTP route uses `rest::adapter::run_public`: the route builds the command from
@@ -521,19 +521,20 @@ that gives `Stale`: a report of the agent came first.
 
 - The project, organization, user, secret, pipeline, trigger, app, agent, job,
   job log, invitation, grant and role use cases are on the pipeline. The
-  session (`Login`, `ValidateToken`, `RevokeToken`), `Signup`, the OAuth flow
+  session (`Login`, `ValidateToken`, `RevokeToken`), the OAuth flow
   (`GetAuthUrl`, `OAuthCallback`), `IssueAppToken`, `AcceptInvitation` and
   `IngestWebhook` are on it too, as `Public` actions. The writes of the server
   drivers and of the agent stream are on it too. Every use case is on the
   pipeline.
 - A `Public` action runs as `Anonymous`, so a `Policy` on `Authorize` sees
-  every sign-in, signup and webhook delivery. The check that the use case does
+  every sign-in and webhook delivery. The check that the use case does
   itself (the password, the app secret, the OAuth code, the invitation token,
   the webhook signature) is in `Prepare`, before the write. The `Debug` rule
   of a command with a secret is in "Adding a command or a query".
 - Every sign-in path stages its session with `auth::new_session`, and a
-  signup and a first OAuth login build the account with
-  `signup::NewAccount`. The `commit` closure writes the account, then stores
+  first OAuth login builds the account with `signup::NewAccount`. The
+  Enterprise sign-up extension uses the same `NewAccount`, `SignupRepository`
+  and `new_session`, so they stay public. The `commit` closure writes the account, then stores
   the session.
 - `ValidateToken` is a query, and its `Fetch` only reads: an expired
   session gives `false` and stays in the store. A failed read also gives

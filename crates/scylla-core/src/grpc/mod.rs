@@ -5,8 +5,6 @@ pub mod mappers;
 pub mod middleware;
 pub mod streaming;
 
-#[cfg(feature = "register")]
-pub use handlers::RegistrationHandler;
 pub use handlers::{
     AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
     InvitationAcceptHandler, InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler,

@@ -102,6 +102,7 @@ organization owns (see Role). `ListGrantableRoles` reads the table.
 | Role | Scope | Confers |
 |------|-------|---------|
 | `system-admin` | System | global super-user: full control over every scope (System is the root) |
+| `organization-creator` | System | create organizations, nothing else; the creator becomes the admin of each one |
 | `organization-admin` | Organization | owner of an organization and everything beneath it |
 | `organization-viewer` | Organization | read every project and run in the organization, change nothing |
 | `organization-member` | Organization | belongs to the organization: sees it exists, nothing more |
@@ -313,7 +314,7 @@ The lifecycle vocabulary a running agent reports: `JobStarted`, `NodeStarted`, `
 The topological-sort routine behind `DagPlan` (`domain/pipeline/dag.rs`). One implementation serves both sides: the control plane calls `drains_completely()` once to reject a pipeline containing a cycle, and an agent drives the same structure incrementally (`drain_ready` / `mark_completed` / `mark_terminal`) to decide what to launch next. Keeping it single is what stops the two from disagreeing about which nodes are runnable.
 
 ### Cargo features
-Two in the whole workspace. `register` exposes the public self-service signup RPC, off by default so a deployment stays invite-only; it is declared on `scylla-core` and forwarded by `scylla-server` and `scylla-ce`. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth` and `scylla-extension` have none.
+One in the whole workspace. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth`, `scylla-extension`, `scylla-server` and `scylla-ce` have none. The public self-service sign-up is not in this repository: it is an extension of the Enterprise Edition.
 
 ### Extension point
 A position in the action pipeline (`scylla-extension`). Every write is a command that `Actions::run` moves through `Authorize`, `Prepare` and `Persist`, every read a query that the same `run` moves through `Authorize` and `Fetch`; around each stage the `Hooks` registry runs `Policy`, `Gate`, `Around`, `Wrap`, `Listener` and `Observer`. An edition implements `Extension` and registers it on the `Server` builder (`.extension(&Arc::new(MeteredQuota))`); the core runs the hooks and never knows which edition built it. The Community Edition registers nothing. `scylla-extension` depends on `scylla-domain` only, so a private Enterprise build implements the hooks against a pinned git tag.
