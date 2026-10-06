@@ -3,11 +3,13 @@
 use crate::application::grant::{
     CreateGrant, ListGrantableRoles, ListGrants, RevokeAllAccess, RevokeGrant,
 };
+use crate::domain::ids::OrganizationId;
 use crate::grpc::convert::{
-    Parse, principal_ref_from_proto, principal_ref_to_proto, required, scope_kind_from_proto,
-    scope_kind_to_proto, scope_ref_from_proto, scope_ref_to_proto, valid, wrap,
+    Parse, optional, principal_ref_from_proto, principal_ref_to_proto, required,
+    scope_kind_from_proto, scope_kind_to_proto, scope_ref_from_proto, scope_ref_to_proto, valid,
+    wrap,
 };
-use scylla_auth::authz::{Grant, GrantableRole, RoleKind};
+use scylla_auth::authz::{Grant, Role, RoleKind};
 use scylla_domain::domain::role::RoleName;
 use scylla_proto::authz::v1::{
     CreateGrantRequest, Grant as ProtoGrant, GrantableRole as ProtoGrantableRole,
@@ -25,20 +27,32 @@ pub fn grant_to_proto(g: &Grant) -> ProtoGrant {
     }
 }
 
-pub fn grantable_role_to_proto(r: &GrantableRole) -> ProtoGrantableRole {
+pub fn grantable_role_to_proto(r: &Role) -> ProtoGrantableRole {
     ProtoGrantableRole {
-        role_id: wrap(r.name),
+        role_id: wrap(r.id.clone()),
         scope_kind: scope_kind_to_proto(r.scope) as i32,
         kind: role_kind_to_proto(r.kind) as i32,
         description: r.description.to_string(),
+        name: r.name.to_string(),
+        owner_organization_id: r.owner_org.as_ref().and_then(|id| wrap(id.to_string())),
     }
 }
 
-fn role_kind_to_proto(kind: RoleKind) -> ProtoRoleKind {
+pub fn role_kind_to_proto(kind: RoleKind) -> ProtoRoleKind {
     match kind {
         RoleKind::Admin => ProtoRoleKind::Admin,
         RoleKind::Member => ProtoRoleKind::Member,
         RoleKind::Agent => ProtoRoleKind::Agent,
+    }
+}
+
+/// Unspecified is a member role; the use case refuses an admin one.
+pub fn role_kind_from_proto(kind: i32) -> Result<RoleKind, Status> {
+    match ProtoRoleKind::try_from(kind) {
+        Ok(ProtoRoleKind::Unspecified | ProtoRoleKind::Member) => Ok(RoleKind::Member),
+        Ok(ProtoRoleKind::Agent) => Ok(RoleKind::Agent),
+        Ok(ProtoRoleKind::Admin) => Ok(RoleKind::Admin),
+        Err(_) => Err(Status::invalid_argument("unknown role kind")),
     }
 }
 
@@ -86,6 +100,7 @@ impl Parse for ListGrantableRolesRequest {
     fn parse(self) -> Result<ListGrantableRoles, Status> {
         Ok(ListGrantableRoles {
             scope_kind: self.scope_kind.map(scope_kind_from_proto).transpose()?,
+            organization_id: optional(self.organization_id).map(OrganizationId::new),
         })
     }
 }

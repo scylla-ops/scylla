@@ -17,7 +17,7 @@ use crate::test_support::stubs::{StubGrants, alice, empty_page};
 use async_trait::async_trait;
 use scylla_auth::authz::{
     FULL_CONTROL, Grant, ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE,
-    ORGANIZATION_MEMBER_ROLE, PROJECT_ADMIN_ROLE, PermissionService, Principal, Role,
+    ORGANIZATION_MEMBER_ROLE, PROJECT_ADMIN_ROLE, PermissionService, Principal, Role, RoleKind,
     RoleRepository, Scope, ScopeKind,
 };
 use scylla_extension::Actions;
@@ -135,9 +135,15 @@ impl Default for StubRoles {
             name: RoleDisplayName::new(id).unwrap(),
             description: RoleDescription::new("").unwrap(),
             scope: kind,
+            kind: if id == ORGANIZATION_AGENT_ROLE {
+                RoleKind::Agent
+            } else {
+                RoleKind::Member
+            },
             owner_org: None,
             builtin: true,
             permissions: permissions.iter().map(ToString::to_string).collect(),
+            version: 0,
         };
         Self {
             rows: vec![
@@ -183,8 +189,11 @@ impl RoleRepository for StubRoles {
     async fn update(&self, _: &Role) -> DomainResult<()> {
         Ok(())
     }
-    async fn delete(&self, _: &str) -> DomainResult<()> {
+    async fn delete(&self, _: &Role) -> DomainResult<()> {
         Ok(())
+    }
+    async fn in_use(&self, _: &str) -> DomainResult<bool> {
+        Ok(false)
     }
 }
 

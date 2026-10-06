@@ -51,8 +51,8 @@ async fn revoke_all_access_strips_the_whole_org_subtree(pool: PgPool) {
     use crate::domain::role::RoleName;
     use crate::postgres::PgGrantRepository;
     use scylla_auth::authz::{
-        Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE,
-        Principal, SYSTEM_ADMIN_ROLE, Scope,
+        Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE,
+        PROJECT_DEVELOPER_ROLE, Principal, SYSTEM_ADMIN_ROLE, Scope,
     };
 
     let org = seed_org(&pool, "acme").await;
@@ -79,7 +79,7 @@ async fn revoke_all_access_strips_the_whole_org_subtree(pool: PgPool) {
         ),
         Grant::new(
             victim_principal.clone(),
-            role(PROJECT_AGENT_ROLE),
+            role(PROJECT_DEVELOPER_ROLE),
             Scope::Project(project.id().clone()),
         ),
     ];

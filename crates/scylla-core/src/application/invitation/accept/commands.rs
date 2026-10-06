@@ -108,7 +108,6 @@ impl Run<Persist<AcceptInvitation>> for InvitationAcceptUseCases {
                         &grant,
                     )
                     .await?;
-                self.policy_control.reload().await?;
                 self.session_repo.create(&session).await?;
                 Ok(AcceptOutcome {
                     token: session.token().to_string(),

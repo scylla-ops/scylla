@@ -6,6 +6,7 @@ use crate::domain::ids::{
     AppCredentialId, AppId, GrantId, InvitationId, JobId, OrganizationId, PipelineId, ProjectId,
     SecretId, TriggerId, UserId,
 };
+use crate::domain::role::RoleName;
 use std::sync::LazyLock;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -89,6 +90,10 @@ pub enum Permission {
     /// The key is the System one, the key of an unknown grant, so it is not in the catalog.
     RevokeGrant(GrantId),
     ManageRoles,
+    ManageOrgRoles(OrganizationId),
+    /// The manage-roles permission of the role's owner, which the access model resolves.
+    /// The key is the System one, the key of an unknown role, so it is not in the catalog.
+    ManageRole(RoleName),
 }
 
 impl Permission {
@@ -160,7 +165,8 @@ impl Permission {
             Self::ManageSystemGrants | Self::RevokeGrant(_) => "manageSystemGrants",
             Self::ManageOrgGrants(_) => "manageOrgGrants",
             Self::ManageProjectGrants(_) => "manageProjectGrants",
-            Self::ManageRoles => "manageRoles",
+            Self::ManageRoles | Self::ManageRole(_) => "manageRoles",
+            Self::ManageOrgRoles(_) => "manageOrgRoles",
         }
     }
 
@@ -197,7 +203,8 @@ impl Permission {
             | Self::ListAppsByOrganization(id)
             | Self::CreateAgent(id)
             | Self::ListAgents(id)
-            | Self::ManageOrgGrants(id) => ResourceRef::Organization(id.clone()),
+            | Self::ManageOrgGrants(id)
+            | Self::ManageOrgRoles(id) => ResourceRef::Organization(id.clone()),
 
             Self::RevokeInvitation(id) => ResourceRef::Invitation(id.clone()),
 
@@ -241,6 +248,7 @@ impl Permission {
             Self::ManageAppSecret(id) => ResourceRef::AppSecret(id.clone()),
 
             Self::RevokeGrant(id) => ResourceRef::Grant(id.clone()),
+            Self::ManageRole(id) => ResourceRef::Role(id.clone()),
         }
     }
 
@@ -263,6 +271,7 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "app",
     "app_secret",
     "grant",
+    "role",
 ];
 
 fn catalog_variants() -> Vec<Permission> {
@@ -331,6 +340,7 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::ManageOrgGrants(org.clone()),
         Permission::ManageProjectGrants(project),
         Permission::ManageRoles,
+        Permission::ManageOrgRoles(org),
     ]
 }
 
@@ -355,6 +365,7 @@ mod catalog_tests {
         PERMISSION_CATALOG, Permission, RESOURCE_TYPES, catalog_variants, permission_resource_type,
     };
     use crate::domain::ids::{AppCredentialId, GrantId, InvitationId, TriggerId};
+    use crate::domain::role::RoleName;
     use std::collections::HashSet;
 
     fn is_known_permission(key: &str) -> bool {
@@ -406,6 +417,13 @@ mod catalog_tests {
     fn grant_permissions_reuse_catalog_keys() {
         assert!(is_known_permission(
             Permission::RevokeGrant(GrantId::new("_")).key()
+        ));
+    }
+
+    #[test]
+    fn role_permissions_reuse_catalog_keys() {
+        assert!(is_known_permission(
+            Permission::ManageRole(RoleName::new("_").unwrap()).key()
         ));
     }
 }

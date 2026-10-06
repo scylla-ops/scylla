@@ -81,7 +81,6 @@ impl Run<Persist<CreateOrganization>> for OrganizationUseCases {
                         self.org_repo
                             .provision_with_owner(&organization, &grant)
                             .await?;
-                        self.policy_control.reload().await?;
                     }
                     None => {
                         self.org_repo.create(&organization).await?;
@@ -212,7 +211,6 @@ impl Run<Prepare<DeleteOrganization>> for OrganizationUseCases {
 
 #[async_trait]
 impl Run<Persist<DeleteOrganization>> for OrganizationUseCases {
-    // DB triggers drop the grants bound to the subtree; the reload stops the live set carrying them.
     async fn run(
         &self,
         input: Prepared<DeleteOrganization>,
@@ -229,7 +227,6 @@ impl Run<Persist<DeleteOrganization>> for OrganizationUseCases {
                         self.org_repo.delete(&organization),
                     )
                     .await?;
-                self.policy_control.reload().await?;
                 for app in &apps {
                     self.dispatch.disconnect(app.id());
                 }

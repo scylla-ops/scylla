@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT r.id, r.key, r.name, r.description, r.scope_kind, r.owner_org_id, r.builtin, COALESCE(ARRAY_AGG(rp.permission) FILTER (WHERE rp.permission IS NOT NULL), ARRAY[]::text[]) AS \"permissions!\" FROM roles r LEFT JOIN role_permissions rp ON rp.role_id = r.id WHERE $1::text IS NULL OR r.id = $1 GROUP BY r.id",
+  "query": "SELECT r.id, r.key, r.name, r.description, r.scope_kind, r.kind, r.owner_org_id, r.builtin, r.version, COALESCE(ARRAY_AGG(rp.permission) FILTER (WHERE rp.permission IS NOT NULL), ARRAY[]::text[]) AS \"permissions!\" FROM roles r LEFT JOIN role_permissions rp ON rp.role_id = r.id WHERE $1::text IS NULL OR r.id = $1 GROUP BY r.id",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,17 @@
       },
       {
         "ordinal": 5,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
         "name": "owner_org_id",
         "type_info": "Text",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "builtin",
         "type_info": "Bool",
         "origin": {
@@ -81,7 +92,18 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
+        "name": "version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
         "name": "permissions!",
         "type_info": "TextArray",
         "origin": "Expression"
@@ -98,10 +120,12 @@
       false,
       false,
       false,
+      false,
       true,
+      false,
       false,
       null
     ]
   },
-  "hash": "379d2b5074ace901bce3cc1ae0c989abf40c271b273fe6b642a80eb8cac007f1"
+  "hash": "fe8383d9298e1d55ce0e19183a04b40377ee417915e88dd16bd381d355fe08c9"
 }

@@ -6,11 +6,14 @@ pub use queries::{
     GetEffectivePermissions, GetMyPermissions, GetRole, ListAuthzVocabulary, ListRoles,
 };
 
-use crate::domain::errors::DomainResult;
+use crate::domain::caller::CallerContext;
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::OrganizationId;
+use crate::domain::role::RoleName;
 use derive_more::Constructor;
 use scylla_auth::authz::{
-    EffectiveScope, FULL_CONTROL, GrantRepository, PolicyControl, Principal, RoleRepository, Scope,
-    permissions_by_role,
+    EffectiveScope, FULL_CONTROL, GrantRepository, Principal, Role, RoleRepository, Scope,
+    ensure_no_escalation, permissions_by_role,
 };
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -20,10 +23,29 @@ use std::sync::Arc;
 pub struct RoleUseCases {
     pub(super) role_repo: Arc<dyn RoleRepository>,
     pub(super) grant_repo: Arc<dyn GrantRepository>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 impl RoleUseCases {
+    pub(super) async fn role(&self, id: &RoleName) -> DomainResult<Role> {
+        self.role_repo
+            .get(id.as_str())
+            .await?
+            .ok_or_else(|| DomainError::not_found("Role", id))
+    }
+
+    /// The caller holds every permission it puts in a role of `organization`, or of the platform.
+    pub(super) async fn ensure_no_escalation(
+        &self,
+        caller: &CallerContext,
+        permissions: &[String],
+        organization: Option<&OrganizationId>,
+    ) -> DomainResult<()> {
+        let scope = organization.map_or(Scope::System, |o| Scope::Organization(o.clone()));
+        let roles = self.role_repo.list_all().await?;
+        let grants = self.grant_repo.list_all().await?;
+        ensure_no_escalation(&roles, &grants, caller, permissions, &scope, organization)
+    }
+
     /// Grants as bound per scope: a System grant is not re-listed under every org and project.
     pub(super) async fn effective_scopes(
         &self,

@@ -70,7 +70,6 @@ async fn lab(pool: &sqlx::PgPool, info: OAuthUserInfo) -> Lab {
             Arc::new(PgUserRepository::new(pool.clone())),
             Arc::new(PgSessionRepository::new(pool.clone())),
             Arc::new(Argon2HashService::new()),
-            permission,
         ),
     }
 }

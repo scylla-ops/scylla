@@ -90,18 +90,19 @@ only as Cedar's wire term inside the infra adapter.
 
 ### Role naming convention
 Builtin role names follow **`<scope>-<role>`**, kebab-case, with scope ∈ {`system`,
-`organization`, `project`}. Single source of truth: the `*_ROLE` constants in
-`application/authz/grant/mod.rs`.
+`organization`, `project`}. The `*_ROLE` constants in
+`crates/scylla-auth/src/authz/grant/mod.rs` name them.
 
 **Unified model:** there is ONE authorization mechanism — the **grant** (`grants`), a `(principal, role, scope)` triple linked as a Cedar role-template instance. A "global role" is just a grant on the **System** scope (the tenancy root: `Organization`/`User` are `in [System]`, so a System grant reaches everything). There is no separate `user_roles` table and no `RoleService` — `GrantService.CreateGrant(user, role, GRANT_SCOPE_SYSTEM)` replaces the old `AssignRole`.
 
-Canonical roles (all stored in `grants`). `GRANTABLE_ROLES` in
-`application/authz/grant/mod.rs` is the single source of truth: there are no
-runtime-defined roles, so this list is exhaustive.
+Builtin roles, seeded in the `roles` table. The table also holds custom roles:
+platform roles that a system administrator creates, and roles that one
+organization owns (see Role). `ListGrantableRoles` reads the table.
 
 | Role | Scope | Confers |
 |------|-------|---------|
 | `system-admin` | System | global super-user: full control over every scope (System is the root) |
+| `organization-creator` | System | create organizations, nothing else; the creator becomes the admin of each one |
 | `organization-admin` | Organization | owner of an organization and everything beneath it |
 | `organization-viewer` | Organization | read every project and run in the organization, change nothing |
 | `organization-member` | Organization | belongs to the organization: sees it exists, nothing more |
@@ -138,21 +139,16 @@ schema only.
 
 ### Role
 A named bundle of permissions bound to a scope kind, stored in the `roles` +
-`role_permissions` tables. Builtin roles (`system-admin`, `organization-admin`,
-`project-admin`, `organization-agent`, `project-agent`) are global and seeded on
-first boot; custom roles are owned by an Org (tenant-isolated). A grant of a role
+`role_permissions` tables. A role with no owner is a **platform role**: the
+builtin roles, seeded on first boot, and the custom roles of the system
+administrators (`manageRoles`). A role with an owner is an **organization role**:
+it is organization or project scoped, only its organization sees and grants it,
+and its administrators manage it (`manageOrgRoles`). A role has a kind: `admin`
+(builtin owner roles only), `member`, or `agent` (apps only). A grant of a role
 confers all its permissions within the grant's scope. The live Cedar policy set
 is **generated** from these rows (a full-control role — permission `*` — maps to
 the unconstrained-action body; any other role lists its permission keys), so
-editing a role's permissions changes authorization on the next reload.
-
-### Default role binding
-A configurable pointer (`default_role_bindings`, a `slot → role` row) telling a
-creation flow which role to grant: `org_creation` → the role the org creator
-gets, `project_creation` → the role the project creator gets. Seeded to the
-builtin admin roles but rebindable to a custom role, so the code never names a
-role directly. `ON DELETE RESTRICT` keeps a bound role from being deleted out
-from under its slot (rebind first, then delete).
+editing a role's permissions changes authorization on the next check.
 
 ### Scope
 The level a grant/role binds to: `System` (tenancy root), `Organization(id)`, or
@@ -162,7 +158,7 @@ a grant at a scope reaches everything beneath it.
 
 ### Grant
 "Principal P holds {a role | a single permission} within scope S." The one
-authorization mechanism — stored in `grants`, linked into Cedar on reload. A
+authorization mechanism: stored in `grants`, linked into Cedar on the next check. A
 direct **permission** grant (e.g. Alice `runPipeline` in Org A) is additive to
 P's role-derived permissions.
 A grant refers to a principal and a scope that exist: a database trigger
@@ -318,7 +314,7 @@ The lifecycle vocabulary a running agent reports: `JobStarted`, `NodeStarted`, `
 The topological-sort routine behind `DagPlan` (`domain/pipeline/dag.rs`). One implementation serves both sides: the control plane calls `drains_completely()` once to reject a pipeline containing a cycle, and an agent drives the same structure incrementally (`drain_ready` / `mark_completed` / `mark_terminal`) to decide what to launch next. Keeping it single is what stops the two from disagreeing about which nodes are runnable.
 
 ### Cargo features
-Two in the whole workspace. `register` exposes the public self-service signup RPC, off by default so a deployment stays invite-only; it is declared on `scylla-core` and forwarded by `scylla-server` and `scylla-ce`. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth` and `scylla-extension` have none.
+One in the whole workspace. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth`, `scylla-extension`, `scylla-server` and `scylla-ce` have none. The public self-service sign-up is not in this repository: it is an extension of the Enterprise Edition.
 
 ### Extension point
 A position in the action pipeline (`scylla-extension`). Every write is a command that `Actions::run` moves through `Authorize`, `Prepare` and `Persist`, every read a query that the same `run` moves through `Authorize` and `Fetch`; around each stage the `Hooks` registry runs `Policy`, `Gate`, `Around`, `Wrap`, `Listener` and `Observer`. An edition implements `Extension` and registers it on the `Server` builder (`.extension(&Arc::new(MeteredQuota))`); the core runs the hooks and never knows which edition built it. The Community Edition registers nothing. `scylla-extension` depends on `scylla-domain` only, so a private Enterprise build implements the hooks against a pinned git tag.

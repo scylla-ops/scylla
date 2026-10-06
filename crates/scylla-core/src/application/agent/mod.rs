@@ -16,7 +16,6 @@ pub use scheduler::PendingJobScheduler;
 
 use crate::application::{AppRepository, HashService, JobRepository};
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use std::sync::Arc;
 
 /// The agent's stage runners, one block per action in `commands.rs` and `queries.rs`: the
@@ -28,7 +27,6 @@ pub struct AgentUseCases {
     pub(super) agent_repo: Arc<dyn AgentRepository>,
     pub(super) job_repo: Arc<dyn JobRepository>,
     pub(super) hash_service: Arc<dyn HashService>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
     pub(super) registry: Arc<dyn AgentDispatch>,
 }
 

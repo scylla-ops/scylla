@@ -125,12 +125,11 @@ impl Run<Persist<OAuthCallback>> for OAuthUseCases {
                             .provision_account_with_identity(
                                 &account.user,
                                 &account.organization,
-                                &account.grant,
+                                &account.grants,
                                 PROVIDER_GITHUB,
                                 &provider_user_id,
                             )
                             .await?;
-                        self.policy_control.reload().await?;
                         AccountOutcome::New {
                             organization_id: account.organization.id().clone(),
                         }

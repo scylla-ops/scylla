@@ -14,8 +14,6 @@ pub mod organization_mapper;
 pub mod pagination_mapper;
 pub mod pipeline_mapper;
 pub mod project_mapper;
-#[cfg(feature = "register")]
-pub mod registration_mapper;
 pub mod role_mapper;
 pub mod secret_mapper;
 pub mod trigger_mapper;

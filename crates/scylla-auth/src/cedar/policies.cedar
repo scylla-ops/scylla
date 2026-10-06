@@ -6,7 +6,7 @@
 // There is no static admin policy: `system-admin` is now a GRANT on the System
 // scope (the tenancy root), linked as a role-template instance like any other
 // grant. Because every resource is `in` System, that single grant confers full
-// control over everything. See `application/permission/grant.rs` (SYSTEM scope).
+// control over everything. See `crates/scylla-auth/src/authz/grant/mod.rs` (SYSTEM scope).
 
 // ── Internal services ──────────────────────────────────────────────────
 // In-process subsystems (recorder, bootstrap, the server drivers) bypass user

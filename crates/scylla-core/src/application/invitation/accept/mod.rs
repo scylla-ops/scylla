@@ -6,7 +6,6 @@ use crate::application::invitation::InvitationRepository;
 use crate::application::{HashService, SessionRepository, UserRepository};
 use crate::domain::ids::{OrganizationId, UserId};
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use std::sync::Arc;
 
 pub struct AcceptOutcome {
@@ -23,7 +22,6 @@ pub struct InvitationAcceptUseCases {
     pub(super) user_repo: Arc<dyn UserRepository>,
     pub(super) hash_service: Arc<dyn HashService>,
     pub(super) session_repo: Arc<dyn SessionRepository>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 #[cfg(test)]

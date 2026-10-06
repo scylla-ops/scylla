@@ -9,7 +9,7 @@ use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, User, Username};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, StubGrants, StubHash, alice};
+use crate::test_support::stubs::{StubGrants, StubHash, alice};
 use crate::test_support::users::user;
 use async_trait::async_trait;
 use scylla_auth::authz::{
@@ -86,7 +86,6 @@ struct Lab {
     actions: Actions,
     uc: UserUseCases,
     users: Arc<StubUsers>,
-    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -101,17 +100,14 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
 
 fn lab_with(permissions: Arc<dyn PermissionService>, grants: Vec<Grant>) -> Lab {
     let users = Arc::new(StubUsers::default());
-    let policy = Arc::new(CountingPolicy::default());
     Lab {
         actions: actions(permissions),
         uc: UserUseCases::new(
             users.clone(),
             Arc::new(StubGrants::new(grants)),
             Arc::new(StubHash::passwords()),
-            policy.clone(),
         ),
         users,
-        policy,
     }
 }
 
@@ -132,7 +128,6 @@ async fn a_create_checks_the_permission_then_stores_the_hashed_user() {
 
     assert_eq!(permissions.permissions(), vec![Permission::CreateUser]);
     assert!(lab.users.rows.lock().unwrap().contains_key(user.id()));
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -229,7 +224,7 @@ async fn an_update_to_a_taken_username_is_a_conflict() {
 }
 
 #[tokio::test]
-async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
+async fn a_delete_returns_the_tombstone() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let created = lab.create("gone").await.unwrap();
@@ -248,7 +243,6 @@ async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
 
     assert_eq!(deleted.last_state().id(), created.id());
     assert!(lab.users.rows.lock().unwrap().is_empty());
-    assert_eq!(lab.policy.reloads(), 1);
     assert_eq!(
         permissions.permissions()[1],
         Permission::DeleteUser(created.id().clone())
@@ -256,7 +250,7 @@ async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
 }
 
 #[tokio::test]
-async fn a_delete_of_a_missing_user_is_not_found_and_does_not_reload() {
+async fn a_delete_of_a_missing_user_is_not_found() {
     let lab = lab(Arc::new(RecordingPermissionService::new()));
 
     let err = lab
@@ -272,7 +266,6 @@ async fn a_delete_of_a_missing_user_is_not_found_and_does_not_reload() {
         .unwrap_err();
 
     assert!(matches!(err, DomainError::NotFound(_)));
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]

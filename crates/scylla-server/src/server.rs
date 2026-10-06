@@ -6,8 +6,13 @@ use scylla_core::config::ControlPlaneConfig;
 use scylla_extension::{Extension, Hooks};
 use sqlx::PgPool;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio_util::sync::CancellationToken;
-use tracing::info;
+use tracing::{info, warn};
+
+/// An agent stream or a log tail never ends by itself, so the graceful drain waits only this
+/// long. Shorter than the 10 seconds a container runtime gives before it kills the process.
+const SHUTDOWN_GRACE: Duration = Duration::from_secs(5);
 
 pub struct Server {
     config: ControlPlaneConfig,
@@ -116,7 +121,6 @@ impl Server {
             db: db.clone(),
             actions: services.actions.clone(),
             permissions: services.permission_checker.clone(),
-            policy_control: services.permission_checker.clone(),
             visibility: services.permission_checker.clone(),
         };
         for feature in features {
@@ -131,10 +135,24 @@ impl Server {
         });
 
         let server_token = token.clone();
-        let result = run_server(&config, &services, surface, async move {
+        let server = run_server(&config, &services, surface, async move {
             server_token.cancelled().await;
-        })
-        .await;
+        });
+        let grace_token = token.clone();
+        let grace = async move {
+            grace_token.cancelled().await;
+            tokio::time::sleep(SHUTDOWN_GRACE).await;
+        };
+        let result = tokio::select! {
+            result = server => result,
+            () = grace => {
+                warn!(
+                    grace_secs = SHUTDOWN_GRACE.as_secs(),
+                    "connections still open after the shutdown grace period; closing them"
+                );
+                Ok(())
+            }
+        };
 
         token.cancel();
 

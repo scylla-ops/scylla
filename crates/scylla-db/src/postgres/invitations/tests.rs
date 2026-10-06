@@ -76,7 +76,6 @@ async fn lab(pool: &sqlx::PgPool) -> Lab {
             Arc::new(PgUserRepository::new(pool.clone())),
             Arc::new(Argon2HashService::new()),
             Arc::new(PgSessionRepository::new(pool.clone())),
-            permission,
         ),
         inbox,
     }

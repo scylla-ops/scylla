@@ -117,12 +117,10 @@ impl Run<Prepare<DeleteUser>> for UserUseCases {
 
 #[async_trait]
 impl Run<Persist<DeleteUser>> for UserUseCases {
-    // A DB trigger drops the user's grants with the row; the reload stops the live set carrying them.
     async fn run(&self, input: Prepared<DeleteUser>) -> DomainResult<Committed<DeleteUser>> {
         input
             .commit(async |user| {
                 self.user_repo.delete(&user).await?;
-                self.policy_control.reload().await?;
                 Ok(Deleted::new(user))
             })
             .await

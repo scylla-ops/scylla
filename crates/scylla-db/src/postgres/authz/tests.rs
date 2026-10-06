@@ -246,3 +246,76 @@ async fn an_unknown_grant_has_no_ancestors(pool: PgPool) {
     assert!(ancestors.organization.is_none());
     assert!(ancestors.project.is_none());
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn every_change_to_grants_and_roles_bumps_the_policy_version(pool: PgPool) {
+    let provider = PgAuthzEntityProvider::new(pool.clone());
+    let org = seed_org(&pool, "versioned").await;
+    let user = seed_user(&pool, "versioned").await;
+    let start = provider.policy_version().await.unwrap();
+
+    PgGrantRepository::new(pool.clone())
+        .create(&Grant::new(
+            Principal::User(user.id().clone()),
+            RoleName::new(ORGANIZATION_VIEWER_ROLE).unwrap(),
+            Scope::Organization(org.id().clone()),
+        ))
+        .await
+        .unwrap();
+    let granted = provider.policy_version().await.unwrap();
+    assert!(granted > start);
+
+    sqlx::query("DELETE FROM role_permissions WHERE role_id = $1 AND permission = 'readProject'")
+        .bind(ORGANIZATION_VIEWER_ROLE)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let edited = provider.policy_version().await.unwrap();
+    assert!(edited > granted);
+
+    sqlx::query("DELETE FROM organizations WHERE id = $1")
+        .bind(org.id().as_str())
+        .execute(&pool)
+        .await
+        .unwrap();
+    let cascaded = provider.policy_version().await.unwrap();
+    assert!(cascaded > edited);
+    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM grants WHERE scope_id = $1")
+        .bind(org.id().as_str())
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(left, 0);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_role_sits_under_its_owner_and_a_platform_role_under_nothing(pool: PgPool) {
+    use scylla_auth::authz::{Role, RoleKind, RoleRepository, ScopeKind};
+    let org = seed_org(&pool, "owner").await;
+    let role = Role::new_custom(
+        crate::domain::role::RoleDisplayName::new("Deployer").unwrap(),
+        crate::domain::role::RoleDescription::new("").unwrap(),
+        ScopeKind::Project,
+        RoleKind::Member,
+        Some(org.id().clone()),
+        vec!["runPipeline".into()],
+    );
+    crate::postgres::PgRoleRepository::new(pool.clone())
+        .create(&role)
+        .await
+        .unwrap();
+    let provider = PgAuthzEntityProvider::new(pool);
+
+    let owned = provider
+        .resource_ancestors(&ResourceRef::Role(RoleName::new(&role.id).unwrap()))
+        .await
+        .unwrap();
+    assert_eq!(owned.organization.as_ref(), Some(org.id()));
+    for platform in [SYSTEM_ADMIN_ROLE, "ghost"] {
+        let ancestors = provider
+            .resource_ancestors(&ResourceRef::Role(RoleName::new(platform).unwrap()))
+            .await
+            .unwrap();
+        assert!(ancestors.organization.is_none(), "{platform}");
+    }
+}

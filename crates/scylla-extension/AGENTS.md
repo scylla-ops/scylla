@@ -203,7 +203,7 @@ async fn list_projects(&self, request: Request<ListProjectsRequest>)
 `grpc::adapter::run` (in `scylla-core`) takes the caller from the
 interceptor, turns the request into its command or query through
 `grpc::convert::Parse`, runs the engine and maps a `DomainError` to a `Status`.
-A service without the interceptor (sign-in, signup, OAuth, the app token
+A service without the interceptor (sign-in, OAuth, the app token
 exchange, the invitation accept) uses `grpc::adapter::run_public`: the same
 steps, with `Anonymous` as the caller, so only a `Public` action passes. An
 HTTP route uses `rest::adapter::run_public`: the route builds the command from
@@ -521,20 +521,21 @@ that gives `Stale`: a report of the agent came first.
 
 - The project, organization, user, secret, pipeline, trigger, app, agent, job,
   job log, invitation, grant and role use cases are on the pipeline. The
-  session (`Login`, `ValidateToken`, `RevokeToken`), `Signup`, the OAuth flow
+  session (`Login`, `ValidateToken`, `RevokeToken`), the OAuth flow
   (`GetAuthUrl`, `OAuthCallback`), `IssueAppToken`, `AcceptInvitation` and
   `IngestWebhook` are on it too, as `Public` actions. The writes of the server
   drivers and of the agent stream are on it too. Every use case is on the
   pipeline.
 - A `Public` action runs as `Anonymous`, so a `Policy` on `Authorize` sees
-  every sign-in, signup and webhook delivery. The check that the use case does
+  every sign-in and webhook delivery. The check that the use case does
   itself (the password, the app secret, the OAuth code, the invitation token,
   the webhook signature) is in `Prepare`, before the write. The `Debug` rule
   of a command with a secret is in "Adding a command or a query".
 - Every sign-in path stages its session with `auth::new_session`, and a
-  signup and a first OAuth login build the account with
-  `signup::NewAccount`. The `commit` closure writes the account, then reloads
-  the policy, then stores the session, as before.
+  first OAuth login builds the account with `signup::NewAccount`. The
+  Enterprise sign-up extension uses the same `NewAccount`, `SignupRepository`
+  and `new_session`, so they stay public. The `commit` closure writes the account, then stores
+  the session.
 - `ValidateToken` is a query, and its `Fetch` only reads: an expired
   session gives `false` and stays in the store. A failed read also gives
   `false`. `PurgeExpiredSessions` deletes the expired sessions: it is a pass
@@ -667,8 +668,11 @@ that gives `Stale`: a report of the agent came first.
   of the token, and only the mail has the token. The invitation records the
   user who sent it, so `Prepare` refuses a caller that is not a user
   (`user_only`).
-- `ListGrantableRoles` and `GetMyPermissions` are `Authenticated` queries: the
-  catalog is static data, and a caller reads its own grants. The gRPC
+- `ListGrantableRoles` without an organization and `GetMyPermissions` are
+  `Authenticated` queries: the platform roles are visible to everyone, and a
+  caller reads its own grants. With an organization, `ListGrantableRoles`
+  requires `ReadOrganization` there and adds the roles of that organization.
+  `ListAuthzVocabulary` is `Authenticated`: the catalog is compiled in. The gRPC
   interceptor refuses a call without a token, so `Anonymous` does not get to
   them from an RPC. `GetMyPermissions` refuses a service caller in its `Fetch`
   runner: a service holds no grants, and an empty list would read as "no
@@ -723,6 +727,17 @@ that gives `Stale`: a report of the agent came first.
   `manageSystemGrants` grant the caller gets `Forbidden`; with one, the call
   succeeds and changes nothing, as before. `CreateGrant`, `RevokeAllAccess`
   and `ListGrants` keep their permission on the scope.
+- `GetRole`, `UpdateRole` and `DeleteRole` use the same method: they ask for
+  `ManageRole` on the role (`ResourceRef::Role`, one read of its owner). The
+  access model applies `manageOrgRoles` for a role that an organization owns,
+  and `manageRoles` for a platform role or an unknown role. `CreateRole` and
+  `ListRoles` ask for `ManageOrgRoles` on the organization they name, or for
+  `ManageRoles` without one. `CreateRole` and `UpdateRole` call
+  `ensure_no_escalation`, as `CreateGrant` does, so a role holds only
+  permissions that its author holds.
+- The Cedar policy set validates each role template alone. A role whose
+  template does not validate is skipped with an error log: its grants give
+  nothing, and the other roles keep working.
 - `CreateTrigger` is `RequiresAll` of `ManageTriggers` and `RunPipeline` on
   the pipeline, and `UpdateTrigger` is `RequiresAll` of `ManageTrigger` and
   `RunTriggerPipeline` on the trigger: managing triggers must not give run
@@ -755,10 +770,11 @@ that gives `Stale`: a report of the agent came first.
 - A `scylla_server::Feature` gets `actions` in its `Context`. An installed
   service authorizes through `Actions::run`, as the core does, so its
   actions go through the hooks. `permissions` stays in the `Context` until
-  the Enterprise features use `actions`; `policy_control` and `visibility`
-  serve a scope in a `Fetch`.
-- The policy reload after a create or a delete sits inside the `commit`
-  closure, so a failed reload still fails the call, as before. It is a
-  `Listener<Persist<C>>` once a failed reload may only be logged.
+  the Enterprise features use `actions`; `visibility` serves a scope in a
+  `Fetch`.
+- No use case rebuilds the Cedar policy set. A database trigger increases
+  `authz_version` on each change to `grants`, `roles` or `role_permissions`,
+  and each check rebuilds the set when the version changed. A write that
+  changes a grant, a feature included, needs no extra call.
 - The Cedar entity provider loads the resource's ancestors during `Authorize`;
   a missing resource surfaces there, before the permission decision.

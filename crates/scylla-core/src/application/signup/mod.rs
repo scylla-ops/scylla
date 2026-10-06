@@ -1,31 +1,20 @@
-pub mod commands;
 pub mod repository;
 
-pub use commands::{NewSignup, Signup};
 pub use repository::SignupRepository;
 
-use crate::application::{HashService, SessionRepository};
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::{OrganizationId, UserId};
 use crate::domain::organization::{Organization, OrganizationName};
 use crate::domain::role::RoleName;
 use crate::domain::user::User;
-use derive_more::Constructor;
-use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, PolicyControl, Principal, Scope};
-use std::sync::Arc;
+use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 
-pub struct SignupOutcome {
-    pub token: String,
-    pub user_id: UserId,
-    pub organization_id: OrganizationId,
-}
-
-/// A user, its own organization and the grant that makes it the admin: what a signup and a
-/// first OAuth login create, in one transaction.
+/// A user, its own organization and the grants of the account, the first of which makes the
+/// user its admin: what a first OAuth login, or a sign-up of an edition, creates in one
+/// transaction.
 pub struct NewAccount {
     pub user: User,
     pub organization: Organization,
-    pub grant: Grant,
+    pub grants: Vec<Grant>,
 }
 
 impl NewAccount {
@@ -39,20 +28,18 @@ impl NewAccount {
         Ok(Self {
             user,
             organization,
-            grant,
+            grants: vec![grant],
         })
     }
-}
 
-/// The signup's stage runners, one block per action in `commands.rs`. `Signup` is `Public`: the
-/// caller has no account yet.
-#[derive(Constructor)]
-pub struct SignupUseCases {
-    pub(super) signup_repo: Arc<dyn SignupRepository>,
-    pub(super) session_repo: Arc<dyn SessionRepository>,
-    pub(super) hash_service: Arc<dyn HashService>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
+    /// One more grant for the user, written in the same transaction.
+    #[must_use]
+    pub fn with_grant(mut self, role: RoleName, scope: Scope) -> Self {
+        self.grants.push(Grant::new(
+            Principal::User(self.user.id().clone()),
+            role,
+            scope,
+        ));
+        self
+    }
 }
-
-#[cfg(test)]
-mod tests;

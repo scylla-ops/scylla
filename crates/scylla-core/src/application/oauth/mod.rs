@@ -11,7 +11,6 @@ pub use repository::OAuthIdentityRepository;
 use crate::application::{HashService, SessionRepository, SignupRepository, UserRepository};
 use crate::domain::ids::{OrganizationId, UserId};
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use std::sync::Arc;
 
 pub struct OAuthOutcome {
@@ -36,7 +35,6 @@ pub struct OAuthUseCases {
     pub(super) user_repo: Arc<dyn UserRepository>,
     pub(super) session_repo: Arc<dyn SessionRepository>,
     pub(super) hash_service: Arc<dyn HashService>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 #[cfg(test)]

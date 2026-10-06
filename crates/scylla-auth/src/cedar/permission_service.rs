@@ -3,7 +3,6 @@ use crate::audit::{AuditDecision, AuditEntry, AuditLog};
 use crate::authz::PermissionService;
 use crate::authz::entity_provider::{AuthzEntityProvider, ResourceAncestors};
 use crate::authz::grant::{Grant, GrantRepository, Principal, Scope};
-use crate::authz::policy::PolicyControl;
 use crate::authz::role::{Role, RoleRepository, permissions_by_role};
 use crate::authz::visibility::{Visibility, VisibilityResolver, visibility_from_grants};
 use crate::domain::caller::CallerContext;
@@ -18,7 +17,7 @@ use chrono::Utc;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
-use tracing::{info, instrument, warn};
+use tracing::{error, info, instrument, warn};
 
 const SCHEMA_SRC: &str = include_str!("schema.cedarschema");
 const POLICIES_SRC: &str = include_str!("policies.cedar");
@@ -43,9 +42,14 @@ fn role_template_src(role: &Role) -> Option<String> {
     ))
 }
 
+struct Built {
+    version: i64,
+    policies: PolicySet,
+}
+
 pub struct CedarPermissionService<EP: AuthzEntityProvider> {
     /// Built off-lock; the write lock is held only for the pointer swap.
-    policies: RwLock<Arc<PolicySet>>,
+    built: RwLock<Arc<Built>>,
     authorizer: Authorizer,
     entity_provider: Arc<EP>,
     role_repo: Arc<dyn RoleRepository>,
@@ -60,12 +64,11 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         grant_repo: Arc<dyn GrantRepository>,
         audit: Arc<dyn AuditLog>,
     ) -> DomainResult<Self> {
-        let roles = role_repo.list_all().await?;
-        let grants = grant_repo.list_all().await?;
-        let policies = Self::build_policy_set(&roles, &grants)?;
+        let version = entity_provider.policy_version().await?;
+        let built = Self::build(role_repo.as_ref(), grant_repo.as_ref(), version).await?;
 
         Ok(Self {
-            policies: RwLock::new(Arc::new(policies)),
+            built: RwLock::new(Arc::new(built)),
             authorizer: Authorizer::new(),
             entity_provider,
             role_repo,
@@ -74,35 +77,56 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         })
     }
 
+    /// The version is read before the rows, so a change committed in between bumps it again and
+    /// the next check rebuilds.
+    async fn build(
+        role_repo: &dyn RoleRepository,
+        grant_repo: &dyn GrantRepository,
+        version: i64,
+    ) -> DomainResult<Built> {
+        let roles = role_repo.list_all().await?;
+        let grants = grant_repo.list_all().await?;
+        let policies = Self::build_policy_set(&roles, &grants)?;
+        Ok(Built { version, policies })
+    }
+
+    fn current(&self) -> Arc<Built> {
+        self.built.read().expect("policy set lock poisoned").clone()
+    }
+
+    /// Fails closed: when the rebuild fails, the check fails rather than decide on a set that may
+    /// still hold a revoked grant.
+    async fn policies(&self) -> DomainResult<Arc<Built>> {
+        let version = self.entity_provider.policy_version().await?;
+        let current = self.current();
+        if current.version >= version {
+            return Ok(current);
+        }
+        let built = Arc::new(
+            Self::build(self.role_repo.as_ref(), self.grant_repo.as_ref(), version).await?,
+        );
+        let mut slot = self.built.write().expect("policy set lock poisoned");
+        if slot.version < built.version {
+            *slot = built.clone();
+            info!(target: "audit", version, "authorization policy set rebuilt");
+        }
+        Ok(slot.clone())
+    }
+
     fn build_policy_set(roles: &[Role], grants: &[Grant]) -> DomainResult<PolicySet> {
         let (schema, _warnings) = Schema::from_cedarschema_str(SCHEMA_SRC)
             .map_err(|e| DomainError::Internal(format!("cedar schema parse: {e}")))?;
 
+        let validator = Validator::new(schema);
         let mut policies = PolicySet::from_str(POLICIES_SRC)
             .map_err(|e| DomainError::Internal(format!("cedar policy parse: {e}")))?;
+        Self::validate(&validator, &policies)?;
 
+        // One role that does not validate loses its access, not every organization theirs.
         for role in roles {
-            let Some(src) = role_template_src(role) else {
-                continue;
-            };
-            let template =
-                Template::parse(Some(PolicyId::new(role.id.as_str())), &src).map_err(|e| {
-                    DomainError::Internal(format!("cedar template parse {}: {e}", role.id))
-                })?;
-            policies.add_template(template).map_err(|e| {
-                DomainError::Internal(format!("cedar add template {}: {e}", role.id))
-            })?;
-        }
-
-        let result = Validator::new(schema).validate(&policies, ValidationMode::Strict);
-        if !result.validation_passed() {
-            let errs: Vec<String> = result
-                .validation_errors()
-                .map(ToString::to_string)
-                .collect();
-            return Err(DomainError::Internal(format!(
-                "cedar policy validation failed: {errs:?}"
-            )));
+            if let Err(e) = Self::add_role_template(&validator, &mut policies, role) {
+                error!(role_id = %role.id, error = %e, "skipping a role whose template does not validate");
+            }
         }
 
         for grant in grants {
@@ -112,6 +136,40 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         }
 
         Ok(policies)
+    }
+
+    fn validate(validator: &Validator, policies: &PolicySet) -> DomainResult<()> {
+        let result = validator.validate(policies, ValidationMode::Strict);
+        if result.validation_passed() {
+            return Ok(());
+        }
+        let errs: Vec<String> = result
+            .validation_errors()
+            .map(ToString::to_string)
+            .collect();
+        Err(DomainError::Internal(format!(
+            "cedar policy validation failed: {errs:?}"
+        )))
+    }
+
+    fn add_role_template(
+        validator: &Validator,
+        policies: &mut PolicySet,
+        role: &Role,
+    ) -> DomainResult<()> {
+        let Some(src) = role_template_src(role) else {
+            return Ok(());
+        };
+        let template = Template::parse(Some(PolicyId::new(role.id.as_str())), &src)
+            .map_err(|e| DomainError::Internal(format!("cedar template parse: {e}")))?;
+        let mut alone = PolicySet::new();
+        alone
+            .add_template(template.clone())
+            .map_err(|e| DomainError::Internal(format!("cedar add template: {e}")))?;
+        Self::validate(validator, &alone)?;
+        policies
+            .add_template(template)
+            .map_err(|e| DomainError::Internal(format!("cedar add template: {e}")))
     }
 
     fn link_grant(policies: &mut PolicySet, grant: &Grant) -> DomainResult<()> {
@@ -177,9 +235,10 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         let nearest = match resource {
             ResourceRef::Job(_) | ResourceRef::Trigger(_) => pipeline_uid.as_ref(),
             ResourceRef::Pipeline(_) | ResourceRef::Secret(_) => project_uid.as_ref(),
-            ResourceRef::Project(_) | ResourceRef::App(_) | ResourceRef::Invitation(_) => {
-                org_uid.as_ref()
-            }
+            ResourceRef::Project(_)
+            | ResourceRef::App(_)
+            | ResourceRef::Invitation(_)
+            | ResourceRef::Role(_) => org_uid.as_ref(),
             ResourceRef::AppSecret(_) => app_uid.as_ref(),
             ResourceRef::Grant(_) => project_uid.as_ref().or(org_uid.as_ref()),
             ResourceRef::Organization(_) | ResourceRef::User(_) | ResourceRef::System => None,
@@ -273,14 +332,10 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
         )
         .map_err(|e| DomainError::Internal(format!("cedar request: {e}")))?;
 
-        let policies = self
-            .policies
-            .read()
-            .expect("policy set lock poisoned")
-            .clone();
+        let built = self.policies().await?;
         let response = self
             .authorizer
-            .is_authorized(&request, &policies, &entities);
+            .is_authorized(&request, &built.policies, &entities);
 
         let policies: Vec<String> = response
             .diagnostics()
@@ -339,19 +394,6 @@ impl<EP: AuthzEntityProvider + 'static> VisibilityResolver for CedarPermissionSe
     }
 }
 
-#[async_trait]
-impl<EP: AuthzEntityProvider + 'static> PolicyControl for CedarPermissionService<EP> {
-    #[instrument(skip(self))]
-    async fn reload(&self) -> DomainResult<()> {
-        let roles = self.role_repo.list_all().await?;
-        let grants = self.grant_repo.list_all().await?;
-        let policies = Self::build_policy_set(&roles, &grants)?;
-        *self.policies.write().expect("policy set lock poisoned") = Arc::new(policies);
-        info!(target: "audit", "authorization policy set reloaded");
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -361,13 +403,15 @@ mod tests {
         ORGANIZATION_VIEWER_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, PROJECT_DEVELOPER_ROLE,
         SYSTEM_ADMIN_ROLE, ScopeKind,
     };
-    use crate::authz::role::FULL_CONTROL;
+    use crate::authz::role::{FULL_CONTROL, RoleKind};
     use crate::domain::caller::ServiceIdentity;
     use crate::domain::ids::{
         AppCredentialId, AppId, GrantId, InvitationId, JobId, OrganizationId, PipelineId,
         ProjectId, SecretId, TriggerId, UserId,
     };
     use crate::domain::role::{RoleDescription, RoleDisplayName, RoleName};
+    use std::sync::Mutex;
+    use std::sync::atomic::{AtomicI64, Ordering};
 
     fn builtin(id: &str, scope: ScopeKind, permissions: &[&str]) -> Role {
         Role {
@@ -376,9 +420,11 @@ mod tests {
             name: RoleDisplayName::new(id).unwrap(),
             description: RoleDescription::new("").unwrap(),
             scope,
+            kind: RoleKind::Member,
             owner_org: None,
             builtin: true,
             permissions: permissions.iter().map(ToString::to_string).collect(),
+            version: 0,
         }
     }
 
@@ -434,14 +480,18 @@ mod tests {
         async fn update(&self, _role: &Role) -> DomainResult<()> {
             Ok(())
         }
-        async fn delete(&self, _id: &str) -> DomainResult<()> {
+        async fn delete(&self, _role: &Role) -> DomainResult<()> {
             Ok(())
+        }
+        async fn in_use(&self, _id: &str) -> DomainResult<bool> {
+            Ok(false)
         }
     }
 
     struct StubProvider {
         ancestors: ResourceAncestors,
         app_active: bool,
+        version: AtomicI64,
     }
 
     #[async_trait]
@@ -455,14 +505,17 @@ mod tests {
         async fn app_is_active(&self, _app: &AppId) -> DomainResult<bool> {
             Ok(self.app_active)
         }
+        async fn policy_version(&self) -> DomainResult<i64> {
+            Ok(self.version.load(Ordering::SeqCst))
+        }
     }
 
-    struct StubGrants(Vec<Grant>);
+    struct StubGrants(Mutex<Vec<Grant>>);
 
     #[async_trait]
     impl GrantRepository for StubGrants {
         async fn list_all(&self) -> DomainResult<Vec<Grant>> {
-            Ok(self.0.clone())
+            Ok(self.0.lock().unwrap().clone())
         }
         async fn revoke_all(&self, _p: &Principal, _s: &Scope) -> DomainResult<u64> {
             Ok(0)
@@ -491,9 +544,10 @@ mod tests {
             Arc::new(StubProvider {
                 ancestors,
                 app_active: true,
+                version: AtomicI64::new(0),
             }),
             Arc::new(StubRoles(roles)),
-            Arc::new(StubGrants(grants)),
+            Arc::new(StubGrants(Mutex::new(grants))),
             Arc::new(crate::audit::NoopAuditLog),
         )
         .await
@@ -508,9 +562,10 @@ mod tests {
             Arc::new(StubProvider {
                 ancestors,
                 app_active: false,
+                version: AtomicI64::new(0),
             }),
             Arc::new(StubRoles(builtin_roles())),
-            Arc::new(StubGrants(grants)),
+            Arc::new(StubGrants(Mutex::new(grants))),
             Arc::new(crate::audit::NoopAuditLog),
         )
         .await
@@ -539,6 +594,44 @@ mod tests {
                 .await
                 .is_ok()
         );
+    }
+
+    #[tokio::test]
+    async fn a_new_policy_version_applies_grants_and_revokes_on_the_next_check() {
+        let provider = Arc::new(StubProvider {
+            ancestors: ResourceAncestors::default(),
+            app_active: true,
+            version: AtomicI64::new(0),
+        });
+        let grants = Arc::new(StubGrants(Mutex::new(vec![])));
+        let svc = CedarPermissionService::new(
+            provider.clone(),
+            Arc::new(StubRoles(builtin_roles())),
+            grants.clone(),
+            Arc::new(crate::audit::NoopAuditLog),
+        )
+        .await
+        .unwrap();
+        let caller = CallerContext::User(UserId::new("u"));
+        let delete = || Permission::DeleteUser(UserId::new("victim"));
+        assert!(svc.check(&caller, delete()).await.is_err());
+
+        grants.0.lock().unwrap().push(Grant::new(
+            Principal::User(UserId::new("u")),
+            role("system-admin"),
+            Scope::System,
+        ));
+        assert!(
+            svc.check(&caller, delete()).await.is_err(),
+            "same version: the built set stays"
+        );
+
+        provider.version.store(1, Ordering::SeqCst);
+        assert!(svc.check(&caller, delete()).await.is_ok());
+
+        grants.0.lock().unwrap().clear();
+        provider.version.store(2, Ordering::SeqCst);
+        assert!(svc.check(&caller, delete()).await.is_err());
     }
 
     #[tokio::test]
@@ -1513,6 +1606,106 @@ mod tests {
         assert!(
             !may_revoke(grant_in(Some("o1"), None), "system-grants", Scope::System).await,
             "manageSystemGrants does not reach an organization grant"
+        );
+    }
+
+    async fn may_manage_role(ancestors: ResourceAncestors, role_name: &str, scope: Scope) -> bool {
+        let svc = service(
+            ancestors,
+            vec![Grant::new(
+                Principal::User(UserId::new("u1")),
+                role(role_name),
+                scope,
+            )],
+        )
+        .await;
+        svc.check(
+            &CallerContext::User(UserId::new("u1")),
+            Permission::ManageRole(role("deployer")),
+        )
+        .await
+        .is_ok()
+    }
+
+    #[tokio::test]
+    async fn a_role_is_managed_with_the_manage_roles_action_of_its_owner() {
+        let owned_by_o1 = || grant_in(Some("o1"), None);
+        let o1 = || Scope::Organization(OrganizationId::new("o1"));
+        let o2 = || Scope::Organization(OrganizationId::new("o2"));
+
+        assert!(may_manage_role(owned_by_o1(), ORGANIZATION_ADMIN_ROLE, o1()).await);
+        assert!(!may_manage_role(owned_by_o1(), ORGANIZATION_ADMIN_ROLE, o2()).await);
+        assert!(may_manage_role(owned_by_o1(), SYSTEM_ADMIN_ROLE, Scope::System).await);
+        assert!(
+            !may_manage_role(ResourceAncestors::default(), ORGANIZATION_ADMIN_ROLE, o1()).await,
+            "a platform role, or an unknown one, needs manageRoles on System"
+        );
+        assert!(
+            may_manage_role(
+                ResourceAncestors::default(),
+                SYSTEM_ADMIN_ROLE,
+                Scope::System
+            )
+            .await
+        );
+    }
+
+    #[tokio::test]
+    async fn a_role_of_an_organization_confers_rights_only_where_it_is_granted() {
+        let mut roles = builtin_roles();
+        roles.push(Role {
+            owner_org: Some(OrganizationId::new("o1")),
+            builtin: false,
+            ..builtin("deployer", ScopeKind::Project, &["runPipeline"])
+        });
+        let grant = || {
+            vec![Grant::new(
+                Principal::User(UserId::new("u1")),
+                role("deployer"),
+                Scope::Project(ProjectId::new("p1")),
+            )]
+        };
+        let caller = CallerContext::User(UserId::new("u1"));
+        let run = || Permission::RunPipeline(PipelineId::new("pl"));
+
+        let in_p1 =
+            service_with_roles(grant_in(Some("o1"), Some("p1")), roles.clone(), grant()).await;
+        assert!(in_p1.check(&caller, run()).await.is_ok());
+        let in_o2 = service_with_roles(grant_in(Some("o2"), Some("p2")), roles, grant()).await;
+        assert!(in_o2.check(&caller, run()).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn a_role_template_that_does_not_validate_loses_only_its_own_access() {
+        let mut roles = builtin_roles();
+        roles.push(builtin("broken", ScopeKind::System, &["noSuchAction"]));
+        let svc = service_with_roles(
+            ResourceAncestors::default(),
+            roles,
+            vec![
+                Grant::new(
+                    Principal::User(UserId::new("root")),
+                    role(SYSTEM_ADMIN_ROLE),
+                    Scope::System,
+                ),
+                Grant::new(
+                    Principal::User(UserId::new("u1")),
+                    role("broken"),
+                    Scope::System,
+                ),
+            ],
+        )
+        .await;
+        let delete = || Permission::DeleteUser(UserId::new("victim"));
+        assert!(
+            svc.check(&CallerContext::User(UserId::new("root")), delete())
+                .await
+                .is_ok()
+        );
+        assert!(
+            svc.check(&CallerContext::User(UserId::new("u1")), delete())
+                .await
+                .is_err()
         );
     }
 }

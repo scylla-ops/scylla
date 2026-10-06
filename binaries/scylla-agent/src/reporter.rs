@@ -32,15 +32,10 @@ impl StatusPublisher {
     /// Stamps the event with the time it happened, not the time the stream carries it.
     pub async fn emit(&self, event: JobEvent) -> Result<(), ExecutionError> {
         let status = scylla_proto::convert::job_event_to_status(&self.job_id, event, Utc::now());
-        self.send(agent_up::Payload::Status(status))
-            .await
-            .map_err(|e| ExecutionError::Publish(e.to_string()))
+        self.send(agent_up::Payload::Status(status)).await
     }
 
-    pub async fn send(
-        &self,
-        payload: agent_up::Payload,
-    ) -> Result<(), mpsc::error::SendError<AgentUp>> {
+    pub async fn send(&self, payload: agent_up::Payload) -> Result<(), ExecutionError> {
         if self.withdrawn.is_cancelled() {
             return Ok(());
         }
@@ -49,5 +44,6 @@ impl StatusPublisher {
                 payload: Some(payload),
             })
             .await
+            .map_err(|e| ExecutionError::Publish(e.to_string()))
     }
 }

@@ -10,7 +10,7 @@ use crate::domain::permission::Permission;
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::jobs::JobBuilder;
 use crate::test_support::pipelines::PipelineBuilder;
-use crate::test_support::stubs::{CountingPolicy, StubHash, StubJobs, StubRegistry, alice};
+use crate::test_support::stubs::{StubHash, StubJobs, StubRegistry, alice};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, PermissionService, Principal, Scope};
@@ -135,7 +135,6 @@ struct Lab {
     jobs: Arc<StubJobs>,
     hash: Arc<StubHash>,
     registry: Arc<StubRegistry>,
-    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -169,7 +168,6 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let jobs = Arc::new(StubJobs::default());
     let hash = Arc::new(StubHash::secrets());
     let registry = Arc::new(StubRegistry::default());
-    let policy = Arc::new(CountingPolicy::default());
     Lab {
         actions: actions(permissions),
         uc: AgentUseCases::new(
@@ -177,7 +175,6 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
             agents.clone(),
             jobs.clone(),
             hash.clone(),
-            policy.clone(),
             registry.clone(),
         ),
         apps,
@@ -185,7 +182,6 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         jobs,
         hash,
         registry,
-        policy,
     }
 }
 
@@ -194,7 +190,7 @@ fn org() -> OrganizationId {
 }
 
 #[tokio::test]
-async fn a_create_provisions_the_app_its_secret_its_agent_row_and_its_grant_then_reloads() {
+async fn a_create_provisions_the_app_its_secret_its_agent_row_and_its_grant() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
 
@@ -215,7 +211,6 @@ async fn a_create_provisions_the_app_its_secret_its_agent_row_and_its_grant_then
     assert_eq!(grants[0].principal, Principal::App(id));
     assert_eq!(grants[0].role.as_str(), ORGANIZATION_AGENT_ROLE);
     assert_eq!(grants[0].scope, Scope::Organization(org()));
-    assert_eq!(lab.policy.reloads(), 1);
 }
 
 #[tokio::test]
@@ -227,7 +222,6 @@ async fn a_denied_create_never_hashes_or_persists() {
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert_eq!(lab.hash.hashed(), 0);
     assert!(lab.apps.rows.lock().unwrap().is_empty());
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -340,7 +334,6 @@ async fn the_runner_name_is_refused() {
 
     assert!(matches!(create, DomainError::Validation(_)));
     assert_eq!(lab.hash.hashed(), 0);
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 fn host() -> AgentHost {

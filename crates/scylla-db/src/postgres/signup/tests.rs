@@ -27,7 +27,7 @@ async fn provision_account_persists_all_four_rows(pool: PgPool) {
     let org = org("Acme");
     let grant = org_admin_grant(user.id().clone(), org.id().clone());
 
-    repo.provision_account(&user, &org, &grant)
+    repo.provision_account(&user, &org, std::slice::from_ref(&grant))
         .await
         .expect("provision");
 
@@ -53,7 +53,7 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
     let first_user = user("dup");
     let first_org = org("FirstOrg");
     let first_grant = org_admin_grant(first_user.id().clone(), first_org.id().clone());
-    repo.provision_account(&first_user, &first_org, &first_grant)
+    repo.provision_account(&first_user, &first_org, std::slice::from_ref(&first_grant))
         .await
         .expect("first provision");
 
@@ -61,7 +61,11 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
     let second_org = org("SecondOrg");
     let second_grant = org_admin_grant(clash_user.id().clone(), second_org.id().clone());
     let err = repo
-        .provision_account(&clash_user, &second_org, &second_grant)
+        .provision_account(
+            &clash_user,
+            &second_org,
+            std::slice::from_ref(&second_grant),
+        )
         .await
         .expect_err("username clash must fail");
     assert!(
@@ -143,22 +147,32 @@ async fn login_by_email_or_username(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
+async fn a_provisioned_account_is_admin_of_its_own_org_only(pool: PgPool) {
     use crate::domain::caller::CallerContext;
     use crate::domain::organization::OrganizationName;
     use crate::domain::permission::Permission;
-    use crate::domain::user::{Email, Password, Username};
+    use crate::domain::role::RoleName;
     use crate::postgres::PgAuthzEntityProvider;
-    use crate::postgres::PgSessionRepository;
     use scylla_auth::audit::NoopAuditLog;
-    use scylla_auth::authz::PermissionService;
+    use scylla_auth::authz::{ORGANIZATION_CREATOR_ROLE, PermissionService, Scope};
     use scylla_auth::cedar::CedarPermissionService;
-    use scylla_core::application::SignupUseCases;
-    use scylla_core::application::signup::Signup;
-    use scylla_core::infrastructure::Argon2HashService;
+    use scylla_core::application::NewAccount;
     use std::sync::Arc;
 
     let foreign = seed_org(&pool, "Foreign Corp").await;
+    let account = NewAccount::new(
+        user("founder"),
+        OrganizationName::new("Founders Inc").unwrap(),
+    )
+    .unwrap()
+    .with_grant(
+        RoleName::new(ORGANIZATION_CREATOR_ROLE).unwrap(),
+        Scope::System,
+    );
+    PgSignupRepository::new(pool.clone())
+        .provision_account(&account.user, &account.organization, &account.grants)
+        .await
+        .expect("provision");
 
     let permission = Arc::new(
         CedarPermissionService::new(
@@ -170,36 +184,25 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
         .await
         .expect("cedar service"),
     );
-    let signup_uc = SignupUseCases::new(
-        Arc::new(PgSignupRepository::new(pool.clone())),
-        Arc::new(PgSessionRepository::new(pool.clone())),
-        Arc::new(Argon2HashService::new()),
-        permission.clone(),
-    );
-
-    let outcome = actions(permission.clone())
-        .run(
-            &signup_uc,
-            &CallerContext::Anonymous,
-            Signup {
-                username: Username::new("founder").unwrap(),
-                email: Email::new("founder@example.com").unwrap(),
-                password: Password::new("SecurePass123!").unwrap(),
-                organization_name: OrganizationName::new("Founders Inc").unwrap(),
-            },
-        )
-        .await
-        .expect("signup");
-
-    let caller = CallerContext::User(outcome.user_id.clone());
+    let caller = CallerContext::User(account.user.id().clone());
 
     permission
         .check(
             &caller,
-            Permission::UpdateOrganization(outcome.organization_id.clone()),
+            Permission::UpdateOrganization(account.organization.id().clone()),
         )
         .await
         .expect("org-admin can update own org");
+    permission
+        .check(&caller, Permission::CreateOrganization)
+        .await
+        .expect("the organization creator role lets it create organizations");
+    assert!(
+        permission
+            .check(&caller, Permission::ListUsers)
+            .await
+            .is_err()
+    );
 
     let err = permission
         .check(

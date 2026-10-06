@@ -46,7 +46,7 @@ pub use role::RoleUseCases;
 pub use secret::{
     DispatchSecretResolver, SecretCipher, SecretRepository, SecretResolver, SecretUseCases,
 };
-pub use signup::{SignupRepository, SignupUseCases};
+pub use signup::{NewAccount, SignupRepository};
 pub use trigger::{
     CronSchedule, IngestOutcome, IngestWebhook, NextFire, TriggerCronScheduler,
     TriggerDeliveryRepository, TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerRepository,

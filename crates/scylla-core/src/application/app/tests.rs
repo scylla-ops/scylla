@@ -7,7 +7,7 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppCredentialId, AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
-use crate::test_support::stubs::{CountingPolicy, StubHash, StubRegistry, alice};
+use crate::test_support::stubs::{StubHash, StubRegistry, alice};
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, PermissionService};
 use scylla_extension::{Actions, Deleted};
@@ -156,7 +156,6 @@ struct Lab {
     credentials: Arc<StubCredentials>,
     hash: Arc<StubHash>,
     registry: Arc<StubRegistry>,
-    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -206,7 +205,6 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let credentials = Arc::new(StubCredentials::default());
     let hash = Arc::new(StubHash::secrets());
     let registry = Arc::new(StubRegistry::default());
-    let policy = Arc::new(CountingPolicy::default());
     Lab {
         actions: actions(permissions),
         uc: AppUseCases::new(
@@ -214,13 +212,11 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
             credentials.clone(),
             hash.clone(),
             registry.clone(),
-            policy.clone(),
         ),
         apps,
         credentials,
         hash,
         registry,
-        policy,
     }
 }
 
@@ -353,7 +349,7 @@ async fn an_activation_keeps_the_stream() {
 }
 
 #[tokio::test]
-async fn a_delete_reloads_the_policies_closes_the_stream_and_wakes_the_dispatcher() {
+async fn a_delete_closes_the_stream_and_wakes_the_dispatcher() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let created = lab.create().await.unwrap();
@@ -367,7 +363,6 @@ async fn a_delete_reloads_the_policies_closes_the_stream_and_wakes_the_dispatche
 
     assert_eq!(deleted.last_state(), &id);
     assert!(lab.apps.rows.lock().unwrap().is_empty());
-    assert_eq!(lab.policy.reloads(), 1);
     assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
     assert_eq!(lab.registry.wakes(), [None]);
     assert_eq!(permissions.permissions()[1], Permission::DeleteApp(id));
@@ -392,7 +387,6 @@ async fn a_denied_delete_keeps_the_stream_and_the_row() {
 
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert!(lab.registry.disconnected().is_empty());
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -447,7 +441,6 @@ async fn the_trigger_runner_cannot_be_disabled_deleted_or_given_a_secret() {
     assert!(lab.apps.rows.lock().unwrap()[&id].is_active());
     assert!(lab.credentials.rows.lock().unwrap().is_empty());
     assert!(lab.registry.disconnected().is_empty());
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -476,7 +469,6 @@ async fn an_allowed_action_on_an_unknown_app_is_not_found() {
     assert!(matches!(delete, DomainError::NotFound(_)));
     assert!(matches!(disable, DomainError::NotFound(_)));
     assert!(lab.registry.disconnected().is_empty());
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]

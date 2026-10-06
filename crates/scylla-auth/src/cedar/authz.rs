@@ -16,17 +16,24 @@ pub(crate) fn parent_set(parent: Option<&EntityUid>) -> HashSet<EntityUid> {
     parent.cloned().into_iter().collect()
 }
 
-/// A grant takes the manage-grants action of its scope kind; an unknown grant has no ancestor and takes the System one.
+/// A grant takes the manage-grants action of its scope kind, a role the manage-roles action of its
+/// owner. An unknown grant or role has no ancestor and takes the System one.
 pub(crate) fn action_key(permission: &Permission, ancestors: &ResourceAncestors) -> &'static str {
-    let Permission::RevokeGrant(_) = permission else {
-        return permission.key();
-    };
-    let scope = match (&ancestors.project, &ancestors.organization) {
-        (Some(project), _) => Scope::Project(project.clone()),
-        (None, Some(organization)) => Scope::Organization(organization.clone()),
-        (None, None) => Scope::System,
-    };
-    scope.manage_permission().key()
+    match permission {
+        Permission::RevokeGrant(_) => {
+            let scope = match (&ancestors.project, &ancestors.organization) {
+                (Some(project), _) => Scope::Project(project.clone()),
+                (None, Some(organization)) => Scope::Organization(organization.clone()),
+                (None, None) => Scope::System,
+            };
+            scope.manage_permission().key()
+        }
+        Permission::ManageRole(_) => match &ancestors.organization {
+            Some(organization) => Permission::ManageOrgRoles(organization.clone()).key(),
+            None => permission.key(),
+        },
+        _ => permission.key(),
+    }
 }
 
 pub(crate) fn resource_uid(resource: &ResourceRef) -> DomainResult<EntityUid> {
@@ -43,6 +50,7 @@ pub(crate) fn resource_uid(resource: &ResourceRef) -> DomainResult<EntityUid> {
         ResourceRef::App(id) => euid("Scylla::App", id.as_str()),
         ResourceRef::AppSecret(id) => euid("Scylla::AppSecret", id.as_str()),
         ResourceRef::Grant(id) => euid("Scylla::Grant", id.as_str()),
+        ResourceRef::Role(id) => euid("Scylla::Role", id.as_str()),
     }
 }
 
@@ -69,5 +77,6 @@ pub(crate) fn resource_parts(resource: &ResourceRef) -> (&'static str, Option<St
         ResourceRef::App(id) => ("app", Some(id.as_str().to_string())),
         ResourceRef::AppSecret(id) => ("app_secret", Some(id.as_str().to_string())),
         ResourceRef::Grant(id) => ("grant", Some(id.as_str().to_string())),
+        ResourceRef::Role(id) => ("role", Some(id.as_str().to_string())),
     }
 }

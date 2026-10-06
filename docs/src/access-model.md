@@ -129,12 +129,13 @@ they need.
 
 ## Builtin roles
 
-Shipped so a tenant is usable without configuring anything. Custom roles can be
-created at any scope with any permission set.
+Shipped so a tenant is usable without configuring anything. Custom roles are
+described under "Custom roles".
 
 | Role                        | Scope        | Confers                                                        |
 | --------------------------- | ------------ | -------------------------------------------------------------- |
 | System Admin                | System       | Everything, everywhere                                          |
+| Organization Creator        | System       | Create organizations. The creator becomes the admin of each one |
 | Organization Admin          | Organization | Everything in the organization, including managing its accesses |
 | Organization Viewer         | Organization | Read every project and run in the organization                  |
 | Organization Member         | Organization | Sees the organization exists. Nothing else                      |
@@ -145,10 +146,39 @@ created at any scope with any permission set.
 | Project Agent               | Project      | Machine app: pull and run the project's jobs                    |
 | Organization Trigger Runner | Organization | Machine app: fire the organization's pipelines                  |
 
-Only a system administrator may edit the role catalog (`manageRoles` applies to
-the System scope). Tenants pick from it; they do not yet redefine it.
+## Custom roles
+
+A role with no owner is a platform role: the builtin roles and the custom roles
+of the system administrators. Only a holder of `manageRoles` (System) creates,
+edits or deletes one. Every organization sees the platform roles.
+
+A role with an owner belongs to that organization. A holder of `manageOrgRoles`
+on the organization creates, edits and deletes it; `organization-admin` has this
+permission through full control. Such a role:
+
+- is organization or project scoped, never system scoped;
+- is seen, listed and granted only in its organization. For another
+  organization, it is the same as a role that does not exist;
+- does not take the name of a platform role. Two organizations may each have a
+  role with the same name. Names are compared without regard to case. A system
+  administrator may still create a platform role with the name of an
+  organization role: that organization then sees both, each in its group.
+
+A change to one role is checked on the role: the access model applies
+`manageOrgRoles` for a role that an organization owns, and `manageRoles` for a
+platform role. So an organization administrator cannot edit a builtin role, or
+a role of another organization.
+
+A role holds only permissions that its author holds at that organization, or at
+the system for a platform role. A role is deleted only when no grant and no
+pending invitation names it. The builtin roles are never deleted.
 
 ## Guarantees
+
+**A role of an organization is granted only inside that organization.** The use
+case refuses it elsewhere, and a database trigger refuses such a grant or
+invitation too. When the organization is deleted, its roles and their grants go
+with it.
 
 **The system and each organization always keep at least one human
 administrator** (`system-admin`, `organization-admin`). You cannot revoke the
@@ -191,21 +221,19 @@ organization.
 
 ## Revocation timing
 
-Grants are compiled into an in-memory policy set and rebuilt on change. A
-revocation therefore takes effect when the control plane reloads that set, which
-happens synchronously in the process that performed the revocation.
+The control plane compiles the grants and the roles into a policy set that it
+keeps in memory. The table `authz_version` holds one number. A database trigger
+increases it in the same transaction as each change to `grants`, `roles` or
+`role_permissions`. This includes the grants that a delete of a user, an app, an
+organization or a project removes by cascade.
 
-This is exact for the current single-process deployment. **It would not hold
-across replicas**: a second control plane would keep serving the old set until
-its own next reload. Running more than one replica requires a cross-process
-invalidation channel first (a `pg_notify` on `grants` with a listener calling
-`reload`). Until that exists, treat single-process as a deployment constraint,
-not an implementation detail.
+Each check reads the version first. If the version is not the one of the set in
+memory, the control plane builds the set again before it decides. Thus a grant
+or a revocation applies on the next check, in every control plane that uses the
+database. No code path has to ask for a rebuild.
 
-If a reload fails, the previous policy set is deliberately kept so that no check
-is ever served by a broken set. The rows are already gone at that point, so the
-failure is logged at error level and returned to the caller: the store and the
-live set are out of step until the next successful reload.
+If the rebuild fails, the check fails. The control plane does not decide with a
+set that can still hold a revoked grant.
 
 ## Deliberate non-goals
 

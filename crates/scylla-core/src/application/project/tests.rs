@@ -14,7 +14,7 @@ use crate::test_support::authz::{
 use crate::test_support::jobs::JobBuilder;
 use crate::test_support::pipelines::PipelineBuilder;
 use crate::test_support::stubs::{
-    CountingPolicy, NoUsers, StubJobs, StubRegistry, StubTails, alice, dispatcher, empty_page,
+    NoUsers, StubJobs, StubRegistry, StubTails, alice, dispatcher, empty_page,
 };
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, PermissionService, Visibility};
@@ -125,7 +125,6 @@ struct Lab {
     actions: Actions,
     uc: ProjectUseCases,
     projects: Arc<StubProjects>,
-    policy: Arc<CountingPolicy>,
     jobs: Arc<StubJobs>,
     registry: Arc<StubRegistry>,
 }
@@ -146,7 +145,6 @@ fn lab_seeing(
     visibility: StubVisibility,
 ) -> Lab {
     let projects = Arc::new(StubProjects::default());
-    let policy = Arc::new(CountingPolicy::default());
     let jobs = Arc::new(StubJobs::default());
     let registry = Arc::new(StubRegistry::default());
     Lab {
@@ -155,7 +153,6 @@ fn lab_seeing(
             projects.clone(),
             Arc::new(NoUsers),
             Arc::new(visibility),
-            policy.clone(),
             dispatcher(
                 registry.clone(),
                 jobs.clone(),
@@ -163,7 +160,6 @@ fn lab_seeing(
             ),
         ),
         projects,
-        policy,
         jobs,
         registry,
     }
@@ -190,7 +186,6 @@ async fn a_create_by_a_user_checks_the_permission_then_writes_the_owner_grant() 
     );
     assert!(lab.projects.rows.lock().unwrap().contains_key(project.id()));
     assert_eq!(lab.projects.grants.lock().unwrap().len(), 1);
-    assert_eq!(lab.policy.reloads(), 1);
 }
 
 #[tokio::test]
@@ -201,7 +196,6 @@ async fn a_denied_caller_writes_nothing() {
 
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert!(lab.projects.rows.lock().unwrap().is_empty());
-    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -252,7 +246,7 @@ async fn an_update_stages_the_change_and_persists_it() {
 }
 
 #[tokio::test]
-async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
+async fn a_delete_returns_the_tombstone() {
     let lab = lab(Arc::new(RecordingPermissionService::new()), Hooks::new());
     let created = lab.create("gone").await.unwrap();
 
@@ -270,7 +264,6 @@ async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
 
     assert_eq!(deleted.last_state().id(), created.id());
     assert!(lab.projects.rows.lock().unwrap().is_empty());
-    assert_eq!(lab.policy.reloads(), 2);
 }
 
 #[tokio::test]

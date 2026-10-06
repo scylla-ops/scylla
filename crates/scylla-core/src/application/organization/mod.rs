@@ -13,7 +13,6 @@ pub use repository::OrganizationRepository;
 
 use crate::application::{AppRepository, DispatchUseCases, UserRepository};
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use std::sync::Arc;
 
 /// The organization aggregate's stage runners, one block per action in `commands.rs` and
@@ -24,7 +23,6 @@ pub struct OrganizationUseCases {
     pub(super) org_repo: Arc<dyn OrganizationRepository>,
     pub(super) user_repo: Arc<dyn UserRepository>,
     pub(super) app_repo: Arc<dyn AppRepository>,
-    pub(super) policy_control: Arc<dyn PolicyControl>,
     pub(super) dispatch: Arc<DispatchUseCases>,
 }
 
