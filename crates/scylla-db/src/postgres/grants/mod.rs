@@ -16,6 +16,17 @@ const SYSTEM_SCOPE_ID: &str = "system";
 const PRINCIPAL_USER: &str = "user";
 const PRINCIPAL_APP: &str = "app";
 
+pub(crate) fn scope_from_row(kind: &str, id: String) -> DomainResult<Scope> {
+    match kind {
+        SCOPE_SYSTEM => Ok(Scope::System),
+        SCOPE_ORGANIZATION => Ok(Scope::Organization(OrganizationId::new(id))),
+        SCOPE_PROJECT => Ok(Scope::Project(ProjectId::new(id))),
+        other => Err(DomainError::Infrastructure(format!(
+            "unknown grant scope_kind '{other}'"
+        ))),
+    }
+}
+
 /// Returns the stored id: the existing one when the same grant is already there.
 pub async fn insert<'e, E>(executor: E, grant: &Grant) -> DomainResult<String>
 where
@@ -132,21 +143,11 @@ impl GrantRepository for PgGrantRepository {
                         )));
                     }
                 };
-                let scope = match r.scope_kind.as_str() {
-                    SCOPE_SYSTEM => Scope::System,
-                    SCOPE_ORGANIZATION => Scope::Organization(OrganizationId::new(r.scope_id)),
-                    SCOPE_PROJECT => Scope::Project(ProjectId::new(r.scope_id)),
-                    other => {
-                        return Err(DomainError::Infrastructure(format!(
-                            "unknown grant scope_kind '{other}'"
-                        )));
-                    }
-                };
                 Ok(Grant {
                     id: r.id,
                     principal,
                     role: RoleName::new(r.role_id)?,
-                    scope,
+                    scope: scope_from_row(&r.scope_kind, r.scope_id)?,
                 })
             })
             .collect()

@@ -4,21 +4,27 @@ use crate::application::agent::{
 use crate::application::job::JobScope;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
-    DispatchUseCases, HashService, JobLogLiveStream, JobLogStreamPort, JobRepository,
-    PipelineRepository, ProjectRepository, SecretResolver, SessionRepository, UserRepository,
+    AccountRepository, DispatchUseCases, HashService, JobLogLiveStream, JobLogStreamPort,
+    JobRepository, PipelineRepository, ProjectRepository, SecretResolver, SessionRepository,
+    UserAccess, UserRepository,
 };
 use crate::domain::app::{AppSecret, AppSecretHash};
 use crate::domain::caller::CallerContext;
+use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId, StreamId, UserId};
+use crate::domain::ids::{
+    AppId, JobId, OrganizationId, PipelineId, ProjectId, SessionId, StreamId, UserId,
+};
 use crate::domain::job::{Job, JobLog, JobStatus};
 use crate::domain::pipeline::{NodeId, Pipeline, PipelineNode};
 use crate::domain::project::Project;
 use crate::domain::session::Session;
-use crate::domain::user::{Email, Password, PasswordHash, User, Username};
+use crate::domain::user::{
+    Email, Password, PasswordHash, PasswordReset, ResetToken, User, Username, reset_link_invalid,
+};
 use crate::test_support::jobs::stored;
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use scylla_auth::authz::{
     Grant, GrantRepository, Principal, Role, RoleRepository, Scope, Visibility, VisibilityResolver,
 };
@@ -42,6 +48,7 @@ pub fn empty_page<T>() -> DomainResult<PaginatedResult<T>> {
 enum Hashes {
     Passwords,
     Secrets,
+    Plain,
 }
 
 pub struct StubHash {
@@ -64,23 +71,42 @@ impl StubHash {
         }
     }
 
+    /// A password hashes to `plain_hash(password)`, and a check compares the two.
+    pub fn plain() -> Self {
+        Self {
+            kind: Hashes::Plain,
+            hashed: Mutex::default(),
+        }
+    }
+
     pub fn hashed(&self) -> usize {
         *self.hashed.lock().unwrap()
     }
 }
 
+pub fn plain_hash(password: &str) -> PasswordHash {
+    PasswordHash::new(format!("$plain${password}")).unwrap()
+}
+
 #[async_trait]
 impl HashService for StubHash {
-    async fn hash(&self, _: &Password) -> DomainResult<PasswordHash> {
+    async fn hash(&self, password: &Password) -> DomainResult<PasswordHash> {
         assert!(
-            matches!(self.kind, Hashes::Passwords),
+            matches!(self.kind, Hashes::Passwords | Hashes::Plain),
             "no password in this action"
         );
         *self.hashed.lock().unwrap() += 1;
-        PasswordHash::new(HASH)
+        match self.kind {
+            Hashes::Plain => Ok(plain_hash(password.as_str())),
+            Hashes::Passwords | Hashes::Secrets => PasswordHash::new(HASH),
+        }
     }
-    async fn verify(&self, _: &Password, _: &PasswordHash) -> DomainResult<bool> {
-        unreachable!("no password check in this action")
+    async fn verify(&self, password: &Password, hash: &PasswordHash) -> DomainResult<bool> {
+        assert!(
+            matches!(self.kind, Hashes::Plain),
+            "no password check in this action"
+        );
+        Ok(&plain_hash(password.as_str()) == hash)
     }
     async fn hash_secret(&self, _: &AppSecret) -> DomainResult<AppSecretHash> {
         assert!(
@@ -954,5 +980,150 @@ impl SessionRepository for StubSessions {
         let before = rows.len();
         rows.retain(|s| !s.is_expired());
         Ok((before - rows.len()) as u64)
+    }
+}
+
+/// The sessions and the reset links of the users of a `StubUsers`, in memory. A write of a user
+/// goes to the `StubUsers`, as the store writes both in one transaction.
+pub struct StubAccounts {
+    users: Arc<StubUsers>,
+    sessions: Mutex<Vec<(SessionId, UserId)>>,
+    resets: Mutex<Vec<PasswordReset>>,
+    access: Mutex<Vec<(UserId, UserAccess)>>,
+}
+
+impl StubAccounts {
+    pub fn new(users: Arc<StubUsers>) -> Self {
+        Self {
+            users,
+            sessions: Mutex::default(),
+            resets: Mutex::default(),
+            access: Mutex::default(),
+        }
+    }
+
+    pub fn open_session(&self, user_id: &UserId) -> SessionId {
+        let id = SessionId::generate();
+        self.sessions
+            .lock()
+            .unwrap()
+            .push((id.clone(), user_id.clone()));
+        id
+    }
+
+    pub fn sessions(&self, user_id: &UserId) -> Vec<SessionId> {
+        self.sessions
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|(_, owner)| owner == user_id)
+            .map(|(id, _)| id.clone())
+            .collect()
+    }
+
+    pub fn put_reset(&self, reset: PasswordReset) {
+        self.resets.lock().unwrap().push(reset);
+    }
+
+    pub fn resets(&self, user_id: &UserId) -> Vec<PasswordReset> {
+        self.resets
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|r| r.user_id() == user_id)
+            .cloned()
+            .collect()
+    }
+
+    pub fn grant_access(&self, user_id: &UserId, access: UserAccess) {
+        self.access.lock().unwrap().push((user_id.clone(), access));
+    }
+
+    fn sign_out(&self, user_id: &UserId, keep: Option<&SessionId>) -> u64 {
+        let mut sessions = self.sessions.lock().unwrap();
+        let before = sessions.len();
+        sessions.retain(|(id, owner)| owner != user_id || Some(id) == keep);
+        (before - sessions.len()) as u64
+    }
+}
+
+#[async_trait]
+impl AccountRepository for StubAccounts {
+    async fn update_signed_out(&self, user: &User, keep: Option<&SessionId>) -> DomainResult<User> {
+        let user = self.users.update(user).await?;
+        self.sign_out(user.id(), keep);
+        self.resets
+            .lock()
+            .unwrap()
+            .retain(|r| r.user_id() != user.id());
+        Ok(user)
+    }
+    async fn revoke_sessions(
+        &self,
+        user_id: &UserId,
+        keep: Option<&SessionId>,
+    ) -> DomainResult<u64> {
+        Ok(self.sign_out(user_id, keep))
+    }
+    async fn issue_reset(
+        &self,
+        reset: &PasswordReset,
+        cooldown: Option<Duration>,
+    ) -> DomainResult<bool> {
+        let mut resets = self.resets.lock().unwrap();
+        let mine = |r: &PasswordReset| r.user_id() == reset.user_id();
+        if let Some(cooldown) = cooldown
+            && resets
+                .iter()
+                .any(|r| mine(r) && r.created_at() > reset.created_at() - cooldown)
+        {
+            return Ok(false);
+        }
+        resets.retain(|r| !mine(r));
+        resets.push(reset.clone());
+        Ok(true)
+    }
+    async fn find_reset(&self, token: &ResetToken) -> DomainResult<PasswordReset> {
+        self.resets
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|r| r.token() == token)
+            .cloned()
+            .ok_or_else(|| DomainError::not_found("PasswordReset", "<token>"))
+    }
+    async fn redeem_reset(&self, reset: &PasswordReset, user: &User) -> DomainResult<User> {
+        {
+            let mut resets = self.resets.lock().unwrap();
+            let stored = resets
+                .iter()
+                .find(|r| r.id() == reset.id())
+                .cloned()
+                .ok_or_else(reset_link_invalid)?;
+            stored.ensure_redeemable()?;
+            let used = PasswordReset::from_persistence(
+                stored.id().clone(),
+                stored.token().clone(),
+                stored.user_id().clone(),
+                stored.created_at(),
+                stored.expires_at(),
+                Some(clock::now()),
+            );
+            resets.retain(|r| r.user_id() != user.id());
+            resets.push(used);
+        }
+        let user = self.users.update(user).await?;
+        self.sign_out(user.id(), None);
+        Ok(user)
+    }
+    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<UserAccess>> {
+        Ok(self
+            .access
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|(owner, _)| owner == user_id)
+            .map(|(_, access)| access.clone())
+            .collect())
     }
 }

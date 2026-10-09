@@ -1,6 +1,7 @@
 use crate::application::auth::{SessionLookup, look_up_session};
 use crate::application::{AppTokenRepository, SessionRepository};
 use crate::domain::caller::CallerContext;
+use crate::domain::ids::SessionId;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -20,6 +21,18 @@ pub fn extract_auth_context<T>(request: &Request<T>) -> Result<AuthContext, Stat
             Status::internal("Auth context not found — interceptor may not be configured")
         })
         .cloned()
+}
+
+/// The session behind the bearer token of a user caller. An action that must spare the session of
+/// the call reads it; an app token has none.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CallerSession(pub SessionId);
+
+pub fn caller_session<T>(request: &Request<T>) -> Option<SessionId> {
+    request
+        .extensions()
+        .get::<CallerSession>()
+        .map(|session| session.0.clone())
 }
 
 fn extract_bearer_token<T>(request: &Request<T>) -> Result<String, Status> {
@@ -73,11 +86,11 @@ impl AsyncInterceptor for AuthInterceptor {
                 .map_err(domain_error_to_status)?
             {
                 SessionLookup::Live(session) => {
-                    request
-                        .extensions_mut()
-                        .insert(AuthContext::new(CallerContext::User(
-                            session.user_id().clone(),
-                        )));
+                    let extensions = request.extensions_mut();
+                    extensions.insert(AuthContext::new(CallerContext::User(
+                        session.user_id().clone(),
+                    )));
+                    extensions.insert(CallerSession(session.id().clone()));
                     return Ok(request);
                 }
                 SessionLookup::Expired => return Err(Status::unauthenticated("Token has expired")),
@@ -211,6 +224,7 @@ mod tests {
         let req = result.unwrap();
         let ctx = req.extensions().get::<AuthContext>().unwrap();
         assert_eq!(ctx.caller, CallerContext::User(user_id));
+        assert_eq!(caller_session(&req).as_ref(), Some(session.id()));
     }
 
     #[tokio::test]
@@ -241,6 +255,7 @@ mod tests {
         let req = result.unwrap();
         let ctx = req.extensions().get::<AuthContext>().unwrap();
         assert_eq!(ctx.caller, CallerContext::App(app_id));
+        assert_eq!(caller_session(&req), None);
     }
 
     #[tokio::test]

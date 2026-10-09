@@ -54,10 +54,31 @@ The App that a trigger fire runs as. An organization has one trigger runner or n
 ### Session
 An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions. The store keeps only the SHA-256 of a token, as for an app token.
 
+These actions revoke the sessions of a user: `UserService.RevokeUserSessions` ("sign out everywhere"), `ChangePassword`, a [reset link](#reset-link), a deactivation (`SetUserActive`) and a deletion. `ChangePassword` and `RevokeUserSessions` on the caller's own account keep the session of the call open. The interceptor gives that session to the handler (`CallerSession`).
+
 ### User
 A user account. A user is related to the tenancy tree only through **grants**: holding a role on a scope is what puts them there, so "who is in this organization" and "what may they do" are the same rows (see [Authorization](#authorization) and `docs/src/access-model.md`).
 
-In the Community Edition, an account comes from one of two sources: `UserService.CreateUser`, which a system administrator sends, or the [bootstrap](#bootstrap-user). The Community Edition sends no mail. The Enterprise edition adds sign-up, invitations, GitHub sign-in and mail.
+In the Community Edition, an account comes from one of two sources: `UserService.CreateUser`, which a system administrator sends, or the [bootstrap](#bootstrap-user). `CreateUser` needs an email. The Community Edition sends no mail: it writes each [reset link](#reset-link) in the server log. The Enterprise edition adds sign-up, invitations, GitHub sign-in and mail.
+
+A user reads its own account with `UserService.GetMe`, changes its password with `ChangePassword` and deletes its account with `DeleteAccount`. An app token cannot call these three RPCs: they give `PERMISSION_DENIED`. A wrong password gives `FAILED_PRECONDITION`, not `UNAUTHENTICATED`, because the web UI signs out on `UNAUTHENTICATED`. `DeleteAccount` keeps the rules of `DeleteUser`: the last holder of `system-admin`, or of `organization-admin` on an organization, cannot delete the account. The message names those organizations. `ListUserAccess` shows each grant of a user with the names of its organization, project and role.
+
+`SetUserActive` sets the `is_active` flag. A user cannot change its own flag. A deactivation that leaves no active user with `system-admin` is refused. An inactive user cannot log in.
+
+### Display name
+The name of a [user](#user) that people read. It is optional and not unique. The value is trimmed, has 1 to 100 characters (characters, not bytes) and has no control character. `CreateUser` and `UpdateUser` set it. An empty value in `UpdateUser` removes it.
+
+### Reset link
+A single-use link that sets a new password: `<public_url>/reset-password#token=<token>`. The token is 32 random bytes in base64url without padding. It is in the URL fragment, so a request to the server does not carry it. The store keeps only the SHA-256 of the token, in the table `password_resets`. A link expires one hour after the server makes it.
+
+`AuthService.RequestPasswordReset` makes a link for the active account with the email. The answer is the same for an unknown email, an inactive account and a known one. The answer does not wait for the store: a task stores and delivers the link after the answer, and logs a failure at WARN. If the account got a link less than 60 seconds before, the task stores and delivers nothing. `UserService.SendPasswordReset` makes a link for an administrator or for the user itself, without the 60-second rule, and delivers it before the answer.
+
+A new link cancels the earlier links of the account. `ResetPassword` sets the password, marks the link used, cancels the other links and revokes each session of the account. An unknown, used or expired link and an inactive account give one error: "This reset link is not valid". `ChangePassword`, a deactivation and a deletion also cancel the links.
+
+### Reset sender
+The port that delivers a [reset link](#reset-link): `PasswordResetSender` in `scylla_core::application`. It has two methods. `delivery()` tells how the server delivers its links (`Mail` or `ServerLog`); it depends on the sender only, never on the account. `send(&PasswordResetMessage)` delivers one link. The message holds the user id, the email, the username, the display name, the link and the expiry time.
+
+The default sender is `LogPasswordResetSender` (`scylla_core::infrastructure`). It writes one INFO line, with the target `scylla_core`, the user id, the username and the link. It never writes the email. An edition replaces it with `Server::password_reset_sender(Arc<dyn PasswordResetSender>)`.
 
 ## States & status values
 
@@ -232,7 +253,7 @@ The dispatcher gives the oldest pending job to a connected agent that holds `exe
 ### gRPC
 Primary transport between API and internal services. Defined in `.proto` files in `crates/scylla-proto/proto/` (the `scylla-protos` submodule), which is the single include root. Each file's path below that root **is** its package: `scylla/job/v1/job.proto` declares `package scylla.job.v1`. Packages carry a version suffix from day one, so a breaking change means a new `v2` directory beside `v1`, never an edit in place. `buf lint` and `buf breaking` enforce both (`just proto-lint`, `just proto-breaking`).
 
-Two packages are deliberate leaves that others may import: `scylla.common.v1` (id wrappers, `Email`, pagination) and `scylla.exec.v1` (the step contract shared by pipelines and agents). Feature packages never import each other — they reference across contexts by id.
+Two packages are deliberate leaves that others may import: `scylla.common.v1` (id wrappers, `Email`, pagination) and `scylla.exec.v1` (the step contract shared by pipelines and agents). Feature packages reference across contexts by id. One exception: `scylla.user.v1` imports `scylla.auth.v1` for `PasswordResetDelivery` and `scylla.authz.v1` for `ScopeRef`.
 
 ### gRPC-Web
 Browser-compatible variant of gRPC, spoken by the web UI. Served by the control plane through `tonic-web`.
@@ -244,7 +265,7 @@ Rust gRPC server/client framework used by all backend services.
 Protobuf code generator used by Tonic. Converts `.proto` → Rust structs.
 
 ### Auth interceptor
-Async Tonic interceptor (`crates/scylla-core/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal: a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
+Async Tonic interceptor (`crates/scylla-core/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal: a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions. For a user session, it also attaches `CallerSession`, the id of that session. `caller_session(&request)` reads it.
 
 ## Identifiers
 

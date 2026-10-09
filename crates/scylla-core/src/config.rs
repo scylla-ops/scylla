@@ -88,6 +88,11 @@ pub struct ServerConfig {
 
     #[serde(default)]
     pub tls: Option<TlsConfig>,
+
+    /// The origin that people open, without a trailing slash, for example
+    /// `https://scylla.example.com`. A reset link starts with it; without it the link is relative.
+    #[serde(default)]
+    pub public_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -196,6 +201,7 @@ impl Default for ServerConfig {
         Self {
             address: SocketAddr::from(([127, 0, 0, 1], 8080)),
             tls: None,
+            public_url: None,
         }
     }
 }
@@ -346,6 +352,23 @@ mod tests {
             let config: ControlPlaneConfig = toml::from_str(src).unwrap();
             assert_eq!(config.bootstrap.is_some(), bootstrap);
         }
+    }
+
+    #[test]
+    fn the_public_url_is_optional() {
+        let config: ControlPlaneConfig = toml::from_str(
+            r#"
+            [server]
+            address = "0.0.0.0:8080"
+            public_url = "https://scylla.example.com"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(
+            config.server.public_url.as_deref(),
+            Some("https://scylla.example.com")
+        );
+        assert!(ControlPlaneConfig::default().server.public_url.is_none());
     }
 
     #[test]

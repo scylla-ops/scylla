@@ -3,7 +3,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
 use scylla_auth::authz::{Principal, Scope, ScopeKind};
 use scylla_domain::domain::errors::DomainResult;
-use scylla_domain::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
+use scylla_domain::domain::ids::{AppId, OrganizationId, ProjectId, SessionId, UserId};
 use scylla_proto::authz::v1::{
     Permission, PrincipalRef, ScopeKind as ProtoScopeKind, ScopeRef, principal_ref, scope_ref,
 };
@@ -73,6 +73,14 @@ pub trait Parse: Sized {
     type Into;
 
     fn parse(self) -> Result<Self::Into, Status>;
+}
+
+/// `Parse` for a request whose action spares the session of the call: the interceptor names that
+/// session, not the request.
+pub trait ParseInSession: Sized {
+    type Into;
+
+    fn parse_in_session(self, session: Option<SessionId>) -> Result<Self::Into, Status>;
 }
 
 #[must_use]

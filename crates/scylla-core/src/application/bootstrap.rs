@@ -36,8 +36,9 @@ impl BootstrapUseCases {
 
         let create = CreateUser {
             username: username.clone(),
-            email: Some(email.clone()),
+            email: email.clone(),
             password,
+            display_name: None,
         };
         let user = match self.actions.run(&*self.user_uc, &caller, create).await {
             Ok(user) => {

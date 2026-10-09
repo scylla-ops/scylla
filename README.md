@@ -168,6 +168,33 @@ key  = "/etc/scylla/tls/privkey.pem"
 Both HTTP/2 and HTTP/1.1 are advertised over ALPN, so browsers, gRPC clients and
 plain HTTP/1.1 webhook senders all connect to the same socket.
 
+## Password reset
+
+A reset link sets a new password. It opens `/reset-password` in the web UI. It
+is good for one use and expires after one hour. A user asks for a link with
+`AuthService.RequestPasswordReset`. An administrator makes a link for a user
+with `UserService.SendPasswordReset`.
+
+The Community Edition sends no mail. It writes each reset link in the server
+log, at INFO, with the user id and the username. Look for the message
+`password reset link`, for example with `just logs scylla-ce`, and give the
+link to the user. The log line does not show the email.
+
+Set `[server].public_url` to the origin that people open, without a trailing
+slash:
+
+```toml
+[server]
+address = "0.0.0.0:8080"
+public_url = "https://scylla.example.com"
+```
+
+The link is then `https://scylla.example.com/reset-password#token=...`. If you
+do not set `public_url`, the link is the relative path
+`/reset-password#token=...` and the server writes a warning when it starts.
+The shipped configs set it: `http://127.0.0.1:8080` in `local.toml` and
+`http://localhost:8080` in `docker.toml`.
+
 ## Common commands
 
 | `just`        | `docker compose`                  | What it does                                  |

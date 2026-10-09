@@ -1,11 +1,13 @@
 //! The user's writes. One block per command, in the order it runs: the struct, its
 //! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
-use super::UserUseCases;
+use super::{UserUseCases, wrong_current_password, wrong_password};
+use crate::application::actions::user_only;
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::UserId;
+use crate::domain::ids::{SessionId, UserId};
 use crate::domain::permission::Permission;
-use crate::domain::user::{Email, Password, User, Username};
+use crate::domain::user::{DisplayName, Email, Password, User, Username};
 use async_trait::async_trait;
 use scylla_auth::authz::{Principal, ensure_owner_remains};
 use scylla_extension::{
@@ -16,8 +18,9 @@ use scylla_extension::{
 #[derive(Debug)]
 pub struct CreateUser {
     pub username: Username,
-    pub email: Option<Email>,
+    pub email: Email,
     pub password: Password,
+    pub display_name: Option<DisplayName>,
 }
 
 impl Describe for CreateUser {
@@ -36,7 +39,8 @@ impl Run<Prepare<CreateUser>> for UserUseCases {
     async fn run(&self, input: Authorized<CreateUser>) -> DomainResult<Prepared<CreateUser>> {
         let cmd = input.command();
         let password_hash = self.hash_service.hash(&cmd.password).await?;
-        let user = User::create(cmd.username.clone(), cmd.email.clone(), password_hash);
+        let user = User::create(cmd.username.clone(), Some(cmd.email.clone()), password_hash)
+            .with_display_name(cmd.display_name.clone());
         Ok(input.prepared(Draft::new(user)))
     }
 }
@@ -50,15 +54,25 @@ impl Run<Persist<CreateUser>> for UserUseCases {
     }
 }
 
+/// `None` leaves a field as it is; `display_name: Some(None)` removes the display name.
 #[derive(Debug)]
 pub struct UpdateUser {
     pub id: UserId,
     pub username: Option<Username>,
+    pub display_name: Option<Option<DisplayName>>,
+    pub email: Option<Email>,
 }
 
+/// An email is the address of the reset links, so setting one also needs `createUser`, also on
+/// the caller's own account.
 impl Describe for UpdateUser {
     fn access(&self) -> Access {
-        Access::Requires(Permission::UpdateUser(self.id.clone()))
+        let update = Permission::UpdateUser(self.id.clone());
+        if self.email.is_some() {
+            Access::RequiresAll(vec![update, Permission::CreateUser])
+        } else {
+            Access::Requires(update)
+        }
     }
 }
 
@@ -74,6 +88,12 @@ impl Run<Prepare<UpdateUser>> for UserUseCases {
         let mut user = self.user_repo.find_by_id(&cmd.id).await?;
         if let Some(username) = &cmd.username {
             user.update_username(username.clone())?;
+        }
+        if let Some(display_name) = &cmd.display_name {
+            user.set_display_name(display_name.clone());
+        }
+        if let Some(email) = &cmd.email {
+            user.update_email(email.clone());
         }
         Ok(input.prepared(Draft::new(user)))
     }
@@ -165,6 +185,213 @@ impl Run<Prepare<DeleteUser>> for UserUseCases {
 #[async_trait]
 impl Run<Persist<DeleteUser>> for UserUseCases {
     async fn run(&self, input: Prepared<DeleteUser>) -> DomainResult<Committed<DeleteUser>> {
+        input
+            .commit(async |user| {
+                self.user_repo.delete(&user).await?;
+                Ok(Deleted::new(user))
+            })
+            .await
+    }
+}
+
+/// `session` is the session of the call, which stays open.
+#[derive(Debug)]
+pub struct ChangePassword {
+    pub current_password: Password,
+    pub new_password: Password,
+    pub session: Option<SessionId>,
+}
+
+impl Describe for ChangePassword {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Command for ChangePassword {
+    type Staged = Draft<User>;
+    type Committed = User;
+}
+
+#[async_trait]
+impl Run<Prepare<ChangePassword>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Authorized<ChangePassword>,
+    ) -> DomainResult<Prepared<ChangePassword>> {
+        let id = user_only(input.caller())?;
+        let cmd = input.command();
+        let mut user = self.user_repo.find_by_id(&id).await?;
+        if !self
+            .hash_service
+            .verify(&cmd.current_password, user.password_hash())
+            .await?
+        {
+            return Err(wrong_current_password());
+        }
+        user.set_password_hash(self.hash_service.hash(&cmd.new_password).await?);
+        Ok(input.prepared(Draft::new(user)))
+    }
+}
+
+/// Revokes the other sessions of the caller and cancels its reset links.
+#[async_trait]
+impl Run<Persist<ChangePassword>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Prepared<ChangePassword>,
+    ) -> DomainResult<Committed<ChangePassword>> {
+        let keep = input.command().session.clone();
+        input
+            .commit(async |draft| {
+                self.accounts
+                    .update_signed_out(&draft.into_inner(), keep.as_ref())
+                    .await
+            })
+            .await
+    }
+}
+
+/// `session` is the session of the call. It stays open only when the user is the caller.
+#[derive(Debug)]
+pub struct RevokeUserSessions {
+    pub id: UserId,
+    pub session: Option<SessionId>,
+}
+
+impl Describe for RevokeUserSessions {
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateUser(self.id.clone()))
+    }
+}
+
+impl Command for RevokeUserSessions {
+    type Staged = Option<SessionId>;
+    type Committed = u64;
+}
+
+#[async_trait]
+impl Run<Prepare<RevokeUserSessions>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Authorized<RevokeUserSessions>,
+    ) -> DomainResult<Prepared<RevokeUserSessions>> {
+        let cmd = input.command();
+        self.user_repo.find_by_id(&cmd.id).await?;
+        let keep = match input.caller() {
+            CallerContext::User(caller) if caller == &cmd.id => cmd.session.clone(),
+            _ => None,
+        };
+        Ok(input.prepared(keep))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<RevokeUserSessions>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Prepared<RevokeUserSessions>,
+    ) -> DomainResult<Committed<RevokeUserSessions>> {
+        let id = input.command().id.clone();
+        input
+            .commit(async |keep| self.accounts.revoke_sessions(&id, keep.as_ref()).await)
+            .await
+    }
+}
+
+/// The caller's own account gets no exemption: the caller cannot change its own flag.
+#[derive(Debug)]
+pub struct SetUserActive {
+    pub id: UserId,
+    pub is_active: bool,
+}
+
+impl Describe for SetUserActive {
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateUser(self.id.clone()))
+    }
+}
+
+/// The flag tells whether the value changed: setting the current value writes nothing.
+impl Command for SetUserActive {
+    type Staged = (Draft<User>, bool);
+    type Committed = User;
+}
+
+#[async_trait]
+impl Run<Prepare<SetUserActive>> for UserUseCases {
+    async fn run(&self, input: Authorized<SetUserActive>) -> DomainResult<Prepared<SetUserActive>> {
+        let cmd = input.command();
+        if input.caller() == &CallerContext::User(cmd.id.clone()) {
+            return Err(DomainError::business_rule(
+                "You cannot change the active state of your own account",
+            ));
+        }
+        let mut user = self.user_repo.find_by_id(&cmd.id).await?;
+        if user.is_active() && !cmd.is_active {
+            self.ensure_an_active_admin_remains(user.id()).await?;
+        }
+        let changed = user.set_active(cmd.is_active);
+        Ok(input.prepared((Draft::new(user), changed)))
+    }
+}
+
+/// A deactivation revokes every session of the user and cancels its reset links.
+#[async_trait]
+impl Run<Persist<SetUserActive>> for UserUseCases {
+    async fn run(&self, input: Prepared<SetUserActive>) -> DomainResult<Committed<SetUserActive>> {
+        input
+            .commit(async |(draft, changed)| {
+                let user = draft.into_inner();
+                if !changed {
+                    Ok(user)
+                } else if user.is_active() {
+                    self.user_repo.update(&user).await
+                } else {
+                    self.accounts.update_signed_out(&user, None).await
+                }
+            })
+            .await
+    }
+}
+
+/// The deletion of the caller's own account, with the effects of `DeleteUser`.
+#[derive(Debug)]
+pub struct DeleteAccount {
+    pub password: Password,
+}
+
+impl Describe for DeleteAccount {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Command for DeleteAccount {
+    type Staged = User;
+    type Committed = Deleted<User>;
+}
+
+#[async_trait]
+impl Run<Prepare<DeleteAccount>> for UserUseCases {
+    async fn run(&self, input: Authorized<DeleteAccount>) -> DomainResult<Prepared<DeleteAccount>> {
+        let id = user_only(input.caller())?;
+        let user = self.user_repo.find_by_id(&id).await?;
+        if !self
+            .hash_service
+            .verify(&input.command().password, user.password_hash())
+            .await?
+        {
+            return Err(wrong_password());
+        }
+        self.ensure_owner_remains_without(&user).await?;
+        Ok(input.prepared(user))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<DeleteAccount>> for UserUseCases {
+    async fn run(&self, input: Prepared<DeleteAccount>) -> DomainResult<Committed<DeleteAccount>> {
         input
             .commit(async |user| {
                 self.user_repo.delete(&user).await?;

@@ -3,7 +3,7 @@
 
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::AppId;
+use crate::domain::ids::{AppId, UserId};
 use crate::domain::job::JobOrigin;
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
@@ -47,6 +47,17 @@ pub(crate) fn app_only(caller: &CallerContext) -> DomainResult<AppId> {
         CallerContext::App(app_id) => Ok(app_id.clone()),
         _ => Err(DomainError::forbidden(
             "only an agent reports its own state",
+        )),
+    }
+}
+
+/// The guard of an action on the caller's own account: the target is the caller, and an app or a
+/// service has no account.
+pub(crate) fn user_only(caller: &CallerContext) -> DomainResult<UserId> {
+    match caller {
+        CallerContext::User(user_id) => Ok(user_id.clone()),
+        _ => Err(DomainError::forbidden(
+            "only a user acts on its own account",
         )),
     }
 }

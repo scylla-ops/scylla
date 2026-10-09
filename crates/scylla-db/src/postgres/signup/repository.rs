@@ -42,4 +42,17 @@ impl SignupRepository for PgSignupRepository {
         tx.commit().await.to_domain()?;
         Ok(())
     }
+
+    #[instrument(skip_all, fields(user_id = %user.id()))]
+    async fn provision_user(&self, user: &User, account_grants: &[Grant]) -> DomainResult<()> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+
+        users::repository::queries::create(&mut *tx, user).await?;
+        for grant in account_grants {
+            grants::insert(&mut *tx, grant).await?;
+        }
+
+        tx.commit().await.to_domain()?;
+        Ok(())
+    }
 }

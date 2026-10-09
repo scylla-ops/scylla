@@ -93,6 +93,9 @@ chacha20poly1305 = "0.11"
 hmac = "0.13"
 sha2 = "0.11"
 hex = "0.4"
+# Reset link tokens: 32 bytes from the OS, in base64url without padding.
+getrandom = "0.4"
+base64 = "0.22"
 cedar-policy = "4"
 
 # web / tracing

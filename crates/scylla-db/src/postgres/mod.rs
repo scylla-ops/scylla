@@ -1,6 +1,7 @@
 mod error;
 mod version;
 
+pub mod accounts;
 pub mod agents;
 pub mod app_secrets;
 pub mod app_tokens;
@@ -22,6 +23,7 @@ pub mod triggers;
 pub mod users;
 pub mod visibility;
 
+pub use accounts::PgAccountRepository;
 pub use agents::PgAgentRepository;
 pub use app_secrets::PgAppCredentialRepository;
 pub use app_tokens::PgAppTokenRepository;

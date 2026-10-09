@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, username, email, password_hash, is_active, created_at, updated_at, version\n            FROM users\n            WHERE username = $1\n            ",
+  "query": "\n            SELECT id, username, email, display_name, password_hash, is_active, created_at, updated_at, version\n            FROM users\n            WHERE id = ANY($1::text[])\n            ",
   "describe": {
     "columns": [
       {
@@ -38,6 +38,17 @@
       },
       {
         "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
         "name": "password_hash",
         "type_info": "Text",
         "origin": {
@@ -48,7 +59,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "is_active",
         "type_info": "Bool",
         "origin": {
@@ -59,7 +70,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "version",
         "type_info": "Int8",
         "origin": {
@@ -94,12 +105,13 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "TextArray"
       ]
     },
     "nullable": [
       false,
       false,
+      true,
       true,
       false,
       false,
@@ -108,5 +120,5 @@
       false
     ]
   },
-  "hash": "12dc4399ff4a672efafda0ea0437332a888c96f096ca1d2d49406b9450620553"
+  "hash": "187ab5b9cc250d1b726a3bf2ea4ce05c4a7d0d35f24735be89c3ad1e2db4d061"
 }

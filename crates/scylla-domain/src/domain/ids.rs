@@ -70,3 +70,4 @@ define_id!(SecretId);
 define_id!(TriggerId);
 define_id!(GrantId);
 define_id!(StreamId);
+define_id!(PasswordResetId);

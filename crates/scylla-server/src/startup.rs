@@ -2,13 +2,15 @@ use crate::surface::Surface;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_auth::audit::AuditLog;
 use scylla_auth::cedar::CedarPermissionService;
+use scylla_core::application::user::reset::ResetLinks;
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuthUseCases, BootstrapUseCases, CronSchedule,
     DispatchSecretResolver, DispatchUseCases, GrantUseCases, JobLogUseCases, JobReaper,
-    JobUseCases, OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer, PipelineUseCases,
-    ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SessionSweeper,
-    TriggerCronScheduler, TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerUseCases,
-    UserUseCases, WebhookIngressUseCases,
+    JobUseCases, OrganizationUseCases, PasswordResetSender, PasswordResetUseCases,
+    PendingJobScheduler, PermissionAuthorizer, PipelineUseCases, ProjectUseCases, RoleUseCases,
+    SecretCipher, SecretResolver, SecretUseCases, SessionSweeper, TriggerCronScheduler,
+    TriggerFireUseCases, TriggerFirer, TriggerFiring, TriggerUseCases, UserUseCases,
+    WebhookIngressUseCases,
 };
 use scylla_core::config::ControlPlaneConfig;
 use scylla_core::error::StartupError;
@@ -18,11 +20,11 @@ use scylla_core::infrastructure::{
     InMemoryJobLogStream,
 };
 use scylla_db::{
-    PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,
-    PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository, PgJobRepository,
-    PgOrganizationRepository, PgPipelineRepository, PgProjectRepository, PgRoleRepository,
-    PgSecretRepository, PgSessionRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
-    PgUserRepository,
+    PgAccountRepository, PgAgentRepository, PgAppCredentialRepository, PgAppRepository,
+    PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository,
+    PgJobRepository, PgOrganizationRepository, PgPipelineRepository, PgProjectRepository,
+    PgRoleRepository, PgSecretRepository, PgSessionRepository, PgTriggerDeliveryRepository,
+    PgTriggerRepository, PgUserRepository,
 };
 use scylla_extension::{Actions, Hooks};
 use sqlx::PgPool;
@@ -38,6 +40,7 @@ use tower_http::trace::TraceLayer;
 pub(crate) struct Services {
     pub auth_uc: Arc<AuthUseCases>,
     pub user_uc: Arc<UserUseCases>,
+    pub reset_uc: Arc<PasswordResetUseCases>,
     pub org_uc: Arc<OrganizationUseCases>,
     pub actions: Arc<Actions>,
     pub project_uc: Arc<ProjectUseCases>,
@@ -63,8 +66,10 @@ pub(crate) async fn init_services(
     config: &ControlPlaneConfig,
     db: PgPool,
     hooks: Arc<Hooks>,
+    reset_sender: Arc<dyn PasswordResetSender>,
 ) -> Result<Services, StartupError> {
     let user_repo = Arc::new(PgUserRepository::new(db.clone()));
+    let account_repo = Arc::new(PgAccountRepository::new(db.clone()));
     let session_repo = Arc::new(PgSessionRepository::new(db.clone()));
     let org_repo = Arc::new(PgOrganizationRepository::new(db.clone()));
     let project_repo = Arc::new(PgProjectRepository::new(db.clone()));
@@ -115,6 +120,21 @@ pub(crate) async fn init_services(
         user_repo.clone(),
         grant_repo.clone(),
         hash_service.clone(),
+        account_repo.clone(),
+    ));
+    let public_url = config.server.public_url.as_deref();
+    if public_url.is_none() {
+        tracing::warn!(
+            "[server].public_url is not set: a reset link is a relative path. Set it to the \
+             origin that people open, for example https://scylla.example.com."
+        );
+    }
+    let reset_uc = Arc::new(PasswordResetUseCases::new(
+        user_repo.clone(),
+        account_repo.clone(),
+        hash_service.clone(),
+        reset_sender,
+        ResetLinks::new(public_url),
     ));
     // The registry and the live tail come first: the dispatcher sends through the one and
     // closes the other, and every use case that starts or ends a job goes through the dispatcher.
@@ -277,6 +297,7 @@ pub(crate) async fn init_services(
     Ok(Services {
         auth_uc,
         user_uc,
+        reset_uc,
         org_uc,
         actions,
         project_uc,
@@ -423,8 +444,16 @@ where
     use tonic_web::GrpcWebLayer;
     use tower::ServiceBuilder;
 
-    let auth_handler = AuthHandler::new(services.actions.clone(), services.auth_uc.clone());
-    let user_handler = UserHandler::new(services.actions.clone(), services.user_uc.clone());
+    let auth_handler = AuthHandler::new(
+        services.actions.clone(),
+        services.auth_uc.clone(),
+        services.reset_uc.clone(),
+    );
+    let user_handler = UserHandler::new(
+        services.actions.clone(),
+        services.user_uc.clone(),
+        services.reset_uc.clone(),
+    );
     let org_handler = OrganizationHandler::new(services.actions.clone(), services.org_uc.clone());
     let project_handler =
         ProjectHandler::new(services.actions.clone(), services.project_uc.clone());

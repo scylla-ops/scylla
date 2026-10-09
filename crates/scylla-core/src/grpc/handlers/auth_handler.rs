@@ -1,11 +1,14 @@
-use crate::application::AuthUseCases;
+use crate::application::{AuthUseCases, PasswordResetUseCases};
 use crate::grpc::adapter::run_public;
 use crate::grpc::convert::wrap;
+use crate::grpc::mappers::delivery_to_proto;
 use derive_more::Constructor;
 use scylla_extension::Actions;
 use scylla_proto::auth::v1::{
-    LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
-    ValidateTokenResponse, auth_service_server::AuthService, validate_token_response,
+    LoginRequest, LoginResponse, RequestPasswordResetRequest, RequestPasswordResetResponse,
+    ResetPasswordRequest, ResetPasswordResponse, RevokeTokenRequest, RevokeTokenResponse,
+    ValidateTokenRequest, ValidateTokenResponse, auth_service_server::AuthService,
+    validate_token_response,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -14,6 +17,7 @@ use tonic::{Request, Response, Status};
 pub struct AuthHandler {
     actions: Arc<Actions>,
     sessions: Arc<AuthUseCases>,
+    resets: Arc<PasswordResetUseCases>,
 }
 
 #[async_trait::async_trait]
@@ -49,5 +53,23 @@ impl AuthService for AuthHandler {
     ) -> Result<Response<RevokeTokenResponse>, Status> {
         run_public(&self.actions, &*self.sessions, request).await?;
         Ok(Response::new(RevokeTokenResponse {}))
+    }
+
+    async fn request_password_reset(
+        &self,
+        request: Request<RequestPasswordResetRequest>,
+    ) -> Result<Response<RequestPasswordResetResponse>, Status> {
+        let delivery = run_public(&self.actions, &*self.resets, request).await?;
+        Ok(Response::new(RequestPasswordResetResponse {
+            delivery: delivery_to_proto(delivery),
+        }))
+    }
+
+    async fn reset_password(
+        &self,
+        request: Request<ResetPasswordRequest>,
+    ) -> Result<Response<ResetPasswordResponse>, Status> {
+        run_public(&self.actions, &*self.resets, request).await?;
+        Ok(Response::new(ResetPasswordResponse {}))
     }
 }

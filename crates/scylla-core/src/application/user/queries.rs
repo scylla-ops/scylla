@@ -1,7 +1,8 @@
 //! The user's reads. One block per query, in the order it runs: the struct, its
 //! access, its output type, what `Fetch` reads.
 
-use super::UserUseCases;
+use super::{UserAccess, UserUseCases};
+use crate::application::actions::user_only;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::UserId;
@@ -29,6 +30,29 @@ impl Query for GetUser {
 impl Run<Fetch<GetUser>> for UserUseCases {
     async fn run(&self, input: Authorized<GetUser>) -> DomainResult<Fetched<GetUser>> {
         let user = self.user_repo.find_by_id(&input.command().id).await?;
+        Ok(input.fetched(user))
+    }
+}
+
+/// The account of the caller. It needs no permission; an app or a service has no account.
+#[derive(Debug)]
+pub struct GetMe;
+
+impl Describe for GetMe {
+    fn access(&self) -> Access {
+        Access::Authenticated
+    }
+}
+
+impl Query for GetMe {
+    type Output = User;
+}
+
+#[async_trait]
+impl Run<Fetch<GetMe>> for UserUseCases {
+    async fn run(&self, input: Authorized<GetMe>) -> DomainResult<Fetched<GetMe>> {
+        let id = user_only(input.caller())?;
+        let user = self.user_repo.find_by_id(&id).await?;
         Ok(input.fetched(user))
     }
 }
@@ -113,5 +137,33 @@ impl Run<Fetch<ListUsers>> for UserUseCases {
             .list_all(input.command().pagination.as_ref())
             .await?;
         Ok(input.fetched(page))
+    }
+}
+
+#[derive(Debug)]
+pub struct ListUserAccess {
+    pub id: UserId,
+}
+
+impl Describe for ListUserAccess {
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadUser(self.id.clone()))
+    }
+}
+
+impl Query for ListUserAccess {
+    type Output = Vec<UserAccess>;
+}
+
+#[async_trait]
+impl Run<Fetch<ListUserAccess>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Authorized<ListUserAccess>,
+    ) -> DomainResult<Fetched<ListUserAccess>> {
+        let id = &input.command().id;
+        self.user_repo.find_by_id(id).await?;
+        let access = self.accounts.list_access(id).await?;
+        Ok(input.fetched(access))
     }
 }

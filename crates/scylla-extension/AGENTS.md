@@ -203,6 +203,10 @@ async fn list_projects(&self, request: Request<ListProjectsRequest>)
 `grpc::adapter::run` (in `scylla-core`) takes the caller from the
 interceptor, turns the request into its command or query through
 `grpc::convert::Parse`, runs the engine and maps a `DomainError` to a `Status`.
+An action that must keep the session of the call open (`ChangePassword`,
+`RevokeUserSessions`) uses `grpc::adapter::run_in_session`: its request
+implements `grpc::convert::ParseInSession`, which also gets the session that
+the interceptor found (`caller_session`).
 A service without the interceptor (sign-in, the app token exchange) uses
 `grpc::adapter::run_public`: the same
 steps, with `Anonymous` as the caller, so only a `Public` action passes. An
@@ -249,7 +253,7 @@ scheduler, a sweeper) has its own file, and its tests check only the driver;
 the tests of the actions it sends are in the `tests.rs` of the use case.
 
 A command derives `Debug` when each secret field is a redacting type
-(`Password`, `AppSecret`): their `Debug` shows `[REDACTED]`. A command that
+(`Password`, `AppSecret`, `ResetToken`): their `Debug` shows `[REDACTED]`. A command that
 holds a secret as a raw `String` or as bytes has no `Debug`: `RevokeToken`,
 `ValidateToken` (their `token`) and `IngestWebhook` (its headers).
 
@@ -260,9 +264,12 @@ hooks. The stubs that more than one use case needs are in
 `test_support::stubs` (compiled for tests only): `CountingPolicy`,
 `StubHash`, `StubRegistry`, `StubRoles`, `StubGrants`, `StubJobs`,
 `StubTails`, `ScopesByAgent`, `StubSessions`, `StubUsers`, `NoUsers`,
-`OneUser`, `OneProject`, `OnePipeline`, `EchoResolver`, `dispatcher`,
-`empty_page` and `alice`. `StubUsers` keeps its users in memory and gives
-`Conflict` for a username or an email of another user, as the store does.
+`OneUser`, `StubAccounts`, `OneProject`, `OnePipeline`, `EchoResolver`,
+`dispatcher`, `empty_page` and `alice`. `StubUsers` keeps its users in memory
+and gives `Conflict` for a username or an email of another user, as the store
+does. `StubAccounts` keeps the sessions and the reset links of the users of a
+`StubUsers`, and writes a user to that `StubUsers`. `StubHash::plain()` hashes
+a password to `plain_hash(password)` and checks a password against it.
 `StubRegistry` fails a test that sends a job to an
 agent; `StubRegistry::accepting()` records each order. `StubRegistry::connect`
 opens a stream of an agent. `StubJobs` checks and increments the version of a
@@ -486,6 +493,41 @@ A binary registers it with `Server::extension(&Arc<E>)`, or a
 `scylla_server::Feature` does it from `Feature::hooks`. The Community Edition
 registers nothing.
 
+### The reset sender
+
+A reset link goes to the user through a port, not through a hook:
+`scylla_core::application::PasswordResetSender`. The server has one sender.
+The default, `LogPasswordResetSender`, writes the link in the server log. An
+edition that sends mail implements the port and gives it to the builder:
+
+```rust
+struct SmtpResetSender { /* the mail client */ }
+
+#[async_trait]
+impl PasswordResetSender for SmtpResetSender {
+    fn delivery(&self) -> PasswordResetDelivery {
+        PasswordResetDelivery::Mail
+    }
+
+    async fn send(&self, message: &PasswordResetMessage) -> DomainResult<()> {
+        // message.email, message.display_name, message.link, message.expires_at
+    }
+}
+
+Server::new(config, db)
+    .password_reset_sender(Arc::new(SmtpResetSender::new(mail)))
+    .serve()
+```
+
+`delivery` must depend on the configuration of the sender only, never on the
+account: `RequestPasswordReset` returns it for every email. `send` writes the
+link only to its recipient: the link carries the token. An error of `send`
+must not hold the email or the link, because the server can log it.
+`RequestPasswordReset` stores the link and calls `send` in a task after the
+answer, and logs a failure at WARN. `SendPasswordReset` calls it before the
+answer, so the administrator sees the error. The link starts with
+`[server].public_url`.
+
 ## Versions
 
 A row that `Prepare` reads and `Persist` writes carries a `version`. The store
@@ -536,7 +578,32 @@ that gives `Stale`: a report of the agent came first.
 - The Enterprise sign-up extension uses `new_session`, `signup::NewAccount`
   and `SignupRepository`. The Community Edition does not use `NewAccount` and
   `SignupRepository`, but they stay public for that extension. Its `commit`
-  closure writes the account, then stores the session.
+  closure writes the account, then stores the session. `NewAccount::new`
+  makes an account with its own organization, which `provision_account`
+  writes. `NewAccount::without_organization(user)` makes a user and its
+  grants only (`NewAccount<NoOrganization>`), which `provision_user` writes in
+  one transaction. `with_grant` works for both. The default
+  `provision_user` of the trait refuses with `Internal`, so a store that
+  existed before it still compiles; `PgSignupRepository` writes the account.
+- The reset links have their own runner, `PasswordResetUseCases`
+  (`application/user/reset/`). `RequestPasswordReset` and `ResetPassword` are
+  `Public`. `RequestPasswordReset` stages nothing for an unknown email or an
+  inactive account. For an active account, its `commit` closure starts a task
+  (`issue_and_deliver`) that stores the link with the 60-second rule and then
+  delivers it. Thus the answer, its time and its errors are the same for each
+  email, and a `Listener` on its `Persist` runs before the link is stored.
+  `SendPasswordReset` asks for `UpdateUser` on the user. The writes that touch
+  a user and what it signs in with (its sessions, its reset links) go through
+  `AccountRepository` (`application/user/account.rs`), one transaction for
+  each write. `ResetPassword` checks the link in `Prepare` and again in the
+  write: a link that a concurrent call used gives the same error.
+- `GetMe`, `ChangePassword` and `DeleteAccount` are `Authenticated`, and their
+  target is the caller: `Prepare` (or `Fetch`) refuses a caller that is not a
+  user (`application::actions::user_only`). `UpdateUser` with an email is
+  `RequiresAll` of `UpdateUser` on the user and `CreateUser`, so the self rule
+  of the Cedar policies does not let a user change its own email.
+  `SetUserActive` and `RevokeUserSessions` ask for `UpdateUser` on the user;
+  `SetUserActive` refuses the caller's own id in `Prepare`.
 - `ValidateToken` is a query, and its `Fetch` only reads: an expired
   session gives `false` and stays in the store. A failed read also gives
   `false`. `PurgeExpiredSessions` deletes the expired sessions: it is a pass
@@ -603,7 +670,8 @@ that gives `Stale`: a report of the agent came first.
   caller that is not a service (`application::actions::service_only`). The
   read `ResolveTriggerRun` does the same in its `Fetch`. The guards on the
   kind of caller are together in `application/actions.rs`: `service_only`,
-  `app_only` and `user_or_app` (the origin of a `RunPipeline`). A pass that
+  `app_only`, `user_only` (an action on the caller's own account) and
+  `user_or_app` (the origin of a `RunPipeline`). A pass that
   runs each 15 or 30 seconds does not write an audit row each time. A write
   on one row asks for the permission of that row, as the bootstrap does:
   `RecordTriggerFire` asks for `ManageTrigger`, and the `service` rule of the

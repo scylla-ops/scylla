@@ -30,4 +30,6 @@ pub use project_mapper::project_to_proto;
 pub use role_mapper::{authz_action_to_proto, effective_scope_to_proto, role_to_proto};
 pub use secret_mapper::secret_to_proto;
 pub use trigger_mapper::trigger_to_proto;
-pub use user_mapper::user_to_proto;
+pub use user_mapper::{
+    delivery_to_proto, user_access_response, user_access_to_proto, user_to_proto,
+};

@@ -2,6 +2,9 @@
 # One listener for everything: web UI, gRPC, gRPC-Web, reflection, and the
 # inbound webhook ingress. Terminate TLS in front, or set [server.tls].
 address = "0.0.0.0:8080"
+# The public origin of this instance, without a trailing slash. The reset links
+# start with it. Without mail, the link is in the server log.
+public_url = "https://your-domain.example.com"
 
 # Terminate TLS here instead of upstream. Both HTTP/2 and HTTP/1.1 are offered
 # over ALPN, so browsers, gRPC clients and plain webhook senders all connect.

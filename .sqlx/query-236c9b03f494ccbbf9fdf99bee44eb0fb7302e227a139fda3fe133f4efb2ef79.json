@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE users\n            SET username = $2,\n                email = $3,\n                password_hash = $4,\n                is_active = $5,\n                updated_at = $6,\n                version = version + 1\n            WHERE id = $1 AND version = $7\n            RETURNING id, username, email, password_hash, is_active, created_at, updated_at, version\n            ",
+  "query": "\n            SELECT id, username, email, display_name, password_hash, is_active, created_at, updated_at, version\n            FROM users\n            WHERE id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -38,6 +38,17 @@
       },
       {
         "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
         "name": "password_hash",
         "type_info": "Text",
         "origin": {
@@ -48,7 +59,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "is_active",
         "type_info": "Bool",
         "origin": {
@@ -59,7 +70,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "version",
         "type_info": "Int8",
         "origin": {
@@ -94,18 +105,13 @@
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Text",
-        "Text",
-        "Text",
-        "Bool",
-        "Timestamptz",
-        "Int8"
+        "Text"
       ]
     },
     "nullable": [
       false,
       false,
+      true,
       true,
       false,
       false,
@@ -114,5 +120,5 @@
       false
     ]
   },
-  "hash": "ff25218a40ff2546401b4b15579ff4188f2482dc87fb4f79674917acfb9cac2a"
+  "hash": "236c9b03f494ccbbf9fdf99bee44eb0fb7302e227a139fda3fe133f4efb2ef79"
 }

@@ -6,7 +6,9 @@ use crate::domain::ids::{AppId, UserId};
 use crate::domain::permission::ResourceRef;
 use crate::domain::role::{RoleDescription, RoleDisplayName};
 use crate::test_support::authz::{RecordingPermissionService, actions};
-use crate::test_support::stubs::{StubGrants, StubHash, StubRegistry, StubRoles, StubUsers};
+use crate::test_support::stubs::{
+    StubAccounts, StubGrants, StubHash, StubRegistry, StubRoles, StubUsers,
+};
 use crate::test_support::users::UserBuilder;
 use async_trait::async_trait;
 use scylla_auth::authz::{
@@ -94,6 +96,7 @@ fn lab(existing: Vec<User>) -> Lab {
         users.clone(),
         grants.clone(),
         Arc::new(StubHash::passwords()),
+        Arc::new(StubAccounts::new(users.clone())),
     ));
     let grant_uc = Arc::new(GrantUseCases::new(
         grants.clone(),

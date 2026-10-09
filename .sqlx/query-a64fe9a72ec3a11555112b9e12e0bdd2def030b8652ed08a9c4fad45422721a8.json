@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, username, email, password_hash, is_active, created_at, updated_at, version\n            FROM users\n            ORDER BY created_at DESC\n            LIMIT $1 OFFSET $2\n            ",
+  "query": "\n            SELECT id, username, email, display_name, password_hash, is_active, created_at, updated_at, version\n            FROM users\n            ORDER BY created_at DESC\n            LIMIT $1 OFFSET $2\n            ",
   "describe": {
     "columns": [
       {
@@ -38,6 +38,17 @@
       },
       {
         "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
         "name": "password_hash",
         "type_info": "Text",
         "origin": {
@@ -48,7 +59,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "is_active",
         "type_info": "Bool",
         "origin": {
@@ -59,7 +70,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "version",
         "type_info": "Int8",
         "origin": {
@@ -102,6 +113,7 @@
       false,
       false,
       true,
+      true,
       false,
       false,
       false,
@@ -109,5 +121,5 @@
       false
     ]
   },
-  "hash": "a84cb61b363830a416087273b133f89fba8dfb0b34a73833d47b938bd1eebb22"
+  "hash": "a64fe9a72ec3a11555112b9e12e0bdd2def030b8652ed08a9c4fad45422721a8"
 }
