@@ -94,11 +94,14 @@ async fn a_login_by_username_or_email_stores_a_session_without_asking_a_permissi
 async fn a_wrong_password_or_an_unknown_account_gives_one_opaque_error() {
     let lab = lab(true, StubSessions::default());
 
-    for (identifier, password) in [("kevin", "WrongPass123!"), ("ghost", PASSWORD)] {
+    for (identifier, password) in [
+        ("kevin", "WrongPass123!"),
+        ("kevin@example.com", "WrongPass123!"),
+        ("ghost", PASSWORD),
+        ("ghost@example.com", PASSWORD),
+    ] {
         let err = lab.login(identifier, password).await.unwrap_err();
-        assert!(
-            matches!(&err, DomainError::Unauthorized(m) if m == "Invalid username or password")
-        );
+        assert!(matches!(&err, DomainError::Unauthorized(m) if m == "Invalid credentials"));
     }
     assert!(lab.sessions.rows().is_empty());
 }
@@ -110,6 +113,17 @@ async fn an_inactive_account_cannot_log_in() {
     let err = lab.login("kevin", PASSWORD).await.unwrap_err();
 
     assert!(matches!(&err, DomainError::Unauthorized(m) if m == "User account is inactive"));
+    assert!(lab.sessions.rows().is_empty());
+}
+
+#[tokio::test]
+async fn an_inactive_account_with_a_wrong_password_gives_the_opaque_error() {
+    let lab = lab(false, StubSessions::default());
+
+    for identifier in ["kevin", "kevin@example.com"] {
+        let err = lab.login(identifier, "WrongPass123!").await.unwrap_err();
+        assert!(matches!(&err, DomainError::Unauthorized(m) if m == "Invalid credentials"));
+    }
     assert!(lab.sessions.rows().is_empty());
 }
 

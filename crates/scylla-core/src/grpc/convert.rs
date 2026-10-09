@@ -33,7 +33,6 @@ impl_wrapper!(
     common::JobLogId,
     common::AppId,
     common::AppSecretId,
-    common::InvitationId,
     common::NodeId,
     common::SecretId,
     common::TriggerId,

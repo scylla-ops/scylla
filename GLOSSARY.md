@@ -17,7 +17,7 @@ The worker binary on each machine that runs pipelines. It authenticates as its [
 ### `scylla-domain`
 The shared kernel, and the only Rust code both binaries run. Holds the domain model (entities, value objects, `DomainError`, the DAG planner) plus [`JobEvent`](#jobevent), the command vocabulary the agent reports and the control plane applies.
 
-Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `derive-where`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
+Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `derive-where`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack and no crypto, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
 
 ### `scylla-proto`
 Library crate with the Rust bindings of the `.proto` files and the conversions to the domain types. The `.proto` files are in `crates/scylla-proto/proto/`, a git submodule of [`scylla-ops/scylla-protos`](https://github.com/scylla-ops/scylla-protos). The web UI pins the same repository with its own submodule.
@@ -52,10 +52,12 @@ A machine principal owned by an organization (an agent / automation). Identified
 The App that a trigger fire runs as. An organization has one trigger runner or none. The server makes it at the first `CreateTrigger` in the organization. It has the kind `trigger_runner`, the name `trigger-runner`, the `organization-trigger-runner` role and no secret. The server finds it by its kind, not by its name. A user cannot give this name to an App, and cannot disable the trigger runner, delete it or add a secret to it.
 
 ### Session
-An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions. The store keeps only the SHA-256 of a token, as for an app token and an invite token.
+An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions. The store keeps only the SHA-256 of a token, as for an app token.
 
 ### User
 A user account. A user is related to the tenancy tree only through **grants**: holding a role on a scope is what puts them there, so "who is in this organization" and "what may they do" are the same rows (see [Authorization](#authorization) and `docs/src/access-model.md`).
+
+In the Community Edition, an account comes from one of two sources: `UserService.CreateUser`, which a system administrator sends, or the [bootstrap](#bootstrap-user). The Community Edition sends no mail. The Enterprise edition adds sign-up, invitations, GitHub sign-in and mail.
 
 ## States & status values
 
@@ -164,7 +166,7 @@ P's role-derived permissions.
 A grant refers to a principal and a scope that exist: a database trigger
 refuses the insert if not. An app gets grants only in the organization that
 owns it. A user cannot get an agent role. `check_grantable` (`scylla-auth`) is
-the one check of a new grant or invitation.
+the one check of a new grant.
 
 ### Principal
 A grant-holding actor: a human `User` or a machine `App`. Maps to the
@@ -193,7 +195,15 @@ Resolves the scope hierarchy via `in` and yields the allow/deny decision +
 diagnostics.
 
 ### Bootstrap user
-The initial `admin` account created on first control-plane startup (configured under `[bootstrap]` in the control-plane config). Default credentials in local dev: `admin` / `admin123`. Gets a `system-admin` grant on the `System` scope (full control over every scope, since System is the tenancy root).
+The initial `admin` account. The `[bootstrap]` section of the control-plane config sets its `username`, `password` and `email`. The email is necessary. The default values in local dev are `admin`, `admin123` and `admin@example.com`. The account gets a `system-admin` grant on the `System` scope (full control over every scope, because System is the tenancy root).
+
+The server runs the bootstrap at each start, as the bootstrap service. It creates the account. If the username or the email exists, it finds the account as follows:
+
+- An account has the configured email. If its username is the configured username, the server makes sure that it has the grant. If not, the start stops with an error: the email belongs to another account.
+- No account has the configured email, and the account with the configured username has no email. The server sets the configured email on that account (`UpdateUserEmail`), then makes sure that it has the grant.
+- No account has the configured email, and the account with the configured username has another email. The start stops with an error. No account gets the grant.
+
+`GetUserByUsername`, `GetUserByEmail` and `UpdateUserEmail` have no RPC. Only the bootstrap sends them.
 
 ### Caller (`CallerContext`)
 The identity that made a request, threaded through the authorization layer. Variants: `User(UserId)`, `App(AppId)` (a machine principal / agent), `Service(ServiceIdentity)` (sealed internal identity), `Anonymous`. A Caller that is a `User` or `App` is also a **Principal** (can hold grants); `Service`/`Anonymous` cannot. Each maps to a Cedar entity (`Scylla::User::"…"`, `Scylla::App::"…"`, `Scylla::Service::"…"`); the Cedar `PermissionService` resolves the caller's roles, scoped grants, and tenancy ancestry on each check.
@@ -239,7 +249,7 @@ Async Tonic interceptor (`crates/scylla-core/src/grpc/middleware/auth_intercepto
 ## Identifiers
 
 ### Entity IDs
-All domain IDs (`UserId`, `OrganizationId`, `ProjectId`, `PipelineId`, `JobId`, `JobLogId`, `SessionId`, `AppId`, `AppTokenId`, `AppCredentialId`, `InvitationId`, `SecretId`, `TriggerId`) are opaque string newtypes generated as lowercased ULIDs via `::generate()`. They also accept external strings via `::new(...)`. Generated by the `define_id!` macro in `domain/ids.rs`; they carry no `sqlx` integration because every query binds them as `&str` through `as_str()`.
+All domain IDs (`UserId`, `OrganizationId`, `ProjectId`, `PipelineId`, `JobId`, `JobLogId`, `SessionId`, `AppId`, `AppTokenId`, `AppCredentialId`, `SecretId`, `TriggerId`) are opaque string newtypes generated as lowercased ULIDs via `::generate()`. They also accept external strings via `::new(...)`. Generated by the `define_id!` macro in `domain/ids.rs`; they carry no `sqlx` integration because every query binds them as `&str` through `as_str()`.
 
 ### `NodeId`
 Caller-supplied ID for each pipeline node. Must be unique within its pipeline. Validated as a lowercase ASCII alphanumeric string plus `-` / `_`, max 128 chars.
@@ -288,7 +298,7 @@ Every crate re-exports the kernel's `domain` module, so `crate::domain::...` nam
 A trait describing something the use cases need from the outside world (persistence, hashing, permission checks), declared next to its use case in `application/<feature>/`. Examples: `PipelineRepository`, `HashService`. `PermissionService` is declared in `scylla-auth`.
 
 ### Adapter
-A concrete implementation of a port. **Driven** adapters, the ones the use cases call out to, live in the crate that owns their dependency: `scylla-db/src/postgres/*` for repositories, `scylla-auth/src/cedar/` for the policy engine, `scylla-core/src/infrastructure/` for the rest (hashing, encryption, mail, OAuth, in-process messaging). **Driving** adapters, the ones that call into the use cases, sit in `scylla-core`: `grpc/` and `rest/`.
+A concrete implementation of a port. **Driven** adapters, the ones the use cases call out to, live in the crate that owns their dependency: `scylla-db/src/postgres/*` for repositories, `scylla-auth/src/cedar/` for the policy engine, `scylla-core/src/infrastructure/` for the rest (hashing, encryption, cron schedules, in-process messaging). **Driving** adapters, the ones that call into the use cases, sit in `scylla-core`: `grpc/` and `rest/`.
 
 ### Use case
 A struct in `application/<feature>/mod.rs` (e.g. `PipelineUseCases`, `JobUseCases`) that holds `Arc<dyn Port>` fields and implements the `Run` stages of its commands and queries. It has no methods. Handlers run the actions through `Actions` (`grpc::adapter::run`).
@@ -314,7 +324,7 @@ The lifecycle vocabulary a running agent reports: `JobStarted`, `NodeStarted`, `
 The topological-sort routine behind `DagPlan` (`domain/pipeline/dag.rs`). One implementation serves both sides: the control plane calls `drains_completely()` once to reject a pipeline containing a cycle, and an agent drives the same structure incrementally (`drain_ready` / `mark_completed` / `mark_terminal`) to decide what to launch next. Keeping it single is what stops the two from disagreeing about which nodes are runnable.
 
 ### Cargo features
-One in the whole workspace. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth`, `scylla-extension`, `scylla-server` and `scylla-ce` have none. The public self-service sign-up is not in this repository: it is an extension of the Enterprise Edition.
+One in the whole workspace. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth`, `scylla-extension`, `scylla-server` and `scylla-ce` have none.
 
 ### Extension point
 A position in the action pipeline (`scylla-extension`). Every write is a command that `Actions::run` moves through `Authorize`, `Prepare` and `Persist`, every read a query that the same `run` moves through `Authorize` and `Fetch`; around each stage the `Hooks` registry runs `Policy`, `Gate`, `Around`, `Wrap`, `Listener` and `Observer`. An edition implements `Extension` and registers it on the `Server` builder (`.extension(&Arc::new(MeteredQuota))`); the core runs the hooks and never knows which edition built it. The Community Edition registers nothing. `scylla-extension` depends on `scylla-domain` only, so a private Enterprise build implements the hooks against a pinned git tag.

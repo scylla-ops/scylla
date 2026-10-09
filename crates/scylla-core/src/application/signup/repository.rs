@@ -12,14 +12,4 @@ pub trait SignupRepository: Send + Sync {
         organization: &Organization,
         grants: &[Grant],
     ) -> DomainResult<()>;
-
-    /// Same transaction as the account: an account with no linked identity and no email would be unrecoverable.
-    async fn provision_account_with_identity(
-        &self,
-        user: &User,
-        organization: &Organization,
-        grants: &[Grant],
-        provider: &str,
-        provider_user_id: &str,
-    ) -> DomainResult<()>;
 }

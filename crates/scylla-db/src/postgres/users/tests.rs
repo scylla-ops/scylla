@@ -56,6 +56,20 @@ async fn find_by_email_returns_persisted_user(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
+async fn an_update_writes_the_email_of_a_user_that_had_none(pool: PgPool) {
+    let repo = PgUserRepository::new(pool);
+    let mut stored = repo.create(&user("nora")).await.expect("create");
+    let email = Email::new("nora@example.com").unwrap();
+
+    stored.update_email(email.clone());
+    repo.update(&stored).await.expect("update");
+
+    let found = repo.find_by_email(&email).await.expect("find by email");
+    assert_eq!(found.id(), stored.id());
+    assert_eq!(found.version(), 1);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
 async fn duplicate_email_maps_to_conflict(pool: PgPool) {
     let repo = PgUserRepository::new(pool);
     repo.create(&UserBuilder::new("ivan").email("dup@example.com").build())

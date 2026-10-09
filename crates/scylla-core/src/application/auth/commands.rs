@@ -29,12 +29,13 @@ impl Command for Login {
     type Committed = Session;
 }
 
-/// Same opaque error for both paths so callers cannot probe which accounts exist.
+/// One opaque error for an unknown account and a wrong password, so a caller cannot probe which
+/// accounts exist. Only a caller with the right password learns that the account is inactive.
 #[async_trait]
 impl Run<Prepare<Login>> for AuthUseCases {
     async fn run(&self, input: Authorized<Login>) -> DomainResult<Prepared<Login>> {
         let cmd = input.command();
-        let invalid = || DomainError::unauthorized("Invalid username or password");
+        let invalid = || DomainError::unauthorized("Invalid credentials");
         let lookup = if cmd.identifier.contains('@') {
             let email = Email::new(&cmd.identifier).map_err(|_| invalid())?;
             self.user_repo.find_by_email(&email).await
@@ -44,15 +45,15 @@ impl Run<Prepare<Login>> for AuthUseCases {
         };
         let user = lookup.map_err(|_| invalid())?;
 
-        if !user.is_active() {
-            return Err(DomainError::unauthorized("User account is inactive"));
-        }
         if !self
             .hash_service
             .verify(&cmd.password, user.password_hash())
             .await?
         {
             return Err(invalid());
+        }
+        if !user.is_active() {
+            return Err(DomainError::unauthorized("User account is inactive"));
         }
         let session = new_session(user.id().clone());
         Ok(input.prepared(Draft::new(session)))

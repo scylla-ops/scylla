@@ -2,7 +2,7 @@
 //! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::UserUseCases;
-use crate::domain::errors::DomainResult;
+use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::UserId;
 use crate::domain::permission::Permission;
 use crate::domain::user::{Email, Password, User, Username};
@@ -82,6 +82,53 @@ impl Run<Prepare<UpdateUser>> for UserUseCases {
 #[async_trait]
 impl Run<Persist<UpdateUser>> for UserUseCases {
     async fn run(&self, input: Prepared<UpdateUser>) -> DomainResult<Committed<UpdateUser>> {
+        input
+            .commit(async |draft| self.user_repo.update(&draft.into_inner()).await)
+            .await
+    }
+}
+
+/// No RPC sends it; the bootstrap gives its email to an admin account that has none. An account
+/// with another email keeps it.
+#[derive(Debug)]
+pub struct UpdateUserEmail {
+    pub id: UserId,
+    pub email: Email,
+}
+
+impl Describe for UpdateUserEmail {
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateUser(self.id.clone()))
+    }
+}
+
+impl Command for UpdateUserEmail {
+    type Staged = Draft<User>;
+    type Committed = User;
+}
+
+#[async_trait]
+impl Run<Prepare<UpdateUserEmail>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Authorized<UpdateUserEmail>,
+    ) -> DomainResult<Prepared<UpdateUserEmail>> {
+        let cmd = input.command();
+        let mut user = self.user_repo.find_by_id(&cmd.id).await?;
+        if user.email().is_some_and(|email| email != &cmd.email) {
+            return Err(DomainError::business_rule("the user already has an email"));
+        }
+        user.update_email(cmd.email.clone());
+        Ok(input.prepared(Draft::new(user)))
+    }
+}
+
+#[async_trait]
+impl Run<Persist<UpdateUserEmail>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Prepared<UpdateUserEmail>,
+    ) -> DomainResult<Committed<UpdateUserEmail>> {
         input
             .commit(async |draft| self.user_repo.update(&draft.into_inner()).await)
             .await

@@ -23,12 +23,6 @@ pub struct ControlPlaneConfig {
     pub bootstrap: Option<BootstrapConfig>,
 
     #[serde(default)]
-    pub mail: Option<MailConfig>,
-
-    #[serde(default)]
-    pub oauth: OauthConfig,
-
-    #[serde(default)]
     pub secrets: Option<SecretsConfig>,
 
     #[serde(default)]
@@ -87,33 +81,6 @@ pub const MASTER_KEY_ENV: &str = "SCYLLA_MASTER_KEY";
 
 /// Public (committed in `config/docker.toml`): detected at startup to warn.
 pub const DEV_MASTER_KEY: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct OauthConfig {
-    #[serde(default)]
-    pub github: Option<GitHubOauthConfig>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GitHubOauthConfig {
-    pub client_id: String,
-    pub client_secret: String,
-    pub redirect_uri: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct MailConfig {
-    pub host: String,
-    #[serde(default = "default_smtp_port")]
-    pub port: u16,
-    pub username: String,
-    pub password: String,
-    pub from: String,
-}
-
-fn default_smtp_port() -> u16 {
-    465
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServerConfig {
@@ -200,14 +167,14 @@ fn default_expose_headers() -> Vec<String> {
     ]
 }
 
+/// The bootstrap finds an existing admin account by `email`, so the email is required.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BootstrapConfig {
     pub username: String,
 
     pub password: String,
 
-    #[serde(default)]
-    pub email: Option<String>,
+    pub email: String,
 }
 
 impl Default for BootstrapConfig {
@@ -215,7 +182,7 @@ impl Default for BootstrapConfig {
         Self {
             username: "admin".to_string(),
             password: "admin123".to_string(),
-            email: None,
+            email: "admin@example.com".to_string(),
         }
     }
 }
@@ -325,6 +292,60 @@ mod tests {
         };
         config.override_master_key("   ");
         assert_eq!(config.secrets.unwrap().master_key, "real-key");
+    }
+
+    #[test]
+    fn a_section_that_the_server_does_not_know_is_ignored() {
+        let config: ControlPlaneConfig = toml::from_str(
+            r#"
+            [bootstrap]
+            username = "admin"
+            password = "admin123"
+            email = "admin@example.com"
+
+            [mail]
+            host = "smtp.example.com"
+
+            [ee.limits]
+            max_projects = 3
+            "#,
+        )
+        .unwrap();
+        assert_eq!(config.bootstrap.unwrap().email, "admin@example.com");
+    }
+
+    #[test]
+    fn a_bootstrap_without_an_email_is_refused() {
+        let err = toml::from_str::<ControlPlaneConfig>(
+            r#"
+            [bootstrap]
+            username = "admin"
+            password = "admin123"
+            "#,
+        )
+        .unwrap_err();
+        assert!(err.to_string().contains("email"), "{err}");
+    }
+
+    #[test]
+    fn the_shipped_configs_parse() {
+        for (src, bootstrap) in [
+            (
+                include_str!("../../../binaries/scylla-ce/config/local.toml"),
+                true,
+            ),
+            (
+                include_str!("../../../binaries/scylla-ce/config/docker.toml"),
+                true,
+            ),
+            (
+                include_str!("../../../binaries/scylla-ce/config/prod.toml"),
+                false,
+            ),
+        ] {
+            let config: ControlPlaneConfig = toml::from_str(src).unwrap();
+            assert_eq!(config.bootstrap.is_some(), bootstrap);
+        }
     }
 
     #[test]

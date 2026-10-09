@@ -2,8 +2,8 @@ pub mod commands;
 pub mod queries;
 pub mod repository;
 
-pub use commands::{CreateUser, DeleteUser, UpdateUser};
-pub use queries::{GetUser, GetUserByUsername, ListUsers};
+pub use commands::{CreateUser, DeleteUser, UpdateUser, UpdateUserEmail};
+pub use queries::{GetUser, GetUserByEmail, GetUserByUsername, ListUsers};
 pub use repository::{UserRepository, users_in_order};
 
 use crate::application::HashService;

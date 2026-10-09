@@ -5,15 +5,13 @@ use crate::application::job::JobScope;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
     DispatchUseCases, HashService, JobLogLiveStream, JobLogStreamPort, JobRepository,
-    PipelineRepository, ProjectRepository, SecretResolver, SessionRepository, SignupRepository,
-    UserRepository,
+    PipelineRepository, ProjectRepository, SecretResolver, SessionRepository, UserRepository,
 };
 use crate::domain::app::{AppSecret, AppSecretHash};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId, StreamId, UserId};
 use crate::domain::job::{Job, JobLog, JobStatus};
-use crate::domain::organization::Organization;
 use crate::domain::pipeline::{NodeId, Pipeline, PipelineNode};
 use crate::domain::project::Project;
 use crate::domain::session::Session;
@@ -665,7 +663,7 @@ impl PipelineRepository for OnePipeline {
     }
 }
 
-/// `used` holds the roles that a grant or a pending invitation still names.
+/// `used` holds the roles that a grant still names.
 #[derive(Default)]
 pub struct StubRoles {
     rows: Mutex<Vec<Role>>,
@@ -828,6 +826,86 @@ impl UserRepository for OneUser {
     }
 }
 
+/// Keeps its users in memory. A write that takes the username or the email of another user is a
+/// `Conflict`, as in the store.
+#[derive(Default)]
+pub struct StubUsers {
+    rows: Mutex<HashMap<UserId, User>>,
+}
+
+impl StubUsers {
+    pub fn with(users: impl IntoIterator<Item = User>) -> Self {
+        let stub = Self::default();
+        for user in users {
+            stub.insert(user);
+        }
+        stub
+    }
+
+    pub fn insert(&self, user: User) {
+        self.rows.lock().unwrap().insert(user.id().clone(), user);
+    }
+
+    pub fn rows(&self) -> HashMap<UserId, User> {
+        self.rows.lock().unwrap().clone()
+    }
+
+    fn find(&self, matches: impl Fn(&User) -> bool) -> Option<User> {
+        self.rows
+            .lock()
+            .unwrap()
+            .values()
+            .find(|u| matches(u))
+            .cloned()
+    }
+}
+
+#[async_trait]
+impl UserRepository for StubUsers {
+    async fn create(&self, user: &User) -> DomainResult<User> {
+        let mut rows = self.rows.lock().unwrap();
+        let others = || rows.values().filter(|u| u.id() != user.id());
+        if others().any(|u| u.username() == user.username()) {
+            return Err(DomainError::conflict("Username already exists"));
+        }
+        if others().any(|u| u.email().is_some() && u.email() == user.email()) {
+            return Err(DomainError::conflict("Email already exists"));
+        }
+        rows.insert(user.id().clone(), user.clone());
+        Ok(user.clone())
+    }
+    async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
+        self.find(|u| u.id() == id)
+            .ok_or_else(|| DomainError::not_found("User", id))
+    }
+    async fn find_by_ids(&self, ids: &[UserId]) -> DomainResult<Vec<User>> {
+        let rows = self.rows.lock().unwrap();
+        Ok(ids
+            .iter()
+            .rev()
+            .filter_map(|id| rows.get(id).cloned())
+            .collect())
+    }
+    async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
+        self.find(|u| u.username() == username)
+            .ok_or_else(|| DomainError::not_found("User", "<username>"))
+    }
+    async fn find_by_email(&self, email: &Email) -> DomainResult<User> {
+        self.find(|u| u.email() == Some(email))
+            .ok_or_else(|| DomainError::not_found("User", "<email>"))
+    }
+    async fn update(&self, user: &User) -> DomainResult<User> {
+        self.create(user).await
+    }
+    async fn delete(&self, user: &User) -> DomainResult<()> {
+        self.rows.lock().unwrap().remove(user.id());
+        Ok(())
+    }
+    async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> {
+        empty_page()
+    }
+}
+
 #[derive(Default)]
 pub struct StubSessions {
     rows: Mutex<Vec<Session>>,
@@ -876,51 +954,5 @@ impl SessionRepository for StubSessions {
         let before = rows.len();
         rows.retain(|s| !s.is_expired());
         Ok((before - rows.len()) as u64)
-    }
-}
-
-/// Each provisioned account, with the provider identity when there is one.
-#[derive(Default)]
-pub struct StubSignups {
-    provisioned: Mutex<Vec<(User, Organization, Vec<Grant>, Option<String>)>>,
-}
-
-impl StubSignups {
-    pub fn provisioned(&self) -> Vec<(User, Organization, Vec<Grant>, Option<String>)> {
-        self.provisioned.lock().unwrap().clone()
-    }
-}
-
-#[async_trait]
-impl SignupRepository for StubSignups {
-    async fn provision_account(
-        &self,
-        user: &User,
-        organization: &Organization,
-        grants: &[Grant],
-    ) -> DomainResult<()> {
-        self.provisioned.lock().unwrap().push((
-            user.clone(),
-            organization.clone(),
-            grants.to_vec(),
-            None,
-        ));
-        Ok(())
-    }
-    async fn provision_account_with_identity(
-        &self,
-        user: &User,
-        organization: &Organization,
-        grants: &[Grant],
-        _: &str,
-        provider_user_id: &str,
-    ) -> DomainResult<()> {
-        self.provisioned.lock().unwrap().push((
-            user.clone(),
-            organization.clone(),
-            grants.to_vec(),
-            Some(provider_user_id.to_string()),
-        ));
-        Ok(())
     }
 }

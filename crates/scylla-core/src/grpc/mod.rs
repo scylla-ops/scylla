@@ -7,8 +7,8 @@ pub mod streaming;
 
 pub use handlers::{
     AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
-    InvitationAcceptHandler, InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler,
-    PipelineHandler, ProjectHandler, RoleHandler, SecretHandler, TriggerHandler, UserHandler,
+    JobHandler, OrganizationHandler, PipelineHandler, ProjectHandler, RoleHandler, SecretHandler,
+    TriggerHandler, UserHandler,
 };
 pub use mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_to_proto, organization_to_proto,

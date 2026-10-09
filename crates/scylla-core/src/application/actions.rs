@@ -3,7 +3,7 @@
 
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::{AppId, UserId};
+use crate::domain::ids::AppId;
 use crate::domain::job::JobOrigin;
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
@@ -48,14 +48,6 @@ pub(crate) fn app_only(caller: &CallerContext) -> DomainResult<AppId> {
         _ => Err(DomainError::forbidden(
             "only an agent reports its own state",
         )),
-    }
-}
-
-/// The guard of an action that records its user: an invitation names the user who sent it.
-pub(crate) fn user_only(caller: &CallerContext) -> DomainResult<UserId> {
-    match caller {
-        CallerContext::User(user_id) => Ok(user_id.clone()),
-        _ => Err(DomainError::forbidden("only a user sends an invitation")),
     }
 }
 

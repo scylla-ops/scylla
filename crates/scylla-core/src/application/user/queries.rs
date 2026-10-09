@@ -6,7 +6,7 @@ use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::UserId;
 use crate::domain::permission::Permission;
-use crate::domain::user::{User, Username};
+use crate::domain::user::{Email, User, Username};
 use async_trait::async_trait;
 use scylla_extension::{Access, Authorized, Describe, Fetch, Fetched, Query, Run};
 
@@ -59,6 +59,33 @@ impl Run<Fetch<GetUserByUsername>> for UserUseCases {
             .user_repo
             .find_by_username(&input.command().username)
             .await?;
+        Ok(input.fetched(user))
+    }
+}
+
+/// No RPC sends it; the bootstrap finds the admin account by its configured email.
+#[derive(Debug)]
+pub struct GetUserByEmail {
+    pub email: Email,
+}
+
+impl Describe for GetUserByEmail {
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ListUsers)
+    }
+}
+
+impl Query for GetUserByEmail {
+    type Output = User;
+}
+
+#[async_trait]
+impl Run<Fetch<GetUserByEmail>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Authorized<GetUserByEmail>,
+    ) -> DomainResult<Fetched<GetUserByEmail>> {
+        let user = self.user_repo.find_by_email(&input.command().email).await?;
         Ok(input.fetched(user))
     }
 }

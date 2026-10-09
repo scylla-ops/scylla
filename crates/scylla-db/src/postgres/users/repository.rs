@@ -41,12 +41,12 @@ impl UserRepository for PgUserRepository {
         queries::find_by_ids(&self.pool, ids).await
     }
 
-    #[instrument(skip_all, fields(username = %username))]
+    #[instrument(skip_all)]
     async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
         queries::find_by_username(&self.pool, username).await
     }
 
-    #[instrument(skip_all, fields(email = %email))]
+    #[instrument(skip_all)]
     async fn find_by_email(&self, email: &Email) -> DomainResult<User> {
         queries::find_by_email(&self.pool, email).await
     }

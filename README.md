@@ -116,11 +116,13 @@ docker compose pull
 docker compose up -d
 ```
 
-First boot creates the `admin` user automatically.
+The first start creates the `admin` user. The `[bootstrap]` section of the
+config sets its username, password and email. At each start, the server finds
+this account by its email and makes sure that it is a system administrator.
 
 Open **http://localhost:8080/** and sign in:
 
-- username: `admin`
+- username: `admin` (or the email `admin@example.com`)
 - password: `admin123`
 
 ## Developing

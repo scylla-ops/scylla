@@ -203,8 +203,8 @@ async fn list_projects(&self, request: Request<ListProjectsRequest>)
 `grpc::adapter::run` (in `scylla-core`) takes the caller from the
 interceptor, turns the request into its command or query through
 `grpc::convert::Parse`, runs the engine and maps a `DomainError` to a `Status`.
-A service without the interceptor (sign-in, OAuth, the app token
-exchange, the invitation accept) uses `grpc::adapter::run_public`: the same
+A service without the interceptor (sign-in, the app token exchange) uses
+`grpc::adapter::run_public`: the same
 steps, with `Anonymous` as the caller, so only a `Public` action passes. An
 HTTP route uses `rest::adapter::run_public`: the route builds the command from
 the path, the headers and the body, and maps the `DomainError` to its own
@@ -251,8 +251,7 @@ the tests of the actions it sends are in the `tests.rs` of the use case.
 A command derives `Debug` when each secret field is a redacting type
 (`Password`, `AppSecret`): their `Debug` shows `[REDACTED]`. A command that
 holds a secret as a raw `String` or as bytes has no `Debug`: `RevokeToken`,
-`ValidateToken`, `OAuthCallback`, `CreateSecret`, `IngestWebhook` and
-`AcceptInvitation` (its `token`).
+`ValidateToken` (their `token`) and `IngestWebhook` (its headers).
 
 A `tests.rs` gets its engine from
 `test_support::authz::actions(permissions)`: the `PermissionAuthorizer` and
@@ -260,9 +259,11 @@ no hooks. Use `actions_with(permissions, hooks)` when the test registers
 hooks. The stubs that more than one use case needs are in
 `test_support::stubs` (compiled for tests only): `CountingPolicy`,
 `StubHash`, `StubRegistry`, `StubRoles`, `StubGrants`, `StubJobs`,
-`StubTails`, `ScopesByAgent`, `StubSessions`, `StubSignups`, `NoUsers`,
+`StubTails`, `ScopesByAgent`, `StubSessions`, `StubUsers`, `NoUsers`,
 `OneUser`, `OneProject`, `OnePipeline`, `EchoResolver`, `dispatcher`,
-`empty_page` and `alice`. `StubRegistry` fails a test that sends a job to an
+`empty_page` and `alice`. `StubUsers` keeps its users in memory and gives
+`Conflict` for a username or an email of another user, as the store does.
+`StubRegistry` fails a test that sends a job to an
 agent; `StubRegistry::accepting()` records each order. `StubRegistry::connect`
 opens a stream of an agent. `StubJobs` checks and increments the version of a
 job, as the Postgres store does, and `StubJobs::place` stores a job placed on
@@ -506,9 +507,7 @@ Projects, pipelines, triggers, organizations, users and jobs carry a version.
 Each Postgres adapter gives the result of its write to `written`
 (`scylla-db/src/postgres/version.rs`) and does not add its own helper. When
 the write changed no row, `written` reads the row: if the row is there, the
-error is `Stale`, else `NotFound`. An invitation has no version: its revoke and
-its accept write only while the stored status is `pending`, and give `Stale`
-when it is not.
+error is `Stale`, else `NotFound`.
 
 The placement of a job is not an edit, but it changes the version:
 `JobRepository::claim_next` and `release` write only the agent and the stream
@@ -520,22 +519,24 @@ that gives `Stale`: a report of the agent came first.
 ## Limits and follow-ups
 
 - The project, organization, user, secret, pipeline, trigger, app, agent, job,
-  job log, invitation, grant and role use cases are on the pipeline. The
-  session (`Login`, `ValidateToken`, `RevokeToken`), the OAuth flow
-  (`GetAuthUrl`, `OAuthCallback`), `IssueAppToken`, `AcceptInvitation` and
+  job log, grant and role use cases are on the pipeline. The session
+  (`Login`, `ValidateToken`, `RevokeToken`), `IssueAppToken` and
   `IngestWebhook` are on it too, as `Public` actions. The writes of the server
   drivers and of the agent stream are on it too. Every use case is on the
   pipeline.
 - A `Public` action runs as `Anonymous`, so a `Policy` on `Authorize` sees
   every sign-in and webhook delivery. The check that the use case does
-  itself (the password, the app secret, the OAuth code, the invitation token,
-  the webhook signature) is in `Prepare`, before the write. The `Debug` rule
+  itself (the password, the app secret, the webhook signature) is in
+  `Prepare`, before the write. The `Debug` rule
   of a command with a secret is in "Adding a command or a query".
-- Every sign-in path stages its session with `auth::new_session`, and a
-  first OAuth login builds the account with `signup::NewAccount`. The
-  Enterprise sign-up extension uses the same `NewAccount`, `SignupRepository`
-  and `new_session`, so they stay public. The `commit` closure writes the account, then stores
-  the session.
+- `Login` stages its session with `auth::new_session`. It verifies the
+  password before it reads `is_active`. An unknown account and a wrong
+  password give the same `Unauthorized("Invalid credentials")`. Only a caller
+  with the right password gets "User account is inactive".
+- The Enterprise sign-up extension uses `new_session`, `signup::NewAccount`
+  and `SignupRepository`. The Community Edition does not use `NewAccount` and
+  `SignupRepository`, but they stay public for that extension. Its `commit`
+  closure writes the account, then stores the session.
 - `ValidateToken` is a query, and its `Fetch` only reads: an expired
   session gives `false` and stays in the store. A failed read also gives
   `false`. `PurgeExpiredSessions` deletes the expired sessions: it is a pass
@@ -660,14 +661,6 @@ that gives `Stale`: a report of the agent came first.
   the organization. The delete of an App returns its jobs that have not
   started to the pool (`ON DELETE SET NULL`), so `DeleteApp` wakes the
   dispatcher.
-- `AcceptInvitation` is `Public`. The invitee has no account yet: the token
-  is the credential, and no permission is asked. The invite mail is sent in
-  the `commit` closure of `CreateInvitation`, after the write; a failed send
-  is logged and does not fail the call, as before. An `Invitation` has no
-  token: `Prepare` stages the token next to it, the store keeps the SHA-256
-  of the token, and only the mail has the token. The invitation records the
-  user who sent it, so `Prepare` refuses a caller that is not a user
-  (`user_only`).
 - `ListGrantableRoles` without an organization and `GetMyPermissions` are
   `Authenticated` queries: the platform roles are visible to everyone, and a
   caller reads its own grants. With an organization, `ListGrantableRoles`
@@ -681,9 +674,15 @@ that gives `Stale`: a report of the agent came first.
   the organization of the scope, `check_grantable` (the role, its scope kind,
   an agent role for a user, the escalation rule) and the admission of the
   grantee: an app only in its own organization, a user on a project only after
-  a grant on its organization. `CreateInvitation` calls the same
-  `check_grantable`. A repeated grant returns the stored grant. The bootstrap
-  admin grant goes through `Actions` as the bootstrap service.
+  a grant on its organization. A repeated grant returns the stored grant. The
+  bootstrap admin grant goes through `Actions` as the bootstrap service.
+- The bootstrap (`application/bootstrap.rs`) is a driver. It sends
+  `CreateUser`, then on a `Conflict` it finds the admin account by the
+  configured email (`GetUserByEmail`). If no account has that email, it finds
+  the account by the configured username (`GetUserByUsername`) and sets the
+  email with `UpdateUserEmail` only when that account has no email. Any other
+  case is a `BootstrapError`, and the account gets no grant. No RPC sends
+  these three actions.
 - `RevokeGrant`, `RevokeAllAccess` and `DeleteUser` call `ensure_owner_remains`
   in `Prepare` with the grants that they remove. `RevokeGrant` of the last
   grant of a user on an organization stages `whole_organization`, and
@@ -707,11 +706,6 @@ that gives `Stale`: a report of the agent came first.
   the same roles give them. They are not in the permission catalog, because a
   key is there one time only. `CreateTrigger` and `ListPipelineTriggers` keep
   `ManageTriggers` on the pipeline.
-- `RevokeInvitation` uses the same method: it asks for `RevokeInvitation` on
-  the invitation (`ResourceRef::Invitation`, one read to the organization).
-  It has the key `manageInvitations`, so the same roles give it, and it is not
-  in the permission catalog. `CreateInvitation` and `ListInvitations` keep
-  `ManageInvitations` on the organization.
 - `RevokeAppSecret` and `SetAppSecretEnabled` use the same method: they ask for
   `ManageAppSecret` on the secret (`ResourceRef::AppSecret`, one join to the
   app and its organization). It has the key `deleteApp`, so the same roles give

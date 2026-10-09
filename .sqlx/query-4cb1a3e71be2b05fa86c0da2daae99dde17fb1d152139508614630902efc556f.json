@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS (SELECT 1 FROM grants WHERE role_id = $1) OR EXISTS (SELECT 1 FROM organization_invites WHERE role_name = $1 AND status = 'pending' AND expires_at > NOW()) AS \"used!\"",
+  "query": "SELECT EXISTS (SELECT 1 FROM grants WHERE role_id = $1) AS \"used!\"",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       null
     ]
   },
-  "hash": "8d21700d24e6a9a78cc4065accd06df18cbe01b2fb377b7fadb06579f20c5347"
+  "hash": "4cb1a3e71be2b05fa86c0da2daae99dde17fb1d152139508614630902efc556f"
 }

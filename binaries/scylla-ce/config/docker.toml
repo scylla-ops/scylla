@@ -33,6 +33,7 @@ expose_headers = [
 [bootstrap]
 username = "admin"
 password = "admin123"
+email = "admin@example.com"
 
 [secrets]
 # Dev-only master key for project-secret encryption. Replace + inject at deploy.

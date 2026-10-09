@@ -9,8 +9,7 @@ use crate::domain::user::User;
 use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 
 /// A user, its own organization and the grants of the account, the first of which makes the
-/// user its admin: what a first OAuth login, or a sign-up of an edition, creates in one
-/// transaction.
+/// user its admin: what the sign-up of an edition creates in one transaction.
 pub struct NewAccount {
     pub user: User,
     pub organization: Organization,

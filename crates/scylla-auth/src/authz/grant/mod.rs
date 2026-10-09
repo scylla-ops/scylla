@@ -110,7 +110,7 @@ impl ScopeKind {
     }
 }
 
-/// One gate for `CreateGrant` and `CreateInvitation`: what can be granted equals what can be invited.
+/// The one gate of `CreateGrant`: the role, its scope kind, an agent role for a user, and escalation.
 pub fn check_grantable(
     roles: &[Role],
     grants: &[Grant],

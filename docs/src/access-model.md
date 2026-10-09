@@ -69,7 +69,7 @@ the control plane closes its stream.
 
 A check on an item finds its nearest known container: the pipeline of a job
 or a trigger, the project of a pipeline or a secret, the organization of a
-project, an app or an invitation. A check on an id that does not exist finds
+project or an app. A check on an id that does not exist finds
 no container, so the item is under System. Only a System grant reaches it.
 Thus a caller without a System grant gets "forbidden" and does not learn if
 the item exists. A caller with a System grant gets "not found".
@@ -77,17 +77,6 @@ the item exists. A caller with a System grant gets "not found".
 A write that refers to a container or a principal that does not exist, for
 example a project in an unknown organization or a grant to an unknown user,
 fails with "failed precondition".
-
-## Invitations
-
-An invitation is not a scope. A check on one invitation, for example to revoke
-it, finds the organization that holds the invitation. Then it applies the rule
-above to that organization, with the permission `manageInvitations`. Thus the
-roles that give this permission on the organization also give it on its
-invitations.
-
-A check on an unknown invitation finds no organization (see
-[Unknown ids](#unknown-ids)).
 
 ## App secrets
 
@@ -170,15 +159,14 @@ platform role. So an organization administrator cannot edit a builtin role, or
 a role of another organization.
 
 A role holds only permissions that its author holds at that organization, or at
-the system for a platform role. A role is deleted only when no grant and no
-pending invitation names it. The builtin roles are never deleted.
+the system for a platform role. A role is deleted only when no grant names it.
+The builtin roles are never deleted.
 
 ## Guarantees
 
 **A role of an organization is granted only inside that organization.** The use
-case refuses it elsewhere, and a database trigger refuses such a grant or
-invitation too. When the organization is deleted, its roles and their grants go
-with it.
+case refuses it elsewhere, and a database trigger refuses such a grant too.
+When the organization is deleted, its roles and their grants go with it.
 
 **The system and each organization always keep at least one human
 administrator** (`system-admin`, `organization-admin`). You cannot revoke the
@@ -191,10 +179,8 @@ cover it and can reopen access, so this is recoverable rather than a dead end.
 
 **Nobody can grant more than they hold.** A role is given only by a principal
 that holds each of its permissions on the scope, on the organization of the
-scope or on System. Full control there permits all roles. An invitation obeys
-the same rule, and an invitation without a role counts as
-`organization-member`. A project administrator cannot award themselves an
-organization role.
+scope or on System. Full control there permits all roles. A project
+administrator cannot award themselves an organization role.
 
 **An agent role is for an app only.** A user cannot hold
 `organization-agent`, `project-agent` or `organization-trigger-runner`.

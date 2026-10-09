@@ -74,6 +74,11 @@ impl User {
         Ok(())
     }
 
+    pub fn update_email(&mut self, email: Email) {
+        self.email = Some(email);
+        self.updated_at = clock::now();
+    }
+
     #[must_use]
     pub fn id(&self) -> &UserId {
         &self.id

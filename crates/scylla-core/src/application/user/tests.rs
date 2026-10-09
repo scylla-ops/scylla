@@ -9,78 +9,13 @@ use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, User, Username};
 use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
-use crate::test_support::stubs::{StubGrants, StubHash, alice};
+use crate::test_support::stubs::{StubGrants, StubHash, StubUsers, alice};
 use crate::test_support::users::user;
-use async_trait::async_trait;
 use scylla_auth::authz::{
     Grant, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, PermissionService, Principal,
     SYSTEM_ADMIN_ROLE, Scope,
 };
 use scylla_extension::Actions;
-use std::collections::HashMap;
-use std::sync::Mutex;
-
-#[derive(Default)]
-struct StubUsers {
-    rows: Mutex<HashMap<UserId, User>>,
-}
-
-#[async_trait]
-impl UserRepository for StubUsers {
-    async fn create(&self, user: &User) -> DomainResult<User> {
-        let mut rows = self.rows.lock().unwrap();
-        if rows
-            .values()
-            .any(|u| u.username() == user.username() && u.id() != user.id())
-        {
-            return Err(DomainError::conflict("Username already exists"));
-        }
-        rows.insert(user.id().clone(), user.clone());
-        Ok(user.clone())
-    }
-    async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
-        self.rows
-            .lock()
-            .unwrap()
-            .get(id)
-            .cloned()
-            .ok_or_else(|| DomainError::not_found("User", id))
-    }
-    async fn find_by_ids(&self, ids: &[UserId]) -> DomainResult<Vec<User>> {
-        let rows = self.rows.lock().unwrap();
-        Ok(ids
-            .iter()
-            .rev()
-            .filter_map(|id| rows.get(id).cloned())
-            .collect())
-    }
-    async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
-        self.rows
-            .lock()
-            .unwrap()
-            .values()
-            .find(|u| u.username() == username)
-            .cloned()
-            .ok_or_else(|| DomainError::not_found("User", username))
-    }
-    async fn find_by_email(&self, email: &Email) -> DomainResult<User> {
-        Err(DomainError::not_found("User", email))
-    }
-    async fn update(&self, user: &User) -> DomainResult<User> {
-        self.create(user).await
-    }
-    async fn delete(&self, user: &User) -> DomainResult<()> {
-        self.rows.lock().unwrap().remove(user.id());
-        Ok(())
-    }
-    async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> {
-        Ok(PaginatedResult::new(
-            Vec::new(),
-            &PaginationParams::default(),
-            0,
-        ))
-    }
-}
 
 struct Lab {
     actions: Actions,
@@ -127,7 +62,7 @@ async fn a_create_checks_the_permission_then_stores_the_hashed_user() {
     let user = lab.create("bob").await.unwrap();
 
     assert_eq!(permissions.permissions(), vec![Permission::CreateUser]);
-    assert!(lab.users.rows.lock().unwrap().contains_key(user.id()));
+    assert!(lab.users.rows().contains_key(user.id()));
 }
 
 #[tokio::test]
@@ -137,7 +72,7 @@ async fn a_denied_caller_writes_nothing() {
     let err = lab.create("bob").await.unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert!(lab.users.rows.lock().unwrap().is_empty());
+    assert!(lab.users.rows().is_empty());
 }
 
 #[tokio::test]
@@ -148,7 +83,7 @@ async fn a_taken_username_is_a_conflict_and_writes_nothing() {
     let err = lab.create("bob").await.unwrap_err();
 
     assert!(matches!(err, DomainError::Conflict(_)));
-    assert_eq!(lab.users.rows.lock().unwrap().len(), 1);
+    assert_eq!(lab.users.rows().len(), 1);
 }
 
 #[tokio::test]
@@ -171,12 +106,7 @@ async fn an_update_stages_the_change_and_persists_it() {
         .unwrap();
 
     assert_eq!(updated.username().as_str(), "new");
-    assert_eq!(
-        lab.users.rows.lock().unwrap()[created.id()]
-            .username()
-            .as_str(),
-        "new"
-    );
+    assert_eq!(lab.users.rows()[created.id()].username().as_str(), "new");
     assert_eq!(
         permissions.permissions()[1],
         Permission::UpdateUser(created.id().clone())
@@ -242,7 +172,7 @@ async fn a_delete_returns_the_tombstone() {
         .unwrap();
 
     assert_eq!(deleted.last_state().id(), created.id());
-    assert!(lab.users.rows.lock().unwrap().is_empty());
+    assert!(lab.users.rows().is_empty());
     assert_eq!(
         permissions.permissions()[1],
         Permission::DeleteUser(created.id().clone())
@@ -316,6 +246,95 @@ async fn a_read_by_username_asks_for_list_users() {
 }
 
 #[tokio::test]
+async fn a_read_by_email_asks_for_list_users() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(permissions.clone());
+    let created = lab
+        .actions
+        .run(
+            &lab.uc,
+            &alice(),
+            CreateUser {
+                email: Some(email("admin@example.com")),
+                ..create("admin")
+            },
+        )
+        .await
+        .unwrap();
+
+    let read = lab
+        .actions
+        .run(
+            &lab.uc,
+            &alice(),
+            GetUserByEmail {
+                email: email("admin@example.com"),
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(read.id(), created.id());
+    assert_eq!(permissions.permissions()[1], Permission::ListUsers);
+}
+
+fn email(value: &str) -> Email {
+    Email::new(value).unwrap()
+}
+
+fn set_email(user: &User, value: &str) -> UpdateUserEmail {
+    UpdateUserEmail {
+        id: user.id().clone(),
+        email: email(value),
+    }
+}
+
+#[tokio::test]
+async fn an_email_update_gives_an_email_to_a_user_that_has_none() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(permissions.clone());
+    let created = lab.create("admin").await.unwrap();
+
+    let updated = lab
+        .actions
+        .run(&lab.uc, &alice(), set_email(&created, "admin@example.com"))
+        .await
+        .unwrap();
+
+    assert_eq!(updated.email(), Some(&email("admin@example.com")));
+    assert_eq!(
+        lab.users.rows()[created.id()].email(),
+        Some(&email("admin@example.com"))
+    );
+    assert_eq!(
+        permissions.permissions()[1],
+        Permission::UpdateUser(created.id().clone())
+    );
+}
+
+#[tokio::test]
+async fn an_email_update_keeps_another_email() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let created = lab.create("admin").await.unwrap();
+    lab.actions
+        .run(&lab.uc, &alice(), set_email(&created, "first@example.com"))
+        .await
+        .unwrap();
+
+    let err = lab
+        .actions
+        .run(&lab.uc, &alice(), set_email(&created, "second@example.com"))
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, DomainError::BusinessRule(_)), "{err}");
+    assert_eq!(
+        lab.users.rows()[created.id()].email(),
+        Some(&email("first@example.com"))
+    );
+}
+
+#[tokio::test]
 async fn users_in_order_keeps_the_page_order_and_metadata_and_drops_unknown_ids() {
     let lab = lab(Arc::new(RecordingPermissionService::new()));
     let bob = lab.create("bob").await.unwrap();
@@ -345,11 +364,7 @@ async fn delete_with(grants: impl Fn(&User, &User) -> Vec<Grant>) -> DomainResul
         Arc::new(RecordingPermissionService::new()),
         grants(&doomed, &other),
     );
-    lab.users
-        .rows
-        .lock()
-        .unwrap()
-        .insert(doomed.id().clone(), doomed.clone());
+    lab.users.insert(doomed.clone());
     lab.actions
         .run(
             &lab.uc,
