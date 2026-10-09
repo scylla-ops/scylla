@@ -1,7 +1,7 @@
 //! The user's writes. One block per command, in the order it runs: the struct, its
 //! access, its payload types, what `Prepare` builds, what `Persist` writes.
 
-use super::{UserUseCases, wrong_current_password, wrong_password};
+use super::{UserSession, UserUseCases, session_not_found, wrong_current_password, wrong_password};
 use crate::application::actions::user_only;
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -295,6 +295,64 @@ impl Run<Persist<RevokeUserSessions>> for UserUseCases {
         let id = input.command().id.clone();
         input
             .commit(async |keep| self.accounts.revoke_sessions(&id, keep.as_ref()).await)
+            .await
+    }
+}
+
+/// Revokes one session of the user. The session of the call can be revoked: the caller is then
+/// signed out. An unknown id, a session of another user and an expired session give the same
+/// `NotFound`.
+#[derive(Debug)]
+pub struct RevokeUserSession {
+    pub id: UserId,
+    pub session_id: SessionId,
+}
+
+impl Describe for RevokeUserSession {
+    fn access(&self) -> Access {
+        Access::Requires(Permission::UpdateUser(self.id.clone()))
+    }
+}
+
+impl Command for RevokeUserSession {
+    type Staged = UserSession;
+    type Committed = Deleted<UserSession>;
+}
+
+#[async_trait]
+impl Run<Prepare<RevokeUserSession>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Authorized<RevokeUserSession>,
+    ) -> DomainResult<Prepared<RevokeUserSession>> {
+        let cmd = input.command();
+        let session = self
+            .accounts
+            .list_sessions(&cmd.id)
+            .await?
+            .into_iter()
+            .find(|s| s.id == cmd.session_id)
+            .ok_or_else(|| session_not_found(&cmd.session_id))?;
+        Ok(input.prepared(session))
+    }
+}
+
+/// A session that a concurrent call revoked, or that expired since `Prepare`, gives `NotFound`.
+#[async_trait]
+impl Run<Persist<RevokeUserSession>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Prepared<RevokeUserSession>,
+    ) -> DomainResult<Committed<RevokeUserSession>> {
+        let id = input.command().id.clone();
+        input
+            .commit(async |session| {
+                if self.accounts.revoke_session(&id, &session.id).await? {
+                    Ok(Deleted::new(session))
+                } else {
+                    Err(session_not_found(&session.id))
+                }
+            })
             .await
     }
 }

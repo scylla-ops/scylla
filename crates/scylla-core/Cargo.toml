@@ -63,8 +63,9 @@ futures-core.workspace = true
 # grpc
 # `tls-connect-info` is what gives us `impl Connected for TlsStream<TcpStream>`,
 # the bound `serve_with_incoming_shutdown` needs to accept our own rustls
-# acceptor (src/tls.rs).
-tonic = { workspace = true, features = ["tls-connect-info"] }
+# acceptor (src/tls.rs). `tls-ring` lets `Request::remote_addr` read the peer
+# address of such a stream too (src/grpc/client.rs); it adds no crate.
+tonic = { workspace = true, features = ["tls-connect-info", "tls-ring"] }
 tokio-rustls.workspace = true
 tonic-async-interceptor.workspace = true
 scylla-proto.workspace = true

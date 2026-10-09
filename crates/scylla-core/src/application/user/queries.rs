@@ -1,11 +1,11 @@
 //! The user's reads. One block per query, in the order it runs: the struct, its
 //! access, its output type, what `Fetch` reads.
 
-use super::{UserAccess, UserUseCases};
+use super::{UserAccess, UserSession, UserUseCases};
 use crate::application::actions::user_only;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::UserId;
+use crate::domain::ids::{SessionId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::user::{Email, User, Username};
 use async_trait::async_trait;
@@ -165,5 +165,38 @@ impl Run<Fetch<ListUserAccess>> for UserUseCases {
         self.user_repo.find_by_id(id).await?;
         let access = self.accounts.list_access(id).await?;
         Ok(input.fetched(access))
+    }
+}
+
+/// `session` is the session of the call: the output marks it `current`.
+#[derive(Debug)]
+pub struct ListUserSessions {
+    pub id: UserId,
+    pub session: Option<SessionId>,
+}
+
+impl Describe for ListUserSessions {
+    fn access(&self) -> Access {
+        Access::Requires(Permission::ReadUser(self.id.clone()))
+    }
+}
+
+impl Query for ListUserSessions {
+    type Output = Vec<UserSession>;
+}
+
+#[async_trait]
+impl Run<Fetch<ListUserSessions>> for UserUseCases {
+    async fn run(
+        &self,
+        input: Authorized<ListUserSessions>,
+    ) -> DomainResult<Fetched<ListUserSessions>> {
+        let cmd = input.command();
+        self.user_repo.find_by_id(&cmd.id).await?;
+        let mut sessions = self.accounts.list_sessions(&cmd.id).await?;
+        for session in &mut sessions {
+            session.current = cmd.session.as_ref() == Some(&session.id);
+        }
+        Ok(input.fetched(sessions))
     }
 }

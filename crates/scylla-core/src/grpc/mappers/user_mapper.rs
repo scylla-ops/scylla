@@ -1,7 +1,8 @@
 use crate::application::user::{
     ChangePassword, CreateUser, DeleteAccount, DeleteUser, GetMe, GetUser, ListUserAccess,
-    ListUsers, PasswordResetDelivery, RevokeUserSessions, SetUserActive, UpdateUser, UserAccess,
-    reset::SendPasswordReset, wrong_current_password, wrong_password,
+    ListUserSessions, ListUsers, PasswordResetDelivery, RevokeUserSession, RevokeUserSessions,
+    SetUserActive, UpdateUser, UserAccess, UserSession, reset::SendPasswordReset,
+    wrong_current_password, wrong_password,
 };
 use crate::grpc::convert::{
     Parse, ParseInSession, id, optional, required, scope_ref_to_proto, ts, valid, wrap,
@@ -14,9 +15,11 @@ use scylla_proto::auth::v1::PasswordResetDelivery as ProtoDelivery;
 use scylla_proto::common::v1 as common;
 use scylla_proto::user::v1::{
     ChangePasswordRequest, CreateUserRequest, DeleteAccountRequest, DeleteUserRequest,
-    GetMeRequest, GetUserRequest, ListUserAccessRequest, ListUserAccessResponse, ListUsersRequest,
-    ListUsersResponse, RevokeUserSessionsRequest, SendPasswordResetRequest, SetUserActiveRequest,
-    UpdateUserRequest, User as ProtoUser, UserAccess as ProtoUserAccess,
+    GetMeRequest, GetUserRequest, ListUserAccessRequest, ListUserAccessResponse,
+    ListUserSessionsRequest, ListUserSessionsResponse, ListUsersRequest, ListUsersResponse,
+    RevokeUserSessionRequest, RevokeUserSessionsRequest, SendPasswordResetRequest,
+    SetUserActiveRequest, UpdateUserRequest, User as ProtoUser, UserAccess as ProtoUserAccess,
+    UserSession as ProtoUserSession,
 };
 use tonic::Status;
 
@@ -54,6 +57,23 @@ pub fn user_access_to_proto(access: &UserAccess) -> ProtoUserAccess {
             .unwrap_or_default(),
         role_id: wrap(access.role.to_string()),
         role_name: access.role_name.to_string(),
+    }
+}
+
+/// No field holds the token.
+pub fn user_session_to_proto(session: &UserSession) -> ProtoUserSession {
+    ProtoUserSession {
+        session_id: wrap(session.id.to_string()),
+        created_at: ts(session.created_at),
+        last_active_at: ts(session.last_active_at),
+        expires_at: ts(session.expires_at),
+        user_agent: session.client.user_agent().unwrap_or_default().to_owned(),
+        ip_address: session
+            .client
+            .ip_address()
+            .map(|ip| ip.to_string())
+            .unwrap_or_default(),
+        current: session.current,
     }
 }
 
@@ -159,6 +179,25 @@ pub fn user_access_response(access: &[UserAccess]) -> ListUserAccessResponse {
     }
 }
 
+impl ParseInSession for ListUserSessionsRequest {
+    type Into = ListUserSessions;
+
+    fn parse_in_session(self, session: Option<SessionId>) -> Result<ListUserSessions, Status> {
+        Ok(ListUserSessions {
+            id: id(self.user_id, "user_id")?,
+            session,
+        })
+    }
+}
+
+pub fn user_sessions_response(sessions: &[UserSession]) -> ListUserSessionsResponse {
+    ListUserSessionsResponse {
+        sessions: sessions.iter().map(user_session_to_proto).collect(),
+    }
+}
+
+parse!(RevokeUserSessionRequest => RevokeUserSession { id: id(user_id), session_id: id(session_id) });
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -168,6 +207,7 @@ mod tests {
     use scylla_domain::domain::organization::OrganizationName;
     use scylla_domain::domain::project::ProjectName;
     use scylla_domain::domain::role::{RoleDisplayName, RoleName};
+    use scylla_domain::domain::session::SessionClient;
     use scylla_domain::domain::user::PasswordHash;
     use tonic::Code;
 
@@ -399,6 +439,65 @@ mod tests {
         assert!(system.organization_id.is_none());
         assert!(system.organization_name.is_empty());
         assert!(system.project_name.is_empty());
+    }
+
+    #[test]
+    fn a_session_row_shows_its_client_and_no_token() {
+        let now = chrono::Utc::now();
+        let session = UserSession {
+            id: SessionId::new("s1"),
+            created_at: now,
+            last_active_at: now,
+            expires_at: now + chrono::Duration::hours(1),
+            client: SessionClient::new(Some("Firefox/131.0"), Some("2001:db8::1")),
+            current: true,
+        };
+
+        let proto = user_session_to_proto(&session);
+        assert_eq!(proto.session_id.unwrap().value, "s1");
+        assert_eq!(proto.user_agent, "Firefox/131.0");
+        assert_eq!(proto.ip_address, "2001:db8::1");
+        assert!(proto.current);
+        assert_eq!(proto.expires_at, ts(session.expires_at));
+
+        let unknown = user_session_to_proto(&UserSession {
+            client: SessionClient::default(),
+            current: false,
+            ..session
+        });
+        assert!(unknown.user_agent.is_empty());
+        assert!(unknown.ip_address.is_empty());
+        assert!(!unknown.current);
+    }
+
+    #[test]
+    fn a_session_list_names_the_session_of_the_call_and_a_revoke_needs_both_ids() {
+        let session = SessionId::new("s1");
+        let command = ListUserSessionsRequest {
+            user_id: wrap("user-1"),
+        }
+        .parse_in_session(Some(session.clone()))
+        .unwrap();
+        assert_eq!(command.id.as_str(), "user-1");
+        assert_eq!(command.session, Some(session));
+
+        let command = RevokeUserSessionRequest {
+            user_id: wrap("user-1"),
+            session_id: wrap("s2"),
+        }
+        .parse()
+        .unwrap();
+        assert_eq!(command.id.as_str(), "user-1");
+        assert_eq!(command.session_id.as_str(), "s2");
+
+        let err = RevokeUserSessionRequest {
+            user_id: wrap("user-1"),
+            session_id: None,
+        }
+        .parse()
+        .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "missing session_id");
     }
 
     #[test]

@@ -1,6 +1,9 @@
 use super::PgAccountRepository;
+use crate::domain::clock;
 use crate::domain::errors::DomainError;
+use crate::domain::ids::{SessionId, UserId};
 use crate::domain::role::RoleName;
+use crate::domain::session::{Session, SessionClient};
 use crate::domain::user::{
     DisplayName, PasswordHash, PasswordReset, RESET_LINK_INVALID, ResetToken, User,
 };
@@ -275,6 +278,141 @@ async fn a_revoke_counts_the_sessions_and_spares_one(pool: PgPool) {
     );
 }
 
+async fn stored_session(
+    pool: &PgPool,
+    user: &User,
+    active: Duration,
+    expires: Duration,
+    client: SessionClient,
+) -> Session {
+    let now = clock::now();
+    let session = SessionBuilder::new(user.id())
+        .created_at(now - active - Duration::minutes(1))
+        .last_active_at(now - active)
+        .expires_at(now + expires)
+        .client(client)
+        .build();
+    PgSessionRepository::new(pool.clone())
+        .create(&session)
+        .await
+        .unwrap();
+    session
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn the_live_sessions_of_a_user_come_most_recently_active_first(pool: PgPool) {
+    let kevin = seed_user(&pool, "kevin").await;
+    let carol = seed_user(&pool, "carol").await;
+    let hour = Duration::hours(1);
+    let browser = SessionClient::new(Some("Firefox/131.0"), Some("203.0.113.7"));
+    let old = stored_session(&pool, &kevin, hour, hour, SessionClient::default()).await;
+    let new = stored_session(&pool, &kevin, Duration::zero(), hour, browser.clone()).await;
+    let mid = stored_session(
+        &pool,
+        &kevin,
+        Duration::minutes(10),
+        hour,
+        SessionClient::default(),
+    )
+    .await;
+    stored_session(
+        &pool,
+        &kevin,
+        hour * 2,
+        -Duration::minutes(1),
+        SessionClient::default(),
+    )
+    .await;
+    stored_session(
+        &pool,
+        &carol,
+        Duration::zero(),
+        hour,
+        SessionClient::default(),
+    )
+    .await;
+    let repo = PgAccountRepository::new(pool.clone());
+
+    let sessions = repo.list_sessions(kevin.id()).await.unwrap();
+
+    let ids: Vec<_> = sessions.iter().map(|s| s.id.clone()).collect();
+    assert_eq!(
+        ids,
+        vec![new.id().clone(), mid.id().clone(), old.id().clone()]
+    );
+    assert_eq!(sessions[0].client, browser);
+    assert_eq!(sessions[0].created_at, new.created_at());
+    assert_eq!(sessions[0].last_active_at, new.last_active_at());
+    assert_eq!(sessions[0].expires_at, new.expires_at());
+    assert_eq!(sessions[2].client, SessionClient::default());
+    assert!(sessions.iter().all(|s| !s.current));
+    assert!(
+        repo.list_sessions(&UserId::new("ghost"))
+            .await
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_single_revoke_deletes_only_a_live_session_of_the_user(pool: PgPool) {
+    let kevin = seed_user(&pool, "kevin").await;
+    let carol = seed_user(&pool, "carol").await;
+    let hour = Duration::hours(1);
+    let live = stored_session(
+        &pool,
+        &kevin,
+        Duration::zero(),
+        hour,
+        SessionClient::default(),
+    )
+    .await;
+    let other = stored_session(
+        &pool,
+        &kevin,
+        Duration::zero(),
+        hour,
+        SessionClient::default(),
+    )
+    .await;
+    let expired = stored_session(
+        &pool,
+        &kevin,
+        hour * 2,
+        -Duration::minutes(1),
+        SessionClient::default(),
+    )
+    .await;
+    let carols = stored_session(
+        &pool,
+        &carol,
+        Duration::zero(),
+        hour,
+        SessionClient::default(),
+    )
+    .await;
+    let repo = PgAccountRepository::new(pool.clone());
+
+    assert!(!repo.revoke_session(kevin.id(), carols.id()).await.unwrap());
+    assert!(!repo.revoke_session(kevin.id(), expired.id()).await.unwrap());
+    assert!(
+        !repo
+            .revoke_session(kevin.id(), &SessionId::new("unknown"))
+            .await
+            .unwrap()
+    );
+    assert!(repo.revoke_session(kevin.id(), live.id()).await.unwrap());
+    assert!(!repo.revoke_session(kevin.id(), live.id()).await.unwrap());
+
+    let mut left = vec![other.id().to_string(), expired.id().to_string()];
+    left.sort();
+    assert_eq!(sessions_of(&pool, &kevin).await, left);
+    assert_eq!(
+        sessions_of(&pool, &carol).await,
+        vec![carols.id().to_string()]
+    );
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_deleted_user_takes_its_links_along(pool: PgPool) {
     let kevin = seed_user(&pool, "kevin").await;
@@ -475,6 +613,7 @@ mod flows {
                 Login {
                     identifier: "kevin".into(),
                     password: Password::new(password).unwrap(),
+                    client: SessionClient::default(),
                 },
             )
         };

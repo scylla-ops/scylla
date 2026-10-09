@@ -3,9 +3,10 @@ use crate::domain::ids::{OrganizationId, SessionId, UserId};
 use crate::domain::organization::OrganizationName;
 use crate::domain::project::ProjectName;
 use crate::domain::role::{RoleDisplayName, RoleName};
+use crate::domain::session::SessionClient;
 use crate::domain::user::{PasswordReset, ResetToken, User};
 use async_trait::async_trait;
-use chrono::Duration;
+use chrono::{DateTime, Duration, Utc};
 use scylla_auth::authz::Scope;
 
 /// One grant of a user, with the names to show it.
@@ -19,6 +20,18 @@ pub struct UserAccess {
     pub project_name: Option<ProjectName>,
     pub role: RoleName,
     pub role_name: RoleDisplayName,
+}
+
+/// One session of a user, without its token. `current` marks the session of the call; the store
+/// leaves it `false`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserSession {
+    pub id: SessionId,
+    pub created_at: DateTime<Utc>,
+    pub last_active_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub client: SessionClient,
+    pub current: bool,
 }
 
 /// What a user signs in with, beyond its row: its sessions, its reset links, and its grants with
@@ -36,6 +49,13 @@ pub trait AccountRepository: Send + Sync {
         user_id: &UserId,
         keep: Option<&SessionId>,
     ) -> DomainResult<u64>;
+
+    /// The sessions of the user that have not expired, the most recently active first.
+    async fn list_sessions(&self, user_id: &UserId) -> DomainResult<Vec<UserSession>>;
+
+    /// Deletes the session when it is a session of the user that has not expired. `false` when
+    /// it deleted nothing.
+    async fn revoke_session(&self, user_id: &UserId, id: &SessionId) -> DomainResult<bool>;
 
     /// Stores the link and deletes the other links of the user. With a `cooldown`, it stores
     /// nothing and returns `false` when the user has a link made within it.

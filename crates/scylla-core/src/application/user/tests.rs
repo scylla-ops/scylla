@@ -8,6 +8,7 @@ use crate::domain::ids::{AppId, OrganizationId, ProjectId, SessionId, UserId};
 use crate::domain::organization::OrganizationName;
 use crate::domain::permission::Permission;
 use crate::domain::role::{RoleDisplayName, RoleName};
+use crate::domain::session::SessionClient;
 use crate::domain::user::{
     DisplayName, Email, Password, PasswordReset, ResetToken, User, Username,
 };
@@ -1053,4 +1054,213 @@ async fn the_access_list_needs_read_user_and_a_known_user() {
         Permission::ReadUser(bob.id().clone())
     );
     assert!(unknown.is_not_found());
+}
+
+fn session_of(age: Duration, expires_in: Duration) -> UserSession {
+    let now = crate::domain::clock::now();
+    UserSession {
+        id: SessionId::generate(),
+        created_at: now - age - Duration::minutes(1),
+        last_active_at: now - age,
+        expires_at: now + expires_in,
+        client: SessionClient::default(),
+        current: false,
+    }
+}
+
+fn put(lab: &Lab, user: &User, session: &UserSession) -> SessionId {
+    lab.accounts.put_session(user.id(), session.clone());
+    session.id.clone()
+}
+
+fn list(user: &User, session: Option<&SessionId>) -> ListUserSessions {
+    ListUserSessions {
+        id: user.id().clone(),
+        session: session.cloned(),
+    }
+}
+
+fn revoke_one(user: &User, session: &SessionId) -> RevokeUserSession {
+    RevokeUserSession {
+        id: user.id().clone(),
+        session_id: session.clone(),
+    }
+}
+
+#[tokio::test]
+async fn a_list_shows_the_live_sessions_most_recently_active_first_and_marks_the_current_one() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(permissions.clone());
+    let bob = signed_in("bob");
+    let carol = signed_in("carol");
+    lab.users.insert(bob.clone());
+    lab.users.insert(carol.clone());
+    let hour = Duration::hours(1);
+    let old = put(&lab, &bob, &session_of(Duration::hours(2), hour));
+    let new = put(&lab, &bob, &session_of(Duration::minutes(1), hour));
+    let this = put(&lab, &bob, &session_of(Duration::minutes(30), hour));
+    put(
+        &lab,
+        &bob,
+        &session_of(Duration::hours(3), -Duration::minutes(1)),
+    );
+    put(&lab, &carol, &session_of(Duration::zero(), hour));
+
+    let sessions = lab
+        .actions
+        .run(&lab.uc, &caller(&bob), list(&bob, Some(&this)))
+        .await
+        .unwrap();
+
+    let ids: Vec<_> = sessions.iter().map(|s| s.id.clone()).collect();
+    assert_eq!(ids, vec![new, this.clone(), old]);
+    let current: Vec<_> = sessions
+        .iter()
+        .filter(|s| s.current)
+        .map(|s| &s.id)
+        .collect();
+    assert_eq!(current, vec![&this]);
+    assert_eq!(
+        permissions.permissions(),
+        vec![Permission::ReadUser(bob.id().clone())]
+    );
+}
+
+#[tokio::test]
+async fn the_sessions_of_another_user_need_the_read_permission() {
+    let bob = signed_in("bob");
+    let carol = signed_in("carol");
+    let refused = lab(Arc::new(Refusing(vec![Permission::ReadUser(
+        bob.id().clone(),
+    )])));
+    let allowed = lab(Arc::new(Refusing(Vec::new())));
+    for lab in [&refused, &allowed] {
+        lab.users.insert(bob.clone());
+        lab.users.insert(carol.clone());
+        put(lab, &bob, &session_of(Duration::zero(), Duration::hours(1)));
+    }
+    let carols = allowed.accounts.open_session(carol.id());
+
+    let err = refused
+        .actions
+        .run(&refused.uc, &caller(&carol), list(&bob, None))
+        .await
+        .unwrap_err();
+    let seen = allowed
+        .actions
+        .run(&allowed.uc, &caller(&carol), list(&bob, Some(&carols)))
+        .await
+        .unwrap();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert_eq!(seen.len(), 1);
+    assert!(!seen[0].current);
+}
+
+#[tokio::test]
+async fn a_session_list_for_an_unknown_user_is_not_found() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+
+    let err = lab
+        .actions
+        .run(&lab.uc, &alice(), list(&user("ghost"), None))
+        .await
+        .unwrap_err();
+
+    assert!(err.is_not_found());
+}
+
+#[tokio::test]
+async fn a_user_revokes_one_of_its_sessions_and_can_revoke_the_session_of_the_call() {
+    let permissions = Arc::new(RecordingPermissionService::new());
+    let lab = lab(permissions.clone());
+    let bob = signed_in("bob");
+    lab.users.insert(bob.clone());
+    let this = lab.accounts.open_session(bob.id());
+    let other = lab.accounts.open_session(bob.id());
+
+    let revoked = lab
+        .actions
+        .run(&lab.uc, &caller(&bob), revoke_one(&bob, &other))
+        .await
+        .unwrap();
+    assert_eq!(revoked.last_state().id, other);
+    assert_eq!(lab.accounts.sessions(bob.id()), vec![this.clone()]);
+
+    lab.actions
+        .run(&lab.uc, &caller(&bob), revoke_one(&bob, &this))
+        .await
+        .unwrap();
+    assert!(lab.accounts.sessions(bob.id()).is_empty());
+    assert_eq!(
+        permissions.permissions(),
+        vec![
+            Permission::UpdateUser(bob.id().clone()),
+            Permission::UpdateUser(bob.id().clone())
+        ]
+    );
+}
+
+#[tokio::test]
+async fn a_session_of_another_user_needs_the_update_permission() {
+    let bob = signed_in("bob");
+    let carol = signed_in("carol");
+    let refused = lab(Arc::new(Refusing(vec![Permission::UpdateUser(
+        bob.id().clone(),
+    )])));
+    let allowed = lab(Arc::new(Refusing(Vec::new())));
+    let mut ids = Vec::new();
+    for lab in [&refused, &allowed] {
+        lab.users.insert(bob.clone());
+        lab.users.insert(carol.clone());
+        ids.push(lab.accounts.open_session(bob.id()));
+    }
+
+    let err = refused
+        .actions
+        .run(&refused.uc, &caller(&carol), revoke_one(&bob, &ids[0]))
+        .await
+        .unwrap_err();
+    allowed
+        .actions
+        .run(&allowed.uc, &caller(&carol), revoke_one(&bob, &ids[1]))
+        .await
+        .unwrap();
+
+    assert!(matches!(err, DomainError::Forbidden(_)));
+    assert_eq!(refused.accounts.sessions(bob.id()), vec![ids[0].clone()]);
+    assert!(allowed.accounts.sessions(bob.id()).is_empty());
+}
+
+#[tokio::test]
+async fn a_session_that_is_not_a_live_session_of_the_user_gives_one_not_found() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let bob = signed_in("bob");
+    let carol = signed_in("carol");
+    lab.users.insert(bob.clone());
+    lab.users.insert(carol.clone());
+    let bobs = lab.accounts.open_session(bob.id());
+    let expired = put(
+        &lab,
+        &carol,
+        &session_of(Duration::hours(2), -Duration::minutes(1)),
+    );
+
+    for (owner, id) in [
+        (&carol, bobs.clone()),
+        (&carol, expired.clone()),
+        (&carol, SessionId::new("unknown")),
+        (&user("ghost"), bobs.clone()),
+    ] {
+        let err = lab
+            .actions
+            .run(&lab.uc, &caller(&carol), revoke_one(owner, &id))
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(&err, DomainError::NotFound(m) if m == &format!("Session '{id}' not found"))
+        );
+    }
+    assert_eq!(lab.accounts.sessions(bob.id()), vec![bobs]);
+    assert_eq!(lab.accounts.sessions(carol.id()), vec![expired]);
 }

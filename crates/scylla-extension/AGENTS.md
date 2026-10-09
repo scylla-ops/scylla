@@ -207,6 +207,11 @@ An action that must keep the session of the call open (`ChangePassword`,
 `RevokeUserSessions`) uses `grpc::adapter::run_in_session`: its request
 implements `grpc::convert::ParseInSession`, which also gets the session that
 the interceptor found (`caller_session`).
+An action that opens a session (`Login`) uses
+`grpc::adapter::run_public_with_client`: its request implements
+`grpc::convert::ParseWithClient`, which also gets the client of the call
+(`grpc::session_client(&request, trust_forwarded_headers)`: the user agent and
+the IP address).
 A service without the interceptor (sign-in, the app token exchange) uses
 `grpc::adapter::run_public`: the same
 steps, with `Anonymous` as the caller, so only a `Public` action passes. An
@@ -571,12 +576,16 @@ that gives `Stale`: a report of the agent came first.
   itself (the password, the app secret, the webhook signature) is in
   `Prepare`, before the write. The `Debug` rule
   of a command with a secret is in "Adding a command or a query".
-- `Login` stages its session with `auth::new_session`. It verifies the
+- `Login` stages its session with `auth::new_session` and attaches the client
+  of the call with `Session::with_client`. It verifies the
   password before it reads `is_active`. An unknown account and a wrong
   password give the same `Unauthorized("Invalid credentials")`. Only a caller
   with the right password gets "User account is inactive".
 - The Enterprise sign-up extension uses `new_session`, `signup::NewAccount`
-  and `SignupRepository`. The Community Edition does not use `NewAccount` and
+  and `SignupRepository`. Its handler can record the client of the call as
+  `Login` does: `new_session(id).with_client(session_client(&request,
+  ctx.trust_forwarded_headers))`, where `ctx` is the `scylla_server::Feature`
+  `Context`. The Community Edition does not use `NewAccount` and
   `SignupRepository`, but they stay public for that extension. Its `commit`
   closure writes the account, then stores the session. `NewAccount::new`
   makes an account with its own organization, which `provision_account`
@@ -604,6 +613,16 @@ that gives `Stale`: a report of the agent came first.
   of the Cedar policies does not let a user change its own email.
   `SetUserActive` and `RevokeUserSessions` ask for `UpdateUser` on the user;
   `SetUserActive` refuses the caller's own id in `Prepare`.
+- `ListUserSessions` asks for `ReadUser` on the user and `RevokeUserSession`
+  for `UpdateUser`; the self rule of the Cedar policies gives both to the user
+  for its own account. Both read the sessions through `AccountRepository`
+  (`list_sessions`, `revoke_session`), as `UserSession` rows without the token.
+  `ListUserSessions` is a `ParseInSession` request: its `Fetch` marks the
+  session of the call `current`. `RevokeUserSession` stages the session that
+  `Prepare` found among the live sessions of the user, and its `Committed` is
+  `Deleted<UserSession>`. An unknown id, a session of another user and an
+  expired session give one `NotFound`, in `Prepare` or, after a concurrent
+  revoke, in the write. It does not spare the session of the call.
 - `ValidateToken` is a query, and its `Fetch` only reads: an expired
   session gives `false` and stays in the store. A failed read also gives
   `false`. `PurgeExpiredSessions` deletes the expired sessions: it is a pass
@@ -614,10 +633,16 @@ that gives `Stale`: a report of the agent came first.
   `Validation`. Every other failure becomes `Internal`. Thus the route answers
   404, 401, 422 or 500.
 - The `AuthInterceptor` stays outside the pipeline. It is not an action: it
-  makes the caller that the actions get. It only reads. It and
+  makes the caller that the actions get. It and
   `ValidateToken` use the same session rule, `auth::look_up_session`. A
   failed read is `INTERNAL` in the interceptor and `false` in
-  `ValidateToken`. The interceptor also accepts an app token.
+  `ValidateToken`. The interceptor also accepts an app token. Its only write
+  is `auth::record_activity`: for a live session whose `last_active_at` is
+  `session::ACTIVITY_INTERVAL` (five minutes) old or older, one conditional
+  `SessionRepository::touch`. A failed write is a WARN, not an error of the
+  call. `ValidateToken` does not move the activity. The default `touch` of the
+  trait refuses with `Internal`, so a store that existed before it still
+  compiles; `PgSessionRepository` writes.
 - The agent stream sends each write through `Actions`, as the agent's own
   token: `RecordJobStatus` for each status and `AppendJobLogs` for each batch
   of lines (the `WriteJobStatus` and `AppendJobLog` checks are the authorize
@@ -833,7 +858,8 @@ that gives `Stale`: a report of the agent came first.
   service authorizes through `Actions::run`, as the core does, so its
   actions go through the hooks. `permissions` stays in the `Context` until
   the Enterprise features use `actions`; `visibility` serves a scope in a
-  `Fetch`.
+  `Fetch`. `trust_forwarded_headers` is `[server].trust_forwarded_headers`,
+  for `session_client`.
 - No use case rebuilds the Cedar policy set. A database trigger increases
   `authz_version` on each change to `grants`, `roles` or `role_permissions`,
   and each check rebuilds the set when the version changed. A write that

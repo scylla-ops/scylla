@@ -3,7 +3,8 @@
 //! and a `DomainError` becomes a `Status`. A handler body is this call and the response.
 
 use crate::domain::caller::CallerContext;
-use crate::grpc::convert::{Parse, ParseInSession};
+use crate::grpc::client::session_client;
+use crate::grpc::convert::{Parse, ParseInSession, ParseWithClient};
 use crate::grpc::mappers::domain_error_to_status;
 use crate::grpc::middleware::{caller_session, extract_auth_context};
 use scylla_extension::{Actions, Kind, Path};
@@ -62,6 +63,27 @@ where
         request.into_inner(),
     )
     .await
+}
+
+/// `run_public` for an action that opens a session: the action also gets the client of the call
+/// (`session_client`).
+pub async fn run_public_with_client<Req, K, R>(
+    actions: &Actions,
+    runner: &R,
+    request: Request<Req>,
+    trust_forwarded_headers: bool,
+) -> Result<<Req::Into as Path<K, R>>::Output, Status>
+where
+    Req: ParseWithClient,
+    Req::Into: Path<K, R>,
+    K: Kind,
+{
+    let client = session_client(&request, trust_forwarded_headers);
+    let action = request.into_inner().parse_with_client(client)?;
+    actions
+        .run(runner, &CallerContext::Anonymous, action)
+        .await
+        .map_err(domain_error_to_status)
 }
 
 async fn send<Req, K, R>(

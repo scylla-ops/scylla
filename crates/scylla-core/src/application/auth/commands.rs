@@ -4,18 +4,20 @@
 use super::{AuthUseCases, new_session};
 use crate::application::actions::service_only;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::session::Session;
+use crate::domain::session::{Session, SessionClient};
 use crate::domain::user::{Email, Password, Username};
 use async_trait::async_trait;
 use scylla_extension::{
     Access, Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
 
-/// `identifier` is a username or an email.
+/// `identifier` is a username or an email. `client` is the client of the call: the new session
+/// records it.
 #[derive(Debug)]
 pub struct Login {
     pub identifier: String,
     pub password: Password,
+    pub client: SessionClient,
 }
 
 impl Describe for Login {
@@ -55,7 +57,7 @@ impl Run<Prepare<Login>> for AuthUseCases {
         if !user.is_active() {
             return Err(DomainError::unauthorized("User account is inactive"));
         }
-        let session = new_session(user.id().clone());
+        let session = new_session(user.id().clone()).with_client(cmd.client.clone());
         Ok(input.prepared(Draft::new(session)))
     }
 }

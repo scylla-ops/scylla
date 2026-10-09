@@ -1,7 +1,7 @@
 //! The reset links through the engine, on stub ports.
 
 use super::*;
-use crate::application::UserAccess;
+use crate::application::{UserAccess, UserSession};
 use crate::domain::caller::CallerContext;
 use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -112,6 +112,12 @@ impl AccountRepository for Store {
         keep: Option<&SessionId>,
     ) -> DomainResult<u64> {
         self.inner.revoke_sessions(user_id, keep).await
+    }
+    async fn list_sessions(&self, user_id: &UserId) -> DomainResult<Vec<UserSession>> {
+        self.inner.list_sessions(user_id).await
+    }
+    async fn revoke_session(&self, user_id: &UserId, id: &SessionId) -> DomainResult<bool> {
+        self.inner.revoke_session(user_id, id).await
     }
     async fn issue_reset(
         &self,

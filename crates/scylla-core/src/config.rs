@@ -93,6 +93,12 @@ pub struct ServerConfig {
     /// `https://scylla.example.com`. A reset link starts with it; without it the link is relative.
     #[serde(default)]
     pub public_url: Option<String>,
+
+    /// Set it to `true` only behind a reverse proxy that sets `x-forwarded-for` or `x-real-ip`
+    /// and replaces the values that a client sends: a client can write these headers. A new
+    /// session then records the IP address from them, not the address of the proxy.
+    #[serde(default)]
+    pub trust_forwarded_headers: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -202,6 +208,7 @@ impl Default for ServerConfig {
             address: SocketAddr::from(([127, 0, 0, 1], 8080)),
             tls: None,
             public_url: None,
+            trust_forwarded_headers: false,
         }
     }
 }
@@ -318,6 +325,29 @@ mod tests {
         )
         .unwrap();
         assert_eq!(config.bootstrap.unwrap().email, "admin@example.com");
+    }
+
+    #[test]
+    fn the_server_trusts_the_forwarded_headers_only_when_told() {
+        let config: ControlPlaneConfig = toml::from_str(
+            r#"
+            [server]
+            address = "0.0.0.0:8080"
+            "#,
+        )
+        .unwrap();
+        assert!(!config.server.trust_forwarded_headers);
+        assert!(!ControlPlaneConfig::default().server.trust_forwarded_headers);
+
+        let config: ControlPlaneConfig = toml::from_str(
+            r#"
+            [server]
+            address = "0.0.0.0:8080"
+            trust_forwarded_headers = true
+            "#,
+        )
+        .unwrap();
+        assert!(config.server.trust_forwarded_headers);
     }
 
     #[test]

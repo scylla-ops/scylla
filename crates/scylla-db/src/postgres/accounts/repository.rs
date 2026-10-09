@@ -4,10 +4,11 @@ use crate::domain::ids::{OrganizationId, PasswordResetId, SessionId, UserId};
 use crate::domain::organization::OrganizationName;
 use crate::domain::project::ProjectName;
 use crate::domain::role::{RoleDisplayName, RoleName};
+use crate::domain::session::SessionClient;
 use crate::domain::user::{PasswordReset, ResetToken, User, reset_link_invalid};
 use async_trait::async_trait;
 use chrono::Duration;
-use scylla_core::application::{AccountRepository, UserAccess};
+use scylla_core::application::{AccountRepository, UserAccess, UserSession};
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
@@ -54,6 +55,16 @@ impl AccountRepository for PgAccountRepository {
         keep: Option<&SessionId>,
     ) -> DomainResult<u64> {
         queries::delete_sessions(&self.pool, user_id, keep).await
+    }
+
+    #[instrument(skip_all, fields(user_id = %user_id))]
+    async fn list_sessions(&self, user_id: &UserId) -> DomainResult<Vec<UserSession>> {
+        queries::list_sessions(&self.pool, user_id).await
+    }
+
+    #[instrument(skip_all, fields(user_id = %user_id, session_id = %id))]
+    async fn revoke_session(&self, user_id: &UserId, id: &SessionId) -> DomainResult<bool> {
+        queries::delete_session(&self.pool, user_id, id).await
     }
 
     /// The user row is locked first, so two requests for one user pass the cooldown one at a
@@ -135,6 +146,60 @@ pub mod queries {
         .await
         .to_domain()?;
         Ok(res.rows_affected())
+    }
+
+    pub async fn list_sessions<'e, E>(
+        executor: E,
+        user_id: &UserId,
+    ) -> DomainResult<Vec<UserSession>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, created_at, last_active_at, expires_at, user_agent, ip_address
+            FROM sessions
+            WHERE user_id = $1 AND expires_at >= $2
+            ORDER BY last_active_at DESC, created_at DESC, id DESC
+            "#,
+            user_id.as_str(),
+            clock::now(),
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        Ok(rows
+            .into_iter()
+            .map(|r| UserSession {
+                id: SessionId::new(r.id),
+                created_at: r.created_at,
+                last_active_at: r.last_active_at,
+                expires_at: r.expires_at,
+                client: SessionClient::new(r.user_agent.as_deref(), r.ip_address.as_deref()),
+                current: false,
+            })
+            .collect())
+    }
+
+    /// `false` when the session is not a session of the user that has not expired.
+    pub async fn delete_session<'e, E>(
+        executor: E,
+        user_id: &UserId,
+        id: &SessionId,
+    ) -> DomainResult<bool>
+    where
+        E: PgExecutor<'e>,
+    {
+        let res = sqlx::query!(
+            "DELETE FROM sessions WHERE id = $1 AND user_id = $2 AND expires_at >= $3",
+            id.as_str(),
+            user_id.as_str(),
+            clock::now(),
+        )
+        .execute(executor)
+        .await
+        .to_domain()?;
+        Ok(res.rows_affected() > 0)
     }
 
     pub async fn delete_resets<'e, E>(

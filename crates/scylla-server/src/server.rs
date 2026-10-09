@@ -134,6 +134,7 @@ impl Server {
             actions: services.actions.clone(),
             permissions: services.permission_checker.clone(),
             visibility: services.permission_checker.clone(),
+            trust_forwarded_headers: config.server.trust_forwarded_headers,
         };
         for feature in features {
             feature.install(&ctx, &mut surface);

@@ -168,6 +168,27 @@ key  = "/etc/scylla/tls/privkey.pem"
 Both HTTP/2 and HTTP/1.1 are advertised over ALPN, so browsers, gRPC clients and
 plain HTTP/1.1 webhook senders all connect to the same socket.
 
+## Behind a reverse proxy
+
+Each session records the IP address of the client that signed in. The user
+sees it in the list of its sessions. By default, the server uses the peer
+address of the connection. Behind a reverse proxy, that is the address of the
+proxy. To record the address of the client, set
+`[server].trust_forwarded_headers`:
+
+```toml
+[server]
+address = "0.0.0.0:8080"
+trust_forwarded_headers = true
+```
+
+The server then uses the first entry of `x-forwarded-for`, else `x-real-ip`. A
+call without these headers keeps the peer address. The default is `false`.
+
+Set it to `true` only behind a reverse proxy that sets these headers and
+replaces the values that the client sends. A client can write these headers,
+so without such a proxy a client can record any address.
+
 ## Password reset
 
 A reset link sets a new password. It opens `/reset-password` in the web UI. It

@@ -1,10 +1,12 @@
 pub mod adapter;
+pub mod client;
 pub mod convert;
 mod handlers;
 pub mod mappers;
 pub mod middleware;
 pub mod streaming;
 
+pub use client::session_client;
 pub use handlers::{
     AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
     JobHandler, OrganizationHandler, PipelineHandler, ProjectHandler, RoleHandler, SecretHandler,

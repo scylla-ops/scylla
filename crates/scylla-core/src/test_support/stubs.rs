@@ -6,7 +6,7 @@ use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
     AccountRepository, DispatchUseCases, HashService, JobLogLiveStream, JobLogStreamPort,
     JobRepository, PipelineRepository, ProjectRepository, SecretResolver, SessionRepository,
-    UserAccess, UserRepository,
+    UserAccess, UserRepository, UserSession,
 };
 use crate::domain::app::{AppSecret, AppSecretHash};
 use crate::domain::caller::CallerContext;
@@ -18,7 +18,7 @@ use crate::domain::ids::{
 use crate::domain::job::{Job, JobLog, JobStatus};
 use crate::domain::pipeline::{NodeId, Pipeline, PipelineNode};
 use crate::domain::project::Project;
-use crate::domain::session::Session;
+use crate::domain::session::{ACTIVITY_INTERVAL, Session, SessionClient};
 use crate::domain::user::{
     Email, Password, PasswordHash, PasswordReset, ResetToken, User, Username, reset_link_invalid,
 };
@@ -932,17 +932,20 @@ impl UserRepository for StubUsers {
     }
 }
 
+/// `touch` follows the rule of the store: it writes only when the stored activity is
+/// `ACTIVITY_INTERVAL` old or older, and `touched` records each write.
 #[derive(Default)]
 pub struct StubSessions {
     rows: Mutex<Vec<Session>>,
     deleted: Mutex<Vec<String>>,
+    touched: Mutex<Vec<SessionId>>,
 }
 
 impl StubSessions {
     pub fn with(session: Session) -> Self {
         Self {
             rows: Mutex::new(vec![session]),
-            deleted: Mutex::default(),
+            ..Self::default()
         }
     }
 
@@ -952,6 +955,10 @@ impl StubSessions {
 
     pub fn deleted(&self) -> Vec<String> {
         self.deleted.lock().unwrap().clone()
+    }
+
+    pub fn touched(&self) -> Vec<SessionId> {
+        self.touched.lock().unwrap().clone()
     }
 }
 
@@ -981,13 +988,33 @@ impl SessionRepository for StubSessions {
         rows.retain(|s| !s.is_expired());
         Ok((before - rows.len()) as u64)
     }
+    async fn touch(&self, id: &SessionId, at: DateTime<Utc>) -> DomainResult<bool> {
+        let mut rows = self.rows.lock().unwrap();
+        let Some(row) = rows
+            .iter_mut()
+            .find(|s| s.id() == id && at - s.last_active_at() >= ACTIVITY_INTERVAL)
+        else {
+            return Ok(false);
+        };
+        *row = Session::from_persistence(
+            row.id().clone(),
+            row.token().to_owned(),
+            row.user_id().clone(),
+            row.created_at(),
+            row.expires_at(),
+            at,
+        )
+        .with_client(row.client().clone());
+        self.touched.lock().unwrap().push(id.clone());
+        Ok(true)
+    }
 }
 
 /// The sessions and the reset links of the users of a `StubUsers`, in memory. A write of a user
 /// goes to the `StubUsers`, as the store writes both in one transaction.
 pub struct StubAccounts {
     users: Arc<StubUsers>,
-    sessions: Mutex<Vec<(SessionId, UserId)>>,
+    sessions: Mutex<Vec<(UserId, UserSession)>>,
     resets: Mutex<Vec<PasswordReset>>,
     access: Mutex<Vec<(UserId, UserAccess)>>,
 }
@@ -1002,13 +1029,29 @@ impl StubAccounts {
         }
     }
 
+    /// A session that started now and expires in one hour.
     pub fn open_session(&self, user_id: &UserId) -> SessionId {
+        let now = clock::now();
         let id = SessionId::generate();
+        self.put_session(
+            user_id,
+            UserSession {
+                id: id.clone(),
+                created_at: now,
+                last_active_at: now,
+                expires_at: now + Duration::hours(1),
+                client: SessionClient::default(),
+                current: false,
+            },
+        );
+        id
+    }
+
+    pub fn put_session(&self, user_id: &UserId, session: UserSession) {
         self.sessions
             .lock()
             .unwrap()
-            .push((id.clone(), user_id.clone()));
-        id
+            .push((user_id.clone(), session));
     }
 
     pub fn sessions(&self, user_id: &UserId) -> Vec<SessionId> {
@@ -1016,8 +1059,8 @@ impl StubAccounts {
             .lock()
             .unwrap()
             .iter()
-            .filter(|(_, owner)| owner == user_id)
-            .map(|(id, _)| id.clone())
+            .filter(|(owner, _)| owner == user_id)
+            .map(|(_, session)| session.id.clone())
             .collect()
     }
 
@@ -1042,7 +1085,7 @@ impl StubAccounts {
     fn sign_out(&self, user_id: &UserId, keep: Option<&SessionId>) -> u64 {
         let mut sessions = self.sessions.lock().unwrap();
         let before = sessions.len();
-        sessions.retain(|(id, owner)| owner != user_id || Some(id) == keep);
+        sessions.retain(|(owner, session)| owner != user_id || Some(&session.id) == keep);
         (before - sessions.len()) as u64
     }
 }
@@ -1064,6 +1107,37 @@ impl AccountRepository for StubAccounts {
         keep: Option<&SessionId>,
     ) -> DomainResult<u64> {
         Ok(self.sign_out(user_id, keep))
+    }
+    async fn list_sessions(&self, user_id: &UserId) -> DomainResult<Vec<UserSession>> {
+        let now = clock::now();
+        let mut live: Vec<UserSession> = self
+            .sessions
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|(owner, session)| owner == user_id && session.expires_at >= now)
+            .map(|(_, session)| UserSession {
+                current: false,
+                ..session.clone()
+            })
+            .collect();
+        live.sort_by(|a, b| {
+            (b.last_active_at, b.created_at, b.id.as_str()).cmp(&(
+                a.last_active_at,
+                a.created_at,
+                a.id.as_str(),
+            ))
+        });
+        Ok(live)
+    }
+    async fn revoke_session(&self, user_id: &UserId, id: &SessionId) -> DomainResult<bool> {
+        let now = clock::now();
+        let mut sessions = self.sessions.lock().unwrap();
+        let before = sessions.len();
+        sessions.retain(|(owner, session)| {
+            !(owner == user_id && &session.id == id && session.expires_at >= now)
+        });
+        Ok(sessions.len() < before)
     }
     async fn issue_reset(
         &self,

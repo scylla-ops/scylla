@@ -4,6 +4,7 @@ use prost_types::Timestamp;
 use scylla_auth::authz::{Principal, Scope, ScopeKind};
 use scylla_domain::domain::errors::DomainResult;
 use scylla_domain::domain::ids::{AppId, OrganizationId, ProjectId, SessionId, UserId};
+use scylla_domain::domain::session::SessionClient;
 use scylla_proto::authz::v1::{
     Permission, PrincipalRef, ScopeKind as ProtoScopeKind, ScopeRef, principal_ref, scope_ref,
 };
@@ -38,6 +39,7 @@ impl_wrapper!(
     common::TriggerId,
     common::GrantId,
     common::RoleId,
+    common::SessionId,
     common::Email,
 );
 
@@ -81,6 +83,14 @@ pub trait ParseInSession: Sized {
     type Into;
 
     fn parse_in_session(self, session: Option<SessionId>) -> Result<Self::Into, Status>;
+}
+
+/// `Parse` for a request whose action opens a session: the transport names the client, not the
+/// request.
+pub trait ParseWithClient: Sized {
+    type Into;
+
+    fn parse_with_client(self, client: SessionClient) -> Result<Self::Into, Status>;
 }
 
 #[must_use]

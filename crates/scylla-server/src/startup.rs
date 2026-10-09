@@ -448,7 +448,8 @@ where
         services.actions.clone(),
         services.auth_uc.clone(),
         services.reset_uc.clone(),
-    );
+    )
+    .trust_forwarded_headers(config.server.trust_forwarded_headers);
     let user_handler = UserHandler::new(
         services.actions.clone(),
         services.user_uc.clone(),

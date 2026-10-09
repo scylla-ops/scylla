@@ -56,6 +56,12 @@ An authenticated user session. Carries an opaque `token`, `user_id`, `created_at
 
 These actions revoke the sessions of a user: `UserService.RevokeUserSessions` ("sign out everywhere"), `ChangePassword`, a [reset link](#reset-link), a deactivation (`SetUserActive`) and a deletion. `ChangePassword` and `RevokeUserSessions` on the caller's own account keep the session of the call open. The interceptor gives that session to the handler (`CallerSession`).
 
+A session also carries its client (`SessionClient`): the user agent and the IP address of the `Login` call that opened it. Both are optional. The server trims the user agent, removes its control characters and keeps at most 512 characters. It keeps an IP address only when the value parses as an IP address. The IP address is the peer address of the connection. When `[server].trust_forwarded_headers` is `true`, it is the first entry of `x-forwarded-for`, else `x-real-ip`, else the peer address. A session that the server opened before it recorded the client has no client. `scylla_core::grpc::session_client` reads the client from a request.
+
+The five-minute rule: a call with a session moves its `last_active_at`, at most one time in five minutes (`session::ACTIVITY_INTERVAL`). The interceptor writes only when the stored value is five minutes old or older, with one conditional `UPDATE`. Thus most calls write nothing, and `last_active_at` can be up to five minutes old. If the write fails, the interceptor logs a WARN and the call continues.
+
+`UserService.ListUserSessions` shows the sessions of a user that have not expired, the most recently active first, without the tokens. `current` marks the session of the call. `UserService.RevokeUserSession` revokes one session. It gives `NOT_FOUND` for an unknown id, a session of another user and an expired session, with the same message. The caller can revoke the session of the call: the caller is then signed out. The list asks for `readUser` on the user, the revoke for `updateUser`; the self rule of the Cedar policies gives both to the user for its own account.
+
 ### User
 A user account. A user is related to the tenancy tree only through **grants**: holding a role on a scope is what puts them there, so "who is in this organization" and "what may they do" are the same rows (see [Authorization](#authorization) and `docs/src/access-model.md`).
 
@@ -265,7 +271,7 @@ Rust gRPC server/client framework used by all backend services.
 Protobuf code generator used by Tonic. Converts `.proto` → Rust structs.
 
 ### Auth interceptor
-Async Tonic interceptor (`crates/scylla-core/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal: a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions. For a user session, it also attaches `CallerSession`, the id of that session. `caller_session(&request)` reads it.
+Async Tonic interceptor (`crates/scylla-core/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal: a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions. For a user session, it also attaches `CallerSession`, the id of that session. `caller_session(&request)` reads it. For a user session, it also applies the five-minute rule of the [session](#session) (`auth::record_activity`): this is the only write of the interceptor.
 
 ## Identifiers
 

@@ -2,7 +2,8 @@
 
 use crate::application::auth::{Login, RevokeToken, ValidateToken};
 use crate::application::user::reset::{RequestPasswordReset, ResetPassword};
-use crate::grpc::convert::{Parse, required, valid};
+use crate::grpc::convert::{Parse, ParseWithClient, required, valid};
+use scylla_domain::domain::session::SessionClient;
 use scylla_domain::domain::user::{Email, Password, ResetToken};
 use scylla_proto::auth::v1::{
     LoginRequest, RequestPasswordResetRequest, ResetPasswordRequest, RevokeTokenRequest,
@@ -10,13 +11,14 @@ use scylla_proto::auth::v1::{
 };
 use tonic::Status;
 
-impl Parse for LoginRequest {
+impl ParseWithClient for LoginRequest {
     type Into = Login;
 
-    fn parse(self) -> Result<Login, Status> {
+    fn parse_with_client(self, client: SessionClient) -> Result<Login, Status> {
         Ok(Login {
             identifier: self.identifier,
             password: valid(self.password, Password::new)?,
+            client,
         })
     }
 }
@@ -118,15 +120,17 @@ mod tests {
     }
 
     #[test]
-    fn a_login_request_keeps_the_identifier() {
+    fn a_login_request_keeps_the_identifier_and_the_client() {
+        let client = SessionClient::new(Some("curl/8.0"), Some("192.0.2.1"));
         let command = LoginRequest {
             identifier: "kevin@example.com".into(),
             password: "SecurePass123!".into(),
         }
-        .parse()
+        .parse_with_client(client.clone())
         .unwrap();
 
         assert_eq!(command.identifier, "kevin@example.com");
+        assert_eq!(command.client, client);
     }
 
     #[test]
@@ -135,7 +139,7 @@ mod tests {
             identifier: "kevin".into(),
             password: String::new(),
         }
-        .parse() else {
+        .parse_with_client(SessionClient::default()) else {
             panic!("an empty password must not parse");
         };
 

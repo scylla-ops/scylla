@@ -4,12 +4,14 @@ pub mod queries;
 pub mod repository;
 pub mod reset;
 
-pub use account::{AccountRepository, UserAccess};
+pub use account::{AccountRepository, UserAccess, UserSession};
 pub use commands::{
-    ChangePassword, CreateUser, DeleteAccount, DeleteUser, RevokeUserSessions, SetUserActive,
-    UpdateUser, UpdateUserEmail,
+    ChangePassword, CreateUser, DeleteAccount, DeleteUser, RevokeUserSession, RevokeUserSessions,
+    SetUserActive, UpdateUser, UpdateUserEmail,
 };
-pub use queries::{GetMe, GetUser, GetUserByEmail, GetUserByUsername, ListUserAccess, ListUsers};
+pub use queries::{
+    GetMe, GetUser, GetUserByEmail, GetUserByUsername, ListUserAccess, ListUserSessions, ListUsers,
+};
 pub use repository::{UserRepository, users_in_order};
 pub use reset::{
     PasswordResetDelivery, PasswordResetMessage, PasswordResetSender, PasswordResetUseCases,
@@ -17,7 +19,7 @@ pub use reset::{
 
 use crate::application::HashService;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::UserId;
+use crate::domain::ids::{SessionId, UserId};
 use crate::domain::user::User;
 use derive_more::Constructor;
 use scylla_auth::authz::{
@@ -37,6 +39,11 @@ pub fn wrong_current_password() -> DomainError {
 #[must_use]
 pub fn wrong_password() -> DomainError {
     DomainError::business_rule(WRONG_PASSWORD)
+}
+
+/// One error for an unknown id, a session of another user and an expired session.
+fn session_not_found(id: &SessionId) -> DomainError {
+    DomainError::not_found("Session", id)
 }
 
 /// The user aggregate's stage runners, one block per action in `commands.rs` and

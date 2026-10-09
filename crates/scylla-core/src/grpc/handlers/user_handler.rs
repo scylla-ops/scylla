@@ -3,17 +3,20 @@
 
 use crate::application::{PasswordResetUseCases, UserUseCases};
 use crate::grpc::adapter::{run, run_in_session};
-use crate::grpc::mappers::{delivery_to_proto, user_access_response, user_to_proto};
+use crate::grpc::mappers::{
+    delivery_to_proto, user_access_response, user_sessions_response, user_to_proto,
+};
 use derive_more::Constructor;
 use scylla_extension::Actions;
 use scylla_proto::user::v1::{
     ChangePasswordRequest, ChangePasswordResponse, CreateUserRequest, CreateUserResponse,
     DeleteAccountRequest, DeleteAccountResponse, DeleteUserRequest, DeleteUserResponse,
     GetMeRequest, GetMeResponse, GetUserRequest, GetUserResponse, ListUserAccessRequest,
-    ListUserAccessResponse, ListUsersRequest, ListUsersResponse, RevokeUserSessionsRequest,
-    RevokeUserSessionsResponse, SendPasswordResetRequest, SendPasswordResetResponse,
-    SetUserActiveRequest, SetUserActiveResponse, UpdateUserRequest, UpdateUserResponse,
-    user_service_server::UserService,
+    ListUserAccessResponse, ListUserSessionsRequest, ListUserSessionsResponse, ListUsersRequest,
+    ListUsersResponse, RevokeUserSessionRequest, RevokeUserSessionResponse,
+    RevokeUserSessionsRequest, RevokeUserSessionsResponse, SendPasswordResetRequest,
+    SendPasswordResetResponse, SetUserActiveRequest, SetUserActiveResponse, UpdateUserRequest,
+    UpdateUserResponse, user_service_server::UserService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -135,5 +138,21 @@ impl UserService for UserHandler {
     ) -> Result<Response<ListUserAccessResponse>, Status> {
         let access = run(&self.actions, &*self.users, request).await?;
         Ok(Response::new(user_access_response(&access)))
+    }
+
+    async fn list_user_sessions(
+        &self,
+        request: Request<ListUserSessionsRequest>,
+    ) -> Result<Response<ListUserSessionsResponse>, Status> {
+        let sessions = run_in_session(&self.actions, &*self.users, request).await?;
+        Ok(Response::new(user_sessions_response(&sessions)))
+    }
+
+    async fn revoke_user_session(
+        &self,
+        request: Request<RevokeUserSessionRequest>,
+    ) -> Result<Response<RevokeUserSessionResponse>, Status> {
+        run(&self.actions, &*self.users, request).await?;
+        Ok(Response::new(RevokeUserSessionResponse {}))
     }
 }

@@ -127,6 +127,7 @@ async fn login_by_email_or_username(pool: PgPool) {
             Login {
                 identifier: identifier.to_string(),
                 password: Password::new(password).unwrap(),
+                client: crate::domain::session::SessionClient::default(),
             },
         )
     };

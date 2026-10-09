@@ -45,5 +45,5 @@ pub use trigger::{
 };
 pub use user::{
     AccountRepository, PasswordResetDelivery, PasswordResetMessage, PasswordResetSender,
-    PasswordResetUseCases, UserAccess, UserRepository, UserUseCases,
+    PasswordResetUseCases, UserAccess, UserRepository, UserSession, UserUseCases,
 };
