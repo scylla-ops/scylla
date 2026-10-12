@@ -536,6 +536,38 @@ answer, and logs a failure at WARN. `SendPasswordReset` calls it before the
 answer, so the administrator sees the error. The link starts with
 `[server].public_url`.
 
+## Building blocks for an edition
+
+An edition outside this repository uses these public items. It does not write
+its own SQL on a table of this repository. `crates/scylla-db/tests/edition_api.rs`
+is a crate of its own: it uses only the public API, so a change that hides one of
+these items fails there.
+
+- `scylla_auth::authz::check_grantable(roles, grants, delegator, grantee, role,
+  scope, organization)`: the check of `CreateGrant` (the role, its scope kind, an
+  agent role for a user, the escalation rule). `roles` comes from
+  `RoleRepository::list_all`, `grants` from `GrantRepository::list_all`, and
+  `organization` is the organization of `scope`. An organization role of another
+  organization is an unknown role.
+- `scylla_auth::authz::grantable_role(roles, grantee, role, scope, organization)`
+  gives the `&Role`: `check_grantable` without the escalation rule.
+  `ensure_no_escalation` is the escalation rule alone.
+- `scylla_core::application::grant::CreateGrant` has public fields (`principal`,
+  `role`, `scope`). A `Gate<Prepare<CreateGrant>>` reads them with
+  `input.command()`. Register it with `hooks.gate::<Prepare<CreateGrant>>(..)`.
+  It runs after the access check and before the checks of the use case, thus
+  before `check_grantable`. The gate and the write are not in one transaction:
+  two grants at the same time can both pass a count.
+- `OrganizationRepository::list_principals`, `count_members` and `has_member`
+  (`scylla_db::PgOrganizationRepository`): the members of an organization are
+  the users with a grant on it or on one of its projects. An app is not a member.
+- `scylla_db::postgres::signup::provision_user_in(&mut tx, &user, &grants)`
+  writes a user and its grants in a transaction that the edition owns: the
+  edition writes its own rows in the same transaction, then commits. Build the
+  values with `NewAccount::without_organization(user).with_grant(role, scope)`. A
+  taken username or email is `Conflict`. `PgSignupRepository::provision_user` is
+  the same write in a transaction of its own.
+
 ## Versions
 
 A row that `Prepare` reads and `Persist` writes carries a `version`. The store

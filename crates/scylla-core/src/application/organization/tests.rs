@@ -52,6 +52,12 @@ impl OrganizationRepository for StubOrganizations {
     ) -> DomainResult<PaginatedResult<UserId>> {
         empty_page()
     }
+    async fn count_members(&self, _: &OrganizationId) -> DomainResult<u64> {
+        Ok(0)
+    }
+    async fn has_member(&self, _: &OrganizationId, _: &UserId) -> DomainResult<bool> {
+        Ok(false)
+    }
     async fn list_for_user(
         &self,
         _: &UserId,

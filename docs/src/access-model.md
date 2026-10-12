@@ -116,6 +116,26 @@ Holders of an organization-wide grant do not appear in a project's people list.
 They administer the organization; the hierarchy already gives them the access
 they need.
 
+## Adding a member
+
+The members of an organization are the users that hold a grant on it or on one
+of its projects. An app is not a member.
+
+In the Community Edition, a member is added in one way: `CreateGrant` gives a
+role on the organization to a user that exists. It needs `manageOrgGrants` on
+the organization. The web dialog "Add a member" picks the user in the user
+directory, and only `listUsers` (System) reads the directory. Thus an
+organization administrator who is not a system administrator sees the button
+denied, with the reason. A user that is not in the directory of the caller
+cannot be added from the web.
+
+The Community Edition has no invitations. The Enterprise edition adds them, with
+its own tables: an organization administrator sends an invitation by email, and
+the person joins with a new account or with the account of that email. An
+invitation gives an organization role with the same rules as `CreateGrant`: the
+inviter must be able to grant the role (no escalation), and the role is not an
+agent role.
+
 ## Builtin roles
 
 Shipped so a tenant is usable without configuring anything. Custom roles are

@@ -30,6 +30,12 @@ Primary datastore. PostgreSQL 18 in the compose stack, listening on port `5432`.
 ### Organization
 Top-level tenant. Carries a `name`, optional `description`, and an `is_active` flag. The name is a label: two organizations can have the same name. Owns projects. People reach it by holding a grant on it or on one of its projects; there is no membership table.
 
+### Member
+A user that holds a grant on an [organization](#organization) or on one of its projects. An app is not a member. `OrganizationRepository::list_principals` lists the members, `count_members` counts them and `has_member` tells if a user is a member. In the Community Edition, a member is added only with `GrantService.CreateGrant` (`manageOrgGrants` on the organization), on a user that exists. The web dialog "Add a member" picks the user in the user directory, thus it needs `listUsers`, which only a system administrator has. The Enterprise edition adds [invitations](#invitation).
+
+### Invitation
+Not in the Community Edition. The Enterprise edition adds invitations by email, with its own tables: an organization administrator sends an invitation, and the person joins the organization with a new account or with the account of that email. The migration `20261009120000` removed the invitation tables of the Community Edition.
+
 ### Project
 A unit of work inside an organization. Carries a `name`, optional `description`, `organization_id`, and `is_active` flag. Owns pipelines and jobs. Being on a project means holding a grant scoped to it.
 
