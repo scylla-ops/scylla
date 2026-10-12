@@ -1,26 +1,10 @@
+use crate::application::grant::PrincipalAccess;
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::{OrganizationId, SessionId, UserId};
-use crate::domain::organization::OrganizationName;
-use crate::domain::project::ProjectName;
-use crate::domain::role::{RoleDisplayName, RoleName};
+use crate::domain::ids::{SessionId, UserId};
 use crate::domain::session::SessionClient;
 use crate::domain::user::{PasswordReset, ResetToken, User};
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
-use scylla_auth::authz::Scope;
-
-/// One grant of a user, with the names to show it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserAccess {
-    pub grant_id: String,
-    pub scope: Scope,
-    /// The organization of an organization or a project scope.
-    pub organization_id: Option<OrganizationId>,
-    pub organization_name: Option<OrganizationName>,
-    pub project_name: Option<ProjectName>,
-    pub role: RoleName,
-    pub role_name: RoleDisplayName,
-}
 
 /// One session of a user, without its token. `current` marks the session of the call; the store
 /// leaves it `false`.
@@ -73,5 +57,5 @@ pub trait AccountRepository: Send + Sync {
     async fn redeem_reset(&self, reset: &PasswordReset, user: &User) -> DomainResult<User>;
 
     /// The system grants first, then by organization name, then by project name.
-    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<UserAccess>>;
+    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<PrincipalAccess>>;
 }

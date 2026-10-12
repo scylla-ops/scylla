@@ -1,12 +1,11 @@
+use crate::application::PrincipalAccess;
 use crate::application::user::{
     ChangePassword, CreateUser, DeleteAccount, DeleteUser, GetMe, GetUser, ListUserAccess,
     ListUserSessions, ListUsers, PasswordResetDelivery, RevokeUserSession, RevokeUserSessions,
-    SetUserActive, UpdateUser, UserAccess, UserSession, reset::SendPasswordReset,
-    wrong_current_password, wrong_password,
+    SetUserActive, UpdateUser, UserSession, reset::SendPasswordReset, wrong_current_password,
+    wrong_password,
 };
-use crate::grpc::convert::{
-    Parse, ParseInSession, id, optional, required, scope_ref_to_proto, ts, valid, wrap,
-};
+use crate::grpc::convert::{Parse, ParseInSession, id, optional, required, ts, valid, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use scylla_domain::domain::errors::DomainError;
 use scylla_domain::domain::ids::SessionId;
@@ -37,27 +36,8 @@ pub fn user_to_proto(user: &User) -> ProtoUser {
     }
 }
 
-pub fn user_access_to_proto(access: &UserAccess) -> ProtoUserAccess {
-    ProtoUserAccess {
-        grant_id: wrap(access.grant_id.clone()),
-        scope: Some(scope_ref_to_proto(&access.scope)),
-        organization_id: access
-            .organization_id
-            .as_ref()
-            .and_then(|id| wrap(id.to_string())),
-        organization_name: access
-            .organization_name
-            .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default(),
-        project_name: access
-            .project_name
-            .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default(),
-        role_id: wrap(access.role.to_string()),
-        role_name: access.role_name.to_string(),
-    }
+pub fn user_access_to_proto(access: &PrincipalAccess) -> ProtoUserAccess {
+    access_to_proto!(ProtoUserAccess, access)
 }
 
 /// No field holds the token.
@@ -173,7 +153,7 @@ impl Parse for DeleteAccountRequest {
 
 parse!(ListUserAccessRequest => ListUserAccess { id: id(user_id) });
 
-pub fn user_access_response(access: &[UserAccess]) -> ListUserAccessResponse {
+pub fn user_access_response(access: &[PrincipalAccess]) -> ListUserAccessResponse {
     ListUserAccessResponse {
         access: access.iter().map(user_access_to_proto).collect(),
     }
@@ -411,7 +391,7 @@ mod tests {
 
     #[test]
     fn an_access_row_names_its_scope() {
-        let proto = user_access_to_proto(&UserAccess {
+        let proto = user_access_to_proto(&PrincipalAccess {
             grant_id: "g1".into(),
             scope: Scope::Project(ProjectId::new("p1")),
             organization_id: Some(OrganizationId::new("o1")),
@@ -427,7 +407,7 @@ mod tests {
         assert_eq!(proto.role_name, "Project admin");
         assert!(proto.scope.is_some());
 
-        let system = user_access_to_proto(&UserAccess {
+        let system = user_access_to_proto(&PrincipalAccess {
             grant_id: "g2".into(),
             scope: Scope::System,
             organization_id: None,

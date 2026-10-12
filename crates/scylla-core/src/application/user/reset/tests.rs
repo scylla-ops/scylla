@@ -1,7 +1,7 @@
 //! The reset links through the engine, on stub ports.
 
 use super::*;
-use crate::application::{UserAccess, UserSession};
+use crate::application::{PrincipalAccess, UserSession};
 use crate::domain::caller::CallerContext;
 use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -138,7 +138,7 @@ impl AccountRepository for Store {
     async fn redeem_reset(&self, reset: &PasswordReset, user: &User) -> DomainResult<User> {
         self.inner.redeem_reset(reset, user).await
     }
-    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<UserAccess>> {
+    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<PrincipalAccess>> {
         self.inner.list_access(user_id).await
     }
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT j.id, j.pipeline_id, j.status,\n                       j.nodes AS \"nodes: Json<Vec<PipelineNode>>\",\n                       j.node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       j.inputs AS \"inputs: Json<Vec<(EnvKey, EnvValue)>>\",\n                       j.origin AS \"origin: Json<JobOrigin>\",\n                       j.agent_app_id,\n                       j.created_at, j.updated_at, j.started_at, j.finished_at, j.version\n                FROM jobs j\n                JOIN pipelines p ON p.id = j.pipeline_id\n                WHERE p.project_id = $1\n                ORDER BY j.created_at DESC\n                LIMIT $2 OFFSET $3\n                ",
+  "query": "\n                SELECT j.id, j.pipeline_id, j.status,\n                       j.nodes AS \"nodes: Json<Vec<PipelineNode>>\",\n                       j.node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       j.inputs AS \"inputs: Json<Vec<(EnvKey, EnvValue)>>\",\n                       j.origin AS \"origin: Json<JobOrigin>\",\n                       j.agent_app_id,\n                       j.created_at, j.updated_at, j.started_at, j.finished_at, j.version\n                FROM jobs j\n                JOIN pipelines p ON p.id = j.pipeline_id\n                WHERE p.project_id = $1 AND ($2::text IS NULL OR j.agent_app_id = $2)\n                ORDER BY j.created_at DESC\n                LIMIT $3 OFFSET $4\n                ",
   "describe": {
     "columns": [
       {
@@ -150,6 +150,7 @@
     "parameters": {
       "Left": [
         "Text",
+        "Text",
         "Int8",
         "Int8"
       ]
@@ -170,5 +171,5 @@
       false
     ]
   },
-  "hash": "faec00d0e99ad4c820f2471c23ab822c427ff37cca6191c160a451c61e27e6a1"
+  "hash": "57e296a194cc92999030f5348bb712a6d5644be99c43497bc1e12d702e66570d"
 }

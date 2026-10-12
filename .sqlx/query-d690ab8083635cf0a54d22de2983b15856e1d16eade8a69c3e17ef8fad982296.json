@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT id, pipeline_id, status,\n                       nodes AS \"nodes: Json<Vec<PipelineNode>>\",\n                       node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       inputs AS \"inputs: Json<Vec<(EnvKey, EnvValue)>>\",\n                       origin AS \"origin: Json<JobOrigin>\",\n                       agent_app_id,\n                       created_at, updated_at, started_at, finished_at, version\n                FROM jobs\n                ORDER BY created_at DESC\n                LIMIT $1 OFFSET $2\n                ",
+  "query": "\n                SELECT id, pipeline_id, status,\n                       nodes AS \"nodes: Json<Vec<PipelineNode>>\",\n                       node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       inputs AS \"inputs: Json<Vec<(EnvKey, EnvValue)>>\",\n                       origin AS \"origin: Json<JobOrigin>\",\n                       agent_app_id,\n                       created_at, updated_at, started_at, finished_at, version\n                FROM jobs\n                WHERE pipeline_id = $1 AND ($2::text IS NULL OR agent_app_id = $2)\n                ORDER BY created_at DESC\n                LIMIT $3 OFFSET $4\n                ",
   "describe": {
     "columns": [
       {
@@ -149,6 +149,8 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
+        "Text",
         "Int8",
         "Int8"
       ]
@@ -169,5 +171,5 @@
       false
     ]
   },
-  "hash": "2c2865f6b9b89ddc30694119d699dc81ae1821237f8c83488bb238cffe71a9b0"
+  "hash": "d690ab8083635cf0a54d22de2983b15856e1d16eade8a69c3e17ef8fad982296"
 }

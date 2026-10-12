@@ -4,7 +4,7 @@ pub mod queries;
 pub mod repository;
 pub mod reset;
 
-pub use account::{AccountRepository, UserAccess, UserSession};
+pub use account::{AccountRepository, UserSession};
 pub use commands::{
     ChangePassword, CreateUser, DeleteAccount, DeleteUser, RevokeUserSession, RevokeUserSessions,
     SetUserActive, UpdateUser, UpdateUserEmail,

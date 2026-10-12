@@ -81,7 +81,7 @@ fails with "failed precondition".
 ## App secrets
 
 An app secret is not a scope. A check on one app secret, for example to revoke
-it or to disable it, finds the app that holds the secret, and then the
+it, to disable it or to change its label, finds the app that holds the secret, and then the
 organization that holds the app. Then it applies the rule above to that
 organization, with the permission `deleteApp`. Thus the roles that give this
 permission on the organization also give it on the secrets of its apps.

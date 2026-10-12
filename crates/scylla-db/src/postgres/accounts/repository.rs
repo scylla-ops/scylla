@@ -1,19 +1,17 @@
 use crate::domain::clock;
 use crate::domain::errors::DomainResult;
-use crate::domain::ids::{OrganizationId, PasswordResetId, SessionId, UserId};
-use crate::domain::organization::OrganizationName;
-use crate::domain::project::ProjectName;
-use crate::domain::role::{RoleDisplayName, RoleName};
+use crate::domain::ids::{PasswordResetId, SessionId, UserId};
 use crate::domain::session::SessionClient;
 use crate::domain::user::{PasswordReset, ResetToken, User, reset_link_invalid};
 use async_trait::async_trait;
 use chrono::Duration;
-use scylla_core::application::{AccountRepository, UserAccess, UserSession};
+use scylla_auth::authz::Principal;
+use scylla_core::application::{AccountRepository, PrincipalAccess, UserSession};
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
-use super::super::error::{DbFieldExt, SqlxResultExt};
-use super::super::grants::scope_from_row;
+use super::super::error::SqlxResultExt;
+use super::super::grants;
 use super::super::users::repository::queries as users;
 use super::super::version::written;
 
@@ -120,8 +118,8 @@ impl AccountRepository for PgAccountRepository {
     }
 
     #[instrument(skip_all, fields(user_id = %user_id))]
-    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<UserAccess>> {
-        queries::list_access(&self.pool, user_id).await
+    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<PrincipalAccess>> {
+        grants::list_access(&self.pool, &Principal::User(user_id.clone())).await
     }
 }
 
@@ -307,53 +305,5 @@ pub mod queries {
         .await
         .to_domain()?;
         Ok(res.rows_affected() > 0)
-    }
-
-    pub async fn list_access<'e, E>(executor: E, user_id: &UserId) -> DomainResult<Vec<UserAccess>>
-    where
-        E: PgExecutor<'e>,
-    {
-        let rows = sqlx::query!(
-            r#"
-            SELECT g.id, g.scope_kind, g.scope_id, g.role_id, r.name AS role_name,
-                   o.id AS "organization_id?", o.name AS "organization_name?",
-                   p.name AS "project_name?"
-            FROM grants g
-            JOIN roles r ON r.id = g.role_id
-            LEFT JOIN projects p ON g.scope_kind = 'project' AND p.id = g.scope_id
-            LEFT JOIN organizations o ON o.id = CASE g.scope_kind
-                WHEN 'organization' THEN g.scope_id
-                WHEN 'project' THEN p.organization_id
-            END
-            WHERE g.principal_kind = 'user' AND g.principal_id = $1
-            ORDER BY g.scope_kind <> 'system', o.name, o.id,
-                     p.name NULLS FIRST, p.id NULLS FIRST, r.name, g.id
-            "#,
-            user_id.as_str(),
-        )
-        .fetch_all(executor)
-        .await
-        .to_domain()?;
-        rows.into_iter()
-            .map(|r| {
-                Ok(UserAccess {
-                    grant_id: r.id,
-                    scope: scope_from_row(&r.scope_kind, r.scope_id)?,
-                    organization_id: r.organization_id.map(OrganizationId::new),
-                    organization_name: r
-                        .organization_name
-                        .map(OrganizationName::new)
-                        .transpose()
-                        .db_field("organization name")?,
-                    project_name: r
-                        .project_name
-                        .map(ProjectName::new)
-                        .transpose()
-                        .db_field("project name")?,
-                    role: RoleName::new(r.role_id).db_field("role id")?,
-                    role_name: RoleDisplayName::new(r.role_name).db_field("role name")?,
-                })
-            })
-            .collect()
     }
 }

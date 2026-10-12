@@ -221,12 +221,15 @@ status.
 
 The request types implement `Parse` in the aggregate's mapper
 (`grpc/mappers/project_mapper.rs`), built from the small converters in
-`grpc::convert`: `id` for a required id wrapper, `valid` for a domain value
-built from a wire string, `proto_to_domain_pagination` for a page. When each
-field is a required id, the page or a field copied as it is, the mapper uses
-`parse!` (`grpc/mappers/macros.rs`) and does not write the impl. The same
-mapper turns a page into its response with `From`: `page_response!` when the
-response is only the mapped items and the page metadata. An impl with other
+`grpc::convert`: `id` for a required id wrapper, `optional_id` for an optional
+id wrapper (a wrapper with an empty value gives `INVALID_ARGUMENT`), `valid`
+for a domain value built from a wire string, `proto_to_domain_pagination` for
+a page. When each field is a required id, an optional id, the page or a field
+copied as it is, the mapper uses `parse!` (`grpc/mappers/macros.rs`) and does
+not write the impl. The same mapper turns a page into its response with
+`From`: `page_response!` when the response is only the mapped items and the
+page metadata. `access_to_proto!` makes the wire row of a `PrincipalAccess`,
+because `UserAccess` and `AppAccess` have the same fields. An impl with other
 logic stays written by hand. A handler never reads a request field itself.
 
 ### Adding a command or a query
@@ -623,6 +626,18 @@ that gives `Stale`: a report of the agent came first.
   `Deleted<UserSession>`. An unknown id, a session of another user and an
   expired session give one `NotFound`, in `Prepare` or, after a concurrent
   revoke, in the write. It does not spare the session of the call.
+- `ListUserAccess` and `ListAppAccess` return `PrincipalAccess` rows
+  (`application/grant/access.rs`): each grant of the principal with the names
+  of its organization, project and role. The two ports
+  (`AccountRepository::list_access`, `AppRepository::list_access`) use one
+  query on a `Principal` (`grants::list_access` in `scylla-db`).
+  `ListUserAccess` asks for `ReadUser` and reads the user first, thus an
+  unknown user gives `NotFound`. `ListAppAccess` asks for `ReadApp` and reads
+  only the grants, thus an unknown App gives an empty list.
+- `ListOrganizationJobs` with `agent_id` keeps its permission
+  (`ListJobsByOrganization`) and lists only the jobs of the organization that
+  the server placed on that agent (`jobs.agent_app_id`), at each state. The
+  order and the pages do not change.
 - `ValidateToken` is a query, and its `Fetch` only reads: an expired
   session gives `false` and stays in the store. A failed read also gives
   `false`. `PurgeExpiredSessions` deletes the expired sessions: it is a pass
@@ -747,7 +762,10 @@ that gives `Stale`: a report of the agent came first.
   An unknown App gives `NotFound`, and the trigger-runner App gives
   `BusinessRule` (`App::ensure_user_managed`). `App::create` refuses the name
   `trigger-runner` with `Validation`, so `CreateApp` and `CreateAgent` cannot
-  make an App with that name. `AgentAdminService.DeleteAgent` sends
+  make an App with that name. When the request has no secret label,
+  `CreateApp` and `CreateAgent` get the label of the first secret from
+  `default_secret_label` (`scylla-domain`): the App name, cut to the label
+  rules, else `default`. `AgentAdminService.DeleteAgent` sends
   `DeleteApp`. Each close of an agent stream comes after its write:
   `DeleteApp`, `SetAppActive`, `RevokeAppSecret`, `SetAppSecretEnabled`,
   `RevokeGrant`, `RevokeAllAccess`, and `DeleteOrganization` for each App of
@@ -799,11 +817,12 @@ that gives `Stale`: a report of the agent came first.
   the same roles give them. They are not in the permission catalog, because a
   key is there one time only. `CreateTrigger` and `ListPipelineTriggers` keep
   `ManageTriggers` on the pipeline.
-- `RevokeAppSecret` and `SetAppSecretEnabled` use the same method: they ask for
-  `ManageAppSecret` on the secret (`ResourceRef::AppSecret`, one join to the
-  app and its organization). It has the key `deleteApp`, so the same roles give
-  it, and it is not in the permission catalog. `CreateAppSecret` and
-  `ListAppSecrets` keep their permission on the app.
+- `RevokeAppSecret`, `SetAppSecretEnabled` and `SetAppSecretLabel` use the
+  same method: they ask for `ManageAppSecret` on the secret
+  (`ResourceRef::AppSecret`, one join to the app and its organization). It has
+  the key `deleteApp`, so the same roles give it, and it is not in the
+  permission catalog. `CreateAppSecret` and `ListAppSecrets` keep their
+  permission on the app.
 - `RevokeGrant` uses the same method: it asks for `RevokeGrant` on the grant
   (`ResourceRef::Grant`, one read of the grant scope, with a join to the
   organization of a project scope). The access model then applies the

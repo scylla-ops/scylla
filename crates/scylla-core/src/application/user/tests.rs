@@ -1,6 +1,7 @@
 //! The user's actions through the engine, on stub ports.
 
 use super::*;
+use crate::application::PrincipalAccess;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -940,8 +941,8 @@ async fn an_account_is_deleted_with_the_right_password() {
     assert!(permissions.permissions().is_empty());
 }
 
-fn named(user: &User, organization: &str, name: &str) -> UserAccess {
-    UserAccess {
+fn named(user: &User, organization: &str, name: &str) -> PrincipalAccess {
+    PrincipalAccess {
         grant_id: format!("{}-{organization}", user.id()),
         scope: Scope::Organization(OrganizationId::new(organization)),
         organization_id: Some(OrganizationId::new(organization)),

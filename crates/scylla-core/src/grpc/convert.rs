@@ -62,6 +62,17 @@ pub fn id<W: Wrapper, I: From<String>>(field: Option<W>, name: &str) -> Result<I
     required(field, name).map(I::from)
 }
 
+/// An optional id wrapper as its domain id. A wrapper with an empty value is invalid.
+pub fn optional_id<W: Wrapper, I: From<String>>(
+    field: Option<W>,
+    name: &str,
+) -> Result<Option<I>, Status> {
+    match optional(field) {
+        Some(value) if value.is_empty() => Err(Status::invalid_argument(format!("invalid {name}"))),
+        value => Ok(value.map(I::from)),
+    }
+}
+
 /// A domain value built from a wire string; a validation failure is the client's fault.
 pub fn valid<T>(
     value: impl Into<String>,

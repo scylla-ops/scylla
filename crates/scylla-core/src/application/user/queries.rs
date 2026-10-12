@@ -1,8 +1,9 @@
 //! The user's reads. One block per query, in the order it runs: the struct, its
 //! access, its output type, what `Fetch` reads.
 
-use super::{UserAccess, UserSession, UserUseCases};
+use super::{UserSession, UserUseCases};
 use crate::application::actions::user_only;
+use crate::application::grant::PrincipalAccess;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{SessionId, UserId};
@@ -152,7 +153,7 @@ impl Describe for ListUserAccess {
 }
 
 impl Query for ListUserAccess {
-    type Output = Vec<UserAccess>;
+    type Output = Vec<PrincipalAccess>;
 }
 
 #[async_trait]

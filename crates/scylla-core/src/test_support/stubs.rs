@@ -5,8 +5,8 @@ use crate::application::job::JobScope;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
     AccountRepository, DispatchUseCases, HashService, JobLogLiveStream, JobLogStreamPort,
-    JobRepository, PipelineRepository, ProjectRepository, SecretResolver, SessionRepository,
-    UserAccess, UserRepository, UserSession,
+    JobRepository, PipelineRepository, PrincipalAccess, ProjectRepository, SecretResolver,
+    SessionRepository, UserRepository, UserSession,
 };
 use crate::domain::app::{AppSecret, AppSecretHash};
 use crate::domain::caller::CallerContext;
@@ -237,6 +237,7 @@ impl AgentDispatch for StubRegistry {
 /// store does. `claim_next` places the oldest pending job on an idle agent that sees anything,
 /// `release` returns only the jobs of its stream, and `list_live` filters a pipeline scope
 /// only. `list_stranded` returns every running job: the stub keeps no last contact.
+/// `list_by_organization` filters on the agent only, in one page.
 #[derive(Default)]
 pub struct StubJobs {
     rows: Mutex<Vec<Job>>,
@@ -446,9 +447,17 @@ impl JobRepository for StubJobs {
     async fn list_by_organization(
         &self,
         _: &OrganizationId,
-        _: Option<&PaginationParams>,
+        agent: Option<&AppId>,
+        pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        empty_page()
+        let params = pagination.copied().unwrap_or_default();
+        let jobs: Vec<Job> = self
+            .rows()
+            .into_iter()
+            .filter(|j| agent.is_none_or(|a| j.agent_app_id() == Some(a)))
+            .collect();
+        let total = jobs.len() as u64;
+        Ok(PaginatedResult::new(jobs, &params, total))
     }
 }
 
@@ -1016,7 +1025,7 @@ pub struct StubAccounts {
     users: Arc<StubUsers>,
     sessions: Mutex<Vec<(UserId, UserSession)>>,
     resets: Mutex<Vec<PasswordReset>>,
-    access: Mutex<Vec<(UserId, UserAccess)>>,
+    access: Mutex<Vec<(UserId, PrincipalAccess)>>,
 }
 
 impl StubAccounts {
@@ -1078,7 +1087,7 @@ impl StubAccounts {
             .collect()
     }
 
-    pub fn grant_access(&self, user_id: &UserId, access: UserAccess) {
+    pub fn grant_access(&self, user_id: &UserId, access: PrincipalAccess) {
         self.access.lock().unwrap().push((user_id.clone(), access));
     }
 
@@ -1190,7 +1199,7 @@ impl AccountRepository for StubAccounts {
         self.sign_out(user.id(), None);
         Ok(user)
     }
-    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<UserAccess>> {
+    async fn list_access(&self, user_id: &UserId) -> DomainResult<Vec<PrincipalAccess>> {
         Ok(self
             .access
             .lock()

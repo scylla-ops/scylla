@@ -48,6 +48,11 @@ The runtime record for one pipeline node inside a job. Holds `NodeState`, `start
 ### App
 A machine principal owned by an organization (an agent / automation). Identified by an `AppId`; authenticates with a secret (stored hashed) that it exchanges for an app token, and acts under scoped grants — typically the `organization-agent` role on its org. An App with an open agent stream is an online **agent**; "agent" now means an App running the agent binary.
 
+`AppService.ListAppAccess` shows each grant of an App with the names of its organization, project and role. It asks for `readApp` on the App. An unknown App gives an empty list.
+
+### App secret
+A secret of an [App](#app). The App exchanges it for an app token. The store keeps only its hash. Each secret has a label that is unique in its App: trimmed, 1 to 64 UTF-8 bytes, no control character (`AppSecretLabel`). `CreateApp` and `AgentAdminService.CreateAgent` make the first secret, with the label `secret_label` of the request. Without `secret_label`, the label is the App name without its control characters, cut to 64 bytes. If no valid label is left, the label is `default` (`DEFAULT_SECRET_LABEL`). `default_secret_label` in `scylla-domain` is the only place of this rule. `AppService.SetAppSecretLabel` changes the label of one secret. It asks for `deleteApp` on the secret, as `RevokeAppSecret` and `SetAppSecretEnabled`. A label that another secret of the App has gives `ALREADY_EXISTS`. The plaintext, the tokens and the open agent stream do not change.
+
 ### Trigger runner
 The App that a trigger fire runs as. An organization has one trigger runner or none. The server makes it at the first `CreateTrigger` in the organization. It has the kind `trigger_runner`, the name `trigger-runner`, the `organization-trigger-runner` role and no secret. The server finds it by its kind, not by its name. A user cannot give this name to an App, and cannot disable the trigger runner, delete it or add a secret to it.
 
@@ -253,6 +258,8 @@ An agent is connected when its [App](#app) holds an open `AgentService` stream t
 
 ### Placement
 The dispatcher gives the oldest pending job to a connected agent that holds `executeJob` on the pipeline of the job and has no job that has not ended. It reads this from the grants of the agent, so it writes no audit row. The job goes to the open stream of the agent and shows the agent in `Job.Pending.agent_id` until it starts. When that stream closes, the job goes back to the pool if it did not start. A newer stream of the same agent keeps the jobs placed on it.
+
+`JobService.ListOrganizationJobs` with `agent_id` lists only the jobs that the server placed on that agent (`jobs.agent_app_id`), at each state. A job in the pool is not in this list.
 
 ## Networking & protocol
 
