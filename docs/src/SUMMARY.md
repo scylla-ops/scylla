@@ -9,6 +9,7 @@
 - [Getting started]()
 - [Architecture]()
 - [Configuration]()
+- [Pipelines](./pipelines.md)
 
 # Operations
 
