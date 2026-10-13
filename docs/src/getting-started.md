@@ -55,13 +55,14 @@ internet can reach the instance:
   Set it before you create secrets. The server cannot decrypt the secrets
   that it encrypted with another key.
 
-- **Change the bootstrap password** in the `[bootstrap]` section of
+- **Change the bootstrap password and email** in the `[bootstrap]` section of
   `docker.toml` before the first start. The server creates the account at the
-  first start only. If the account exists, a new password in the file does not
+  first start. If the account exists, a new password in the file does not
   change it.
 
-- **Set `[webhook].public_base_url`** to the public address of the instance,
-  so that the UI shows the right webhook URLs.
+- **Set `[server].public_url` and `[webhook].public_base_url`** to the public
+  address of the instance, so that password reset links and webhook URLs
+  point to it.
 
 See [Configuration](./configuration.md) for every key.
 
@@ -81,13 +82,13 @@ It needs a PostgreSQL database and applies its migrations at start when
 `[database].run_migrations` is `true`. `binaries/scylla-ce/config/prod.toml` is
 a starting point for `my-config.toml`. It has no `[bootstrap]` and no
 `[secrets]` section: add them, or no administrator is created and secrets are
-disabled.
+disabled. `[bootstrap]` needs a `username`, a `password` and an `email`.
 
 ## 2. Sign in
 
 Open <http://localhost:8080/> and sign in with the bootstrap account:
 
-- username: `admin`
+- username: `admin`, or the email `admin@example.com`
 - password: `admin123` (or the password you set)
 
 This account holds the System Admin role: it may do everything, everywhere.
@@ -180,7 +181,31 @@ belongs to the organization of the project.
   with `secret_ref`: [Pipelines](./pipelines.md#environment).
 - Start runs on a schedule or from a GitHub push:
   [Triggers](./triggers.md).
-- Give other people access: [Access model](./access-model.md).
+- Give other people access: see [Add people](#add-people) below.
+
+## Add people
+
+The Community Edition has no sign-up and no invitations, and it sends no mail.
+A system administrator adds people:
+
+1. Create the account with **New user** (`UserService.CreateUser`): a
+   username, an email and an initial password.
+2. In the organization or the project, use **Add a member** to give the user a
+   role (`GrantService.CreateGrant`). The dialog picks the user in the user
+   directory, which only a system administrator can read.
+
+To reset a password, the user clicks **Forgot password?** on the sign-in page,
+or an administrator sends a reset link to the user
+(`UserService.SendPasswordReset`). The server writes the link in its log, at
+INFO, with the message `password reset link`, the user id and the username.
+Find it with `docker compose logs scylla-ce` and give it to the user. A link
+works once and expires after one hour. Using it signs out every session of
+the account.
+
+Each user sees their own sessions, with the device and the IP address, and
+can sign one or all of them out.
+
+See the [Access model](./access-model.md#adding-a-member) for the rules.
 
 ## Who needs which role
 

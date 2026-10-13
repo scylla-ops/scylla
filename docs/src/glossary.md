@@ -55,6 +55,10 @@ agent that may run it and is free.
 **Project.** A unit of work inside an organization. It holds pipelines, jobs,
 triggers and secrets.
 
+**Reset link.** A single-use link that sets a new password, valid one hour.
+The Community Edition writes it in the server log. See
+[Add people](./getting-started.md#add-people).
+
 **Role.** A named set of permissions, valid at one scope kind: System,
 Organization or Project.
 
