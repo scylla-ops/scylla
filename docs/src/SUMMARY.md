@@ -6,8 +6,8 @@
 
 # User Guide
 
-- [Getting started]()
-- [Architecture]()
+- [Getting started](./getting-started.md)
+- [Architecture](./architecture.md)
 - [Configuration]()
 - [Pipelines](./pipelines.md)
 
