@@ -19,4 +19,4 @@
 # Reference
 
 - [Access model](./access-model.md)
-- [Glossary]()
+- [Glossary](./glossary.md)
