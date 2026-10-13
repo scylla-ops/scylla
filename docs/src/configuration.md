@@ -35,8 +35,21 @@
 | Key        | Default          | Meaning                                                        |
 | ---------- | ---------------- | -------------------------------------------------------------- |
 | `address`  | `127.0.0.1:8080` | The one listener: UI, gRPC, gRPC-Web, reflection and webhooks. Required when the section is present. Use `0.0.0.0:8080` in a container. |
+| `public_url` | none           | The origin that people open, without a trailing slash, for example `https://ci.example.com`. Password reset links start with it. |
+| `trust_forwarded_headers` | `false` | Where a new session takes the IP address of the client. See below. |
 
 The section may also be named `[grpc]`.
+
+Without `public_url`, a reset link is the relative path
+`/reset-password#token=...`, and the server logs a warning at start. The
+shipped `docker.toml` and `local.toml` set it to the local address.
+
+Each session records the IP address of the client that signed in. With
+`trust_forwarded_headers = false`, it is the peer address of the connection:
+behind a reverse proxy, the address of the proxy. With `true`, it is the first
+entry of `x-forwarded-for`, else `x-real-ip`, else the peer address. Set
+`true` only behind a reverse proxy that sets these headers and replaces the
+values that the client sends: a client can write them.
 
 ### `[server.tls]`
 
@@ -77,14 +90,25 @@ created at start.
 
 | Key        | Meaning                                    |
 | ---------- | ------------------------------------------ |
-| `username` | Required.                                  |
+| `username` | Required. No `@`.                          |
 | `password` | Required. 8 to 255 characters.             |
-| `email`    | Optional.                                  |
+| `email`    | Required.                                  |
 
 At each start the server creates this user if it does not exist, and makes
-sure that it holds the System Admin role. It does not change the password of
-an existing user. The server logs a warning when the credentials are
-`admin` / `admin123`.
+sure that it holds the System Admin role. If the username or the email is
+taken, the server looks for the existing account:
+
+- An account has the configured email and the configured username: the server
+  keeps it and makes sure it holds the role.
+- An account has the configured email and another username: the start fails.
+- No account has the email, and the account with the configured username has
+  no email: the server sets the email on it, then makes sure it holds the
+  role.
+- No account has the email, and the account with the configured username has
+  another email: the start fails.
+
+The server never changes the password of an existing account. It logs a
+warning when the credentials are `admin` / `admin123`.
 
 ### `[secrets]`
 
@@ -128,34 +152,13 @@ browser clients.
 start. This is the default when the section is absent. An empty list accepts
 no cross-origin request.
 
-### `[mail]`
-
-Optional SMTP settings. The server uses them to send invitation emails.
-Without this section it sends no mail.
-
-| Key        | Default | Meaning                 |
-| ---------- | ------- | ----------------------- |
-| `host`     |         | SMTP host.              |
-| `port`     | `465`   | SMTP port.              |
-| `username` |         | SMTP user.              |
-| `password` |         | SMTP password.          |
-| `from`     |         | Sender address.         |
-
-### `[oauth.github]`
-
-Optional. Enables sign-in with GitHub.
-
-| Key             | Meaning                         |
-| --------------- | ------------------------------- |
-| `client_id`     | The OAuth app client id.        |
-| `client_secret` | The OAuth app client secret.    |
-| `redirect_uri`  | The callback URL registered on GitHub. |
-
 ### Example
 
 ```toml
 [server]
 address = "0.0.0.0:8080"
+public_url = "https://ci.example.com"
+trust_forwarded_headers = true
 
 [webhook]
 public_base_url = "https://ci.example.com"
@@ -170,12 +173,14 @@ run_migrations = true
 [bootstrap]
 username = "admin"
 password = "a-long-unique-password"
+email = "ops@example.com"
 
 [cors]
 allow_origins = []
 ```
 
-Pass the master key with `SCYLLA_MASTER_KEY` rather than in the file.
+Pass the master key with `SCYLLA_MASTER_KEY` rather than in the file. This
+example assumes a reverse proxy in front that sets `x-forwarded-for`.
 
 ## Agent: `scylla-agent`
 
