@@ -14,7 +14,7 @@
 # Operations
 
 - [Running an agent](./running-an-agent.md)
-- [Triggers (cron & webhooks)]()
+- [Triggers (cron & webhooks)](./triggers.md)
 
 # Reference
 
