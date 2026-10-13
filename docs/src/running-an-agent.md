@@ -19,14 +19,22 @@ organization.
 
 The control plane gives a job to an agent only when the agent holds
 `executeJob` on the pipeline of the job. Both agent roles grant it. An App
-acts only in the organization that owns it.
+acts only in the organization that owns it. `AppService.ListAppAccess` lists
+every grant of an App, with the names of its organization, project and role.
 
 ## Secrets and tokens
 
 The secret is 64 lowercase hex characters. The server returns it once, at
 creation, and stores only a hash of it. An App may hold several secrets, each
-with a label. If you lose a secret, add a new one to the same App
+with a label that is unique within the App: 1 to 64 bytes, trimmed, with no
+control character. If you lose a secret, add a new one to the same App
 (`AppService.CreateAppSecret`); you do not need a new agent.
+
+`CreateAgent` and `CreateApp` take the label of the first secret in
+`secret_label`. Without it, the label is the name of the App without its
+control characters, trimmed and cut to 64 bytes, or `default` when nothing is
+left. `AppService.SetAppSecretLabel` renames a secret. It changes only the
+label: the secret, its tokens and the open stream stay.
 
 At each connection the agent exchanges its App id and secret for a new app
 token (`AppAuthService.IssueToken`). A token expires **30 days** after it is
@@ -104,6 +112,10 @@ not started goes back to the pending pool when the stream closes.
 An agent runs **one job at a time**. The control plane gives the oldest
 pending job to a connected agent that may run it and has no unfinished job.
 To run jobs in parallel, run more agents.
+
+`JobService.ListOrganizationJobs` with `agent_id` lists the jobs that the
+control plane placed on that agent, in any state. A job that no agent took
+yet is not in that list.
 
 Within a job, nodes whose dependencies are met run at the same time. See
 [Pipelines](./pipelines.md) for the step rules, the environment of a step and
