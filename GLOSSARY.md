@@ -74,7 +74,7 @@ The five-minute rule: a call with a session moves its `last_active_at`, at most 
 `UserService.ListUserSessions` shows the sessions of a user that have not expired, the most recently active first, without the tokens. `current` marks the session of the call. `UserService.RevokeUserSession` revokes one session. It gives `NOT_FOUND` for an unknown id, a session of another user and an expired session, with the same message. The caller can revoke the session of the call: the caller is then signed out. The list asks for `readUser` on the user, the revoke for `updateUser`; the self rule of the Cedar policies gives both to the user for its own account.
 
 ### User
-A user account. A user is related to the tenancy tree only through **grants**: holding a role on a scope is what puts them there, so "who is in this organization" and "what may they do" are the same rows (see [Authorization](#authorization) and `docs/src/access-model.md`).
+A user account. A user is related to the tenancy tree only through **grants**: holding a role on a scope is what puts them there, so "who is in this organization" and "what may they do" are the same rows (see [Authorization](#authorization)).
 
 In the Community Edition, an account comes from one of two sources: `UserService.CreateUser`, which a system administrator sends, or the [bootstrap](#bootstrap-user). `CreateUser` needs an email. The Community Edition sends no mail: it writes each [reset link](#reset-link) in the server log. The Enterprise edition adds sign-up, invitations, GitHub sign-in and mail.
 
@@ -118,8 +118,7 @@ A state from which no transition is possible. A job or node in a terminal state 
 ## Authorization
 
 The vocabulary below is the **single source of truth** for authorization words:
-one word per concept, used identically in code, proto, DB, and UI. See
-[`docs/src/access-model.md`](docs/src/access-model.md) for the model itself.
+one word per concept, used identically in code, proto, DB, and UI.
 
 **The seven words:** **Permission** (atomic capability) · **Role** (bundle of
 permissions) · **Scope** (System/Organization/Project) · **Grant** (P holds X in
@@ -330,7 +329,7 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 
 `crates/scylla-server/src/`: `server.rs` (the `Server` builder, the public entry point), `startup.rs` (the `Services` struct and `init_services`, the one place that names every concrete adapter, plus `run_server`; all crate-private) and `cli.rs` (the command line, config loading and tracing setup shared by the edition binaries).
 
-`crates/scylla-extension/src/`: the action pipeline, see [Extension point](#extension-point) and `crates/scylla-extension/AGENTS.md`.
+`crates/scylla-extension/src/`: the action pipeline, see [Extension point](#extension-point) and `crates/scylla-extension/ARCHITECTURE.md`.
 
 Every crate re-exports the kernel's `domain` module, so `crate::domain::...` names the model from anywhere even though it lives in another crate. That is the only re-export of its kind: the access model is reached as `scylla_auth::authz`, and the Postgres adapters import the ports they implement from `scylla_core::application`.
 
